@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_jwt_extended import jwt_required, current_user, unset_jwt_cookies, set_access_cookies, create_access_token
 from App.database import db
 from App.models import User
@@ -21,15 +21,29 @@ def login():
         password = request.form.get('password')
 
         user = User.query.filter_by(email=email).first()
-        if not user or not user.check_password(password) or not user.is_active:
-            flash('Invalid credentials', 'danger')
+        if not user: 
+            flash('User not found', 'danger')
             return redirect(url_for('auth_views.login'))
+        if not user.check_password(password):
+            flash('Invalid password', 'danger')
+            return redirect(url_for('auth_views.login'))
+        db.session.add(user)
+        db.session.commit()
 
         # Create JWT token
         token = create_access_token(identity=user.id)
 
+        #Redirect based on role
+        if user.role == 'admin':
+            response = redirect(url_for('dashboard_views.admin_page'))
+        elif user.role == 'hr':
+            response = redirect(url_for('dashboard_views.hr_page'))
+        elif user.role == 'scorer':
+            response = redirect(url_for('dashboard_views.scorer_page'))
+        else:
+            response = redirect(url_for('index_views.index_page'))
+
         # Set cookie
-        response = redirect(url_for('auth_views.identify_page'))  # or dashboard later
         set_access_cookies(response, token)
         flash('Login successful!', 'success')
         return response
@@ -53,7 +67,7 @@ def user_login_api():
     password = data.get('password')
 
     user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password) or not user.is_active:
+    if not user or not user.check_password(password): #or not user.is_active:
         return jsonify(message='Invalid credentials'), 401
 
     token = create_access_token(identity=user.id)

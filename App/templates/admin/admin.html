@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard-CariFin Data</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    <div class="dashboard-wrapper">
+      <aside class="sidebar">
+        <h2>Filters</h2>
+
+        <div class="filter-group">
+          <label>Time Range</label>
+          <div class="range-inputs">
+            <input type="number" value="2024">-<input type="number" value="2025">
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Institution:</label>
+          <select id="institutionSelect">
+            <option>Institution_2</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Event</label>
+          <label><input type="checkbox">Cross Country</label>
+          <label><input type="checkbox" checked> Urban Challenge</label>
+        </div>
+
+        <div class="filter-group">
+          <label>Division (Sex/Age)</label>
+          <div class="division-grid">
+            <label><input type="checkbox">Div1</label>
+          <label><input type="checkbox" checked>Div2</label>
+          <label><input type="checkbox">Div3</label>
+          <label><input type="checkbox">Div4</label>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-reset">Reset</button>
+          <button class="btn-apply">Apply</button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="top-bar">
+          <h1>CariFin Data Dashboard</h1>
+          <div class=""user-info">
+          Hi, Admin123 (Admin) | System | <a href="/logout">Logout</a></div>
+        </header>
+
+        <div class="active-filters-breadcrumb">
+          Filter: Season:2024-2025 / Institution_2 / Event: Urban Challenge / Division: Div2
+        </div>
+
+        <section class="admin-actions card" style="margin-bottom:20px; padding:20px;">
+          <h3>Create New HR User</h3>
+          <form action="/api/admin/create-hr" method="POST" style="display: flex; gap:10px; align-items: center;">
+            <input type="text" name="username" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <select name="institution_id" required>
+              <option value="">Select Institution</option>
+              {% for inst in institutions %}
+              <option value="{{ inst.id }}">{{ inst.name}} </option>
+                      {% endfor %}
+            </select>
+            <button type="submit" class="btn-apply">Register HR</button>
+          </form>
+        </section>
+
+        <div class="comparison-grid">
+          <section class=""season-column">
+          <h2> Season: 2024</h2>
+        <div class="stats-cards">
+          <div class="card"><strong>550</strong>Total Registered</div>
+           <div class="card"><strong>200</strong>Total Participated</div>
+            <div class="card"><strong>350</strong>Total No-Shows</div>
+        </div>
+      
+        <div class="chart-placeholder">
+          <p>Events in 2024 (Bar Chart)</p>
+        </div>
+
+        <div class="chart-placeholder">
+          <p>Event Stage Progression (Line Chart)</p>
+        </section>
+        </div>
+
+        <section class="season-column">
+          <h2>Season: 2025</h2>
+          <div class="stats-cards">
+            <div class="card"><strong>550</strong>Total Registered</div>
+            <div class="card"><strong>200</strong>Total Participated</div>
+            <div class="card"><strong>350</strong>Total No-Shows</div>
+
+            <div class="chart-placeholder">
+              <p>Events in 2025 (Bar Chart)</p>
+            </div>
+
+            <div class="chart-placeholder">
+              <p>Event Stage Progression (Line Chart)</p>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

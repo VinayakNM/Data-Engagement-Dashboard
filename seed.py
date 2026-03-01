@@ -23,6 +23,7 @@ def seed():
             inst = Institution.query.filter_by(code=code).first()
             if not inst:
                 inst = Institution(name=name, code=code)
+                
                 db.session.add(inst)
                 print(f"  + Institution: {name} ({code})")
         db.session.commit()

@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CariFin Data Dashboard – Institution Management</title>
+<link rel="stylesheet" href="Style.css">
+<style>
+  /* ── PAGE-SPECIFIC STYLES ── */
+  textarea {
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    padding: 7px 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+    width: 100%;
+    max-width: 420px;
+    min-height: 70px;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  /* HR User Assignment table */
+  .hr-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .hr-table th { font-size: 10px; padding: 6px 10px; background: #f0ece4; }
+  .hr-table td { padding: 7px 10px; font-size: 12px; }
+  .hr-table td:first-child {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    width: 44px;
+  }
+
+  /* Participation history list */
+  .participation-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .participation-list {
+    list-style: disc;
+    padding-left: 20px;
+    margin-bottom: 16px;
+  }
+  .participation-list li {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Participants cell */
+  .participants-cell { font-size: 12px; line-height: 1.6; }
+  .participants-cell strong { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Assign HR modal fields */
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .modal-field input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    padding: 6px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal-field input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>CariFin Data Dashboard</span>
+  <div class="topbar-right">
+    <span>Hi, Admin123 (Admin)</span>
+    <a href="#">System ▾</a>
+    <a href="#">Logout</a>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="logo-box">🏔</div>
+  <div class="breadcrumb"><span>System &rsaquo;</span> Institution Management</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="section-title">Manage Institutions</div>
+  <div class="section-actions">
+    <button class="btn" onclick="openForm('new')">Add New Institution</button>
+    <button class="btn btn-ghost" onclick="openAssignHRModal()">Assign HR Users</button>
+  </div>
+
+  <!-- REGISTERED INSTITUTIONS TABLE -->
+  <div class="card">
+    <div class="card-header">Registered Institutions</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID#</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Users</th>
+          <th>Participants</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="institutionsTableBody">
+        <!-- Rendered by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ADD/EDIT INSTITUTION FORM -->
+  <div class="form-panel" id="institutionForm">
+    <div class="form-panel-header">
+      <span id="formTitle">Add / Edit Institution Form</span>
+      <button class="close-btn" onclick="closeForm()" title="Close">✕</button>
+    </div>
+    <div class="form-body">
+
+      <div class="form-row">
+        <span class="form-label">Institution Code:</span>
+        <input type="text" class="wide" id="instCode" placeholder="e.g. CBTT">
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">Full Name:</span>
+        <input type="text" class="wide" id="instName" placeholder="e.g. Central Bank of Trinidad and Tobago">
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">Contact Person:</span>
+        <input type="text" class="wide" id="instContact" placeholder="e.g. Johnson Doe">
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">Contact Email:</span>
+        <input type="text" class="wide" id="instEmail" placeholder="e.g. hr@central-bank.org.tt">
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">Phone:</span>
+        <input type="text" class="wide" id="instPhone" placeholder="e.g. 1-868-XXX-XXXX">
+      </div>
+
+      <!-- HR User Assignment -->
+      <div class="events-label" style="margin-top:6px;">HR User Assignment</div>
+      <table class="hr-table">
+        <thead>
+          <tr>
+            <th>ID#</th>
+            <th>Username</th>
+            <th>User Email</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="hrTableBody">
+          <!-- Rendered by JS -->
+        </tbody>
+      </table>
+      <div style="margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" onclick="openAddHRRow()">+ Add HR User</button>
+      </div>
+
+      <!-- Participation History -->
+      <div class="participation-label">Participation History</div>
+      <ul class="participation-list" id="participationList">
+        <!-- Rendered by JS -->
+      </ul>
+
+    </div><!-- /form-body -->
+
+    <div class="form-actions">
+      <button class="btn" onclick="handleSave()">Save Institution</button>
+      <button class="btn btn-ghost" id="deactivateBtn" onclick="handleDeactivate()" style="display:none;">Deactivate</button>
+      <button class="btn btn-ghost" id="activateBtn" onclick="handleActivate()" style="display:none;">Activate</button>
+      <button class="btn btn-ghost" id="analyticsBtn" onclick="handleAnalytics()" style="display:none;">View Analytics</button>
+      <button class="btn btn-ghost" onclick="closeForm()" style="margin-left:auto;">Cancel</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ASSIGN HR MODAL (global) -->
+<div class="overlay" id="assignHROverlay">
+  <div class="modal">
+    <h3>Assign HR User</h3>
+    <div class="modal-field">
+      <label>Institution</label>
+      <select id="hrInstSelect" style="width:100%;border:1.5px solid var(--border);background:var(--bg);padding:6px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;outline:none;"></select>
+    </div>
+    <div class="modal-field">
+      <label>Username</label>
+      <input type="text" id="hrUsername" placeholder="e.g. CBTT_JDoe1">
+    </div>
+    <div class="modal-field">
+      <label>User Email</label>
+      <input type="text" id="hrEmail" placeholder="e.g. jdoe@cbtt.com">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAssignHRModal()">Cancel</button>
+      <button class="btn" onclick="confirmAssignHR()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD HR ROW MODAL (inline to form) -->
+<div class="overlay" id="addHROverlay">
+  <div class="modal">
+    <h3>Add HR User</h3>
+    <div class="modal-field">
+      <label>Username</label>
+      <input type="text" id="newHRUsername" placeholder="e.g. CBTT_JDoe1">
+    </div>
+    <div class="modal-field">
+      <label>User Email</label>
+      <input type="text" id="newHREmail" placeholder="e.g. jdoe@cbtt.com">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAddHRRow()">Cancel</button>
+      <button class="btn" onclick="confirmAddHRRow()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <p id="confirmMsg">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn" id="confirmOkBtn" onclick="confirmAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ── DATA STORE ── */
+  let institutions = [
+    {
+      id: 1, code: 'CBTT', name: 'Central Bank', fullName: 'Central Bank of Trinidad and Tobago',
+      contact: 'Johnson Doe', email: 'hr@central-bank.org.tt', phone: '1-868-625-4835',
+      users: 3, participants: 500, status: 'active',
+      hrUsers: [
+        { username: 'CBTT_JDoe1',    email: 'jdoe@cbtt.com' },
+        { username: 'CBTT_NCharles2',email: 'ncharles@cbtt.com' },
+        { username: 'CBTT_Klaw',     email: 'klaw@cbtt.com' },
+      ],
+      history: ['2025: 200 registered, 90% participation','2024: 180 registered, 88% participation','2023: 150 registered, 85% participation'],
+    },
+    {
+      id: 2, code: 'SAGC', name: 'Sagicor', fullName: 'Sagicor',
+      contact: 'Mary Thomas', email: 'hr@sagicor.com', phone: '1-868-625-1000',
+      users: 1, participants: 96, status: 'active',
+      hrUsers: [{ username: 'SAGC_MThomas', email: 'mthomas@sagicor.com' }],
+      history: ['2025: 40 registered, 95% participation','2024: 30 registered, 90% participation'],
+    },
+    {
+      id: 3, code: 'FCBL', name: 'First Citizens Bank', fullName: 'First Citizens Bank',
+      contact: 'Andre Gill', email: 'hr@firstcitizens.co.tt', phone: '1-868-623-2576',
+      users: 3, participants: 237, status: 'inactive',
+      hrUsers: [
+        { username: 'FCBL_AGill',   email: 'agill@firstcitizens.co.tt' },
+        { username: 'FCBL_SWilson', email: 'swilson@firstcitizens.co.tt' },
+      ],
+      history: ['2025: 100 registered, 80% participation','2024: 90 registered, 78% participation','2023: 80 registered, 75% participation'],
+    },
+  ];
+  let nextId = 4;
+  let currentMode = 'new';
+  let editingId   = null;
+  let pendingAction = null;
+
+  // HR users being edited in the form (local copy)
+  let formHRUsers = [];
+
+  /* ── RENDER MAIN TABLE ── */
+  function renderTable() {
+    const tbody = document.getElementById('institutionsTableBody');
+    if (!institutions.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No institutions found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = institutions.map(inst => {
+      const isActive = inst.status === 'active';
+      const statusCell = isActive
+        ? `<span class="status-dot dot-active"></span> Active`
+        : `<span class="status-dot dot-closed"></span> Inactive`;
+      const actions = `
+        <button class="btn btn-sm" onclick="openForm('edit',${inst.id})">Edit</button>
+        <button class="btn btn-sm btn-ghost" onclick="openForm('view',${inst.id})">View Users</button>`;
+      return `
+        <tr>
+          <td style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:center;">${inst.id}</td>
+          <td><strong>${inst.code}</strong></td>
+          <td>${inst.name}</td>
+          <td style="text-align:center;">${inst.users}</td>
+          <td class="participants-cell">
+            <strong>♦ ${inst.participants.toLocaleString()}</strong><br>
+            <button class="btn btn-sm btn-ghost" style="margin-top:3px;" onclick="showToast('Viewing participants for ${inst.name}…')">View Participants</button>
+          </td>
+          <td>${statusCell}</td>
+          <td style="white-space:nowrap;">${actions}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* ── RENDER HR TABLE (inside form) ── */
+  function renderHRTable() {
+    const tbody = document.getElementById('hrTableBody');
+    if (!formHRUsers.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:10px;font-size:11px;">No HR users assigned.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = formHRUsers.map((u, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${u.username}</td>
+        <td>${u.email}</td>
+        <td><button class="btn btn-sm btn-ghost" onclick="removeHRUser(${i})">Remove</button></td>
+      </tr>`).join('');
+  }
+
+  /* ── RENDER PARTICIPATION HISTORY ── */
+  function renderHistory(history) {
+    const list = document.getElementById('participationList');
+    list.innerHTML = (history || []).map(h => `<li>${h}</li>`).join('') || '<li style="color:var(--text-muted)">No history available.</li>';
+  }
+
+  /* ── OPEN FORM ── */
+  function openForm(mode, id) {
+    currentMode = mode;
+    editingId = id || null;
+
+    // Reset
+    document.getElementById('instCode').value    = '';
+    document.getElementById('instName').value    = '';
+    document.getElementById('instContact').value = '';
+    document.getElementById('instEmail').value   = '';
+    document.getElementById('instPhone').value   = '';
+    document.getElementById('deactivateBtn').style.display = 'none';
+    document.getElementById('activateBtn').style.display   = 'none';
+    document.getElementById('analyticsBtn').style.display  = 'none';
+    document.getElementById('instCode').readOnly = false;
+    formHRUsers = [];
+
+    if (mode === 'new') {
+      document.getElementById('formTitle').textContent = 'Add New Institution';
+      renderHRTable();
+      renderHistory([]);
+    } else {
+      const inst = institutions.find(i => i.id === id);
+      if (!inst) return;
+      document.getElementById('formTitle').textContent = `${mode === 'view' ? 'View' : 'Edit'} Institution – ${inst.code}`;
+      document.getElementById('instCode').value    = inst.code;
+      document.getElementById('instCode').readOnly = true;
+      document.getElementById('instName').value    = inst.fullName;
+      document.getElementById('instContact').value = inst.contact;
+      document.getElementById('instEmail').value   = inst.email;
+      document.getElementById('instPhone').value   = inst.phone;
+      formHRUsers = inst.hrUsers ? [...inst.hrUsers] : [];
+      renderHRTable();
+      renderHistory(inst.history);
+
+      // Show contextual action buttons
+      if (inst.status === 'active') {
+        document.getElementById('deactivateBtn').style.display = 'inline-block';
+      } else {
+        document.getElementById('activateBtn').style.display = 'inline-block';
+      }
+      document.getElementById('analyticsBtn').style.display = 'inline-block';
+    }
+
+    document.getElementById('institutionForm').classList.add('active');
+    setTimeout(() => document.getElementById('institutionForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+
+  function closeForm() {
+    document.getElementById('institutionForm').classList.remove('active');
+    editingId = null;
+    formHRUsers = [];
+  }
+
+  /* ── HR USER MANAGEMENT (inside form) ── */
+  function removeHRUser(idx) {
+    formHRUsers.splice(idx, 1);
+    renderHRTable();
+  }
+
+  function openAddHRRow() {
+    document.getElementById('newHRUsername').value = '';
+    document.getElementById('newHREmail').value    = '';
+    document.getElementById('addHROverlay').classList.add('active');
+  }
+  function closeAddHRRow() {
+    document.getElementById('addHROverlay').classList.remove('active');
+  }
+  function confirmAddHRRow() {
+    const username = document.getElementById('newHRUsername').value.trim();
+    const email    = document.getElementById('newHREmail').value.trim();
+    if (!username || !email) { showToast('⚠ Please fill in both fields.'); return; }
+    formHRUsers.push({ username, email });
+    renderHRTable();
+    closeAddHRRow();
+    showToast(`✓ HR user "${username}" added.`);
+  }
+
+  /* ── SAVE ── */
+  function handleSave() {
+    const code    = document.getElementById('instCode').value.trim();
+    const name    = document.getElementById('instName').value.trim();
+    const contact = document.getElementById('instContact').value.trim();
+    const email   = document.getElementById('instEmail').value.trim();
+    const phone   = document.getElementById('instPhone').value.trim();
+
+    if (!code || !name) { showToast('⚠ Institution Code and Name are required.'); return; }
+
+    if (currentMode === 'new') {
+      if (institutions.find(i => i.code === code)) {
+        showToast(`⚠ Code "${code}" already exists.`); return;
+      }
+      institutions.push({
+        id: nextId++, code, name: name.split(' ').slice(0,3).join(' '), fullName: name,
+        contact, email, phone,
+        users: formHRUsers.length,
+        participants: 0,
+        status: 'active',
+        hrUsers: [...formHRUsers],
+        history: [],
+      });
+      showToast(`✓ Institution "${code}" added successfully.`);
+    } else {
+      const idx = institutions.findIndex(i => i.id === editingId);
+      if (idx > -1) {
+        institutions[idx] = {
+          ...institutions[idx],
+          fullName: name,
+          name: name.split(' ').slice(0,3).join(' '),
+          contact, email, phone,
+          users: formHRUsers.length,
+          hrUsers: [...formHRUsers],
+        };
+        showToast(`✓ Institution "${code}" updated successfully.`);
+      }
+    }
+
+    renderTable();
+    closeForm();
+  }
+
+  /* ── DEACTIVATE / ACTIVATE ── */
+  function handleDeactivate() {
+    const inst = institutions.find(i => i.id === editingId);
+    pendingAction = () => {
+      inst.status = 'inactive';
+      renderTable();
+      closeForm();
+      showToast(`✓ "${inst.name}" deactivated.`);
+    };
+    openConfirm('Deactivate Institution', `Deactivate "${inst?.name}"? Members will lose access.`);
+  }
+
+  function handleActivate() {
+    const inst = institutions.find(i => i.id === editingId);
+    if (inst) { inst.status = 'active'; }
+    renderTable();
+    closeForm();
+    showToast(`✓ "${inst?.name}" is now Active.`);
+  }
+
+  function handleAnalytics() {
+    const inst = institutions.find(i => i.id === editingId);
+    showToast(`Opening analytics for "${inst?.name}"…`);
+  }
+
+  /* ── GLOBAL ASSIGN HR MODAL ── */
+  function openAssignHRModal() {
+    const select = document.getElementById('hrInstSelect');
+    select.innerHTML = institutions.map(i => `<option value="${i.id}">${i.code} – ${i.name}</option>`).join('');
+    document.getElementById('hrUsername').value = '';
+    document.getElementById('hrEmail').value    = '';
+    document.getElementById('assignHROverlay').classList.add('active');
+  }
+  function closeAssignHRModal() {
+    document.getElementById('assignHROverlay').classList.remove('active');
+  }
+  function confirmAssignHR() {
+    const instId   = parseInt(document.getElementById('hrInstSelect').value);
+    const username = document.getElementById('hrUsername').value.trim();
+    const email    = document.getElementById('hrEmail').value.trim();
+    if (!username || !email) { showToast('⚠ Please fill in both fields.'); return; }
+    const inst = institutions.find(i => i.id === instId);
+    if (inst) {
+      inst.hrUsers = inst.hrUsers || [];
+      inst.hrUsers.push({ username, email });
+      inst.users = inst.hrUsers.length;
+    }
+    renderTable();
+    closeAssignHRModal();
+    showToast(`✓ HR user "${username}" assigned to ${inst?.code}.`);
+  }
+
+  /* ── CONFIRM MODAL ── */
+  function openConfirm(title, msg, danger = false) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent   = msg;
+    const btn = document.getElementById('confirmOkBtn');
+    btn.className   = danger ? 'btn btn-danger' : 'btn';
+    btn.textContent = danger ? 'Delete' : 'Confirm';
+    document.getElementById('confirmOverlay').classList.add('active');
+  }
+  function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    pendingAction = null;
+  }
+  function confirmAction() {
+    if (pendingAction) pendingAction();
+    closeConfirm();
+  }
+
+  /* ── TOAST ── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  // Initial render
+  renderTable();
+</script>
+</body>
+</html>
