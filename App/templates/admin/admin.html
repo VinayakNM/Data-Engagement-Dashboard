@@ -61,14 +61,17 @@
 
         <section class="admin-actions card" style="margin-bottom:20px; padding:20px;">
           <h3>Create New HR User</h3>
-          <form action="/api/admin/create-hr" method="POST" style="display: flex; gap:10px; align-items: center;">
-            <input type="text" name="username" placeholder="Full Name" required>
-            <input type="email" name="email" placeholder="Email Address" required>
+          <form action="{{ url_for('admin_views.create_hr') }}" method="POST" style="display: flex; gap:10px; align-items: center;">
+            <input type="text" name="firstname" placeholder="First Name" required>
+            <input type="text" name="lastname" placeholder="Last Name" required>
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
             <select name="institution_id" required>
               <option value="">Select Institution</option>
               {% for inst in institutions %}
-              <option value="{{ inst.id }}">{{ inst.name}} </option>
-                      {% endfor %}
+                <option value="{{ inst.id }}">{{ inst.name}} </option>
+              {% endfor %}
             </select>
             <button type="submit" class="btn-apply">Register HR</button>
           </form>

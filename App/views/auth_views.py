@@ -37,7 +37,7 @@ def login():
 
         # Redirect based on role
         if user.role == 'admin':
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('admin_views.dashboard'))
         elif user.role == 'hr':
             return redirect(url_for('hr.dashboard'))
         elif user.role == 'scorer':

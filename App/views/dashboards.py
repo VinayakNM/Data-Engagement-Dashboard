@@ -10,7 +10,7 @@ def admin_page():
     if current_user.role != 'admin':
         return "Access Denied", 403
     institutions = get_admin_data()
-    return render_template('admin.html', institutions=institutions)
+    return render_template('admin/admin.html', institutions=institutions)
 
 @dashboard_views.route('/dashboard/hr')
 @jwt_required()
@@ -18,7 +18,7 @@ def hr_page():
     if current_user.role != 'hr':
         return "Access Denied", 403
     stats = get_hr_stats(current_user.institution_id)
-    return render_template('hr.html', **stats)
+    return render_template('admin/hr.html', **stats)
 
 @dashboard_views.route('/dashboard/scorer')
 @jwt_required()
@@ -26,4 +26,4 @@ def scorer_page():
     if current_user.role not in ['admin', 'scorer']:
         return "Access Denied", 403
     recent_results = get_scorer_data()
-    return render_template('scorer.html', results=recent_results)
+    return render_template('admin/scorer.html', results=recent_results)
