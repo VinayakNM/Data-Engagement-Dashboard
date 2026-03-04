@@ -4,65 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CariFin Data Dashboard{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <span>CariFin Data Dashboard</span>
+        <div class="topbar-right">
+            <span>Hi, {% if current_user %}{{ current_user.firstname }} ({{ current_user.role|capitalize }}){% endif %}</span>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_views.list_users') }}">Users</a>
+            {% elif current_user.role == 'hr' %}
+            <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
+            {% endif %}
+            <a href="{{ url_for('auth_views.logout') }}">Logout</a>
+        </div>
+    </div>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <span>CariFin Data Dashboard</span>
-  <div class="topbar-right">
-    <span>Hi, {% if current_user %}{{ current_user.firstname }} ({{ current_user.role|capitalize }}){% endif %}</span>
-    {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('admin_views.list_users') }}">Users</a>
-    <a href="#">System ▾</a>
-    {% elif current_user.role == 'hr' %}
-    <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
-    <a href="{{ url_for('hr_views.register') }}">Register</a>
-    {% elif current_user.role == 'scorer' %}
-    <a href="{{ url_for('scorer_views.dashboard') }}">Dashboard</a>
-    {% endif %}
-    <a href="{{ url_for('auth_views.logout') }}">Logout</a>
-  </div>
-</div>
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="logo-box">🏔</div>
+        <div class="breadcrumb">
+            <span>{% block breadcrumb %}{% endblock %}</span>
+        </div>
+    </div>
 
-<!-- PAGE HEADER -->
-<div class="page-header">
-  <div class="logo-box">🏔</div>
-  <div class="breadcrumb">
-    <span>{% block breadcrumb %}{% endblock %}</span>
-  </div>
-</div>
+    <!-- MAIN CONTENT -->
+    <div class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="toast show" style="position: static; margin-bottom: 16px; opacity: 1; transform: none; pointer-events: auto;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-<!-- MAIN CONTENT -->
-<div class="main">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="toast show" style="position: static; margin-bottom: 16px; opacity: 1; transform: none; pointer-events: auto;">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
 
-    {% block content %}{% endblock %}
-</div>
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast"></div>
 
-<!-- TOAST NOTIFICATION (hidden by default) -->
-<div class="toast" id="toast"></div>
-
-<script>
-    // Toast function for JavaScript messages
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        clearTimeout(t._timer);
-        t._timer = setTimeout(() => t.classList.remove('show'), 3200);
-    }
-</script>
-{% block extra_js %}{% endblock %}
+    <script>
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

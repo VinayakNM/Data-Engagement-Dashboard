@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Add Participant{% endblock %}
+{% block breadcrumb %}HR &rsaquo; Add Participant{% endblock %}
+{% block content %}
+
+<div class="form-panel active" style="display: block; border: none;">
+  <div class="form-panel-header">
+    <span>Add New Participant</span>
+  </div>
+  <div class="form-body">
+    <form method="POST" action="{{ url_for('hr_views.add_participant') }}">
+      <div class="form-row">
+        <span class="form-label">First Name:</span>
+        <input type="text" name="first_name" required class="wide">
+      </div>
+      <div class="form-row">
+        <span class="form-label">Last Name:</span>
+        <input type="text" name="last_name" required class="wide">
+      </div>
+      <div class="form-row">
+        <span class="form-label">Email:</span>
+        <input type="email" name="email" class="wide">
+      </div>
+      <div class="form-row">
+        <span class="form-label">Birth Date:</span>
+        <input type="date" name="birth_date">
+      </div>
+      <div class="form-row">
+        <span class="form-label">Sex:</span>
+        <select name="sex">
+          <option value="">-- Select --</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <span class="form-label">Division:</span>
+        <input type="text" name="division" placeholder="e.g. M2029">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Add Participant</button>
+        <a href="{{ url_for('hr_views.dashboard') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
