@@ -2,559 +2,345 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CariFin Data Dashboard – Event Management</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='test.css') }}">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CariFin — Event Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  .stage-table input[type="text"],
-  .stage-table input[type="date"] {
-    width: 100%; font-size: 11px; padding: 3px 7px;
-  }
-  .stage-table input[type="date"] { width: auto; min-width: 130px; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f1923;--ink2:#3d4f5e;--muted:#7a8fa0;--divider:#e4eaef;
+  --bg:#f2f5f8;--surface:#fff;--surface2:#f7f9fb;
+  --accent:#0066ff;--accent-h:#0052cc;--accent-l:#e6f0ff;
+  --green:#00875a;--green-l:#e3fcef;--red:#de350b;--red-l:#ffebe6;
+  --orange:#ff8b00;--orange-l:#fffae6;
+  --radius:8px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+.hdr{background:var(--ink);color:#fff;height:54px;display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:100}
+.hdr-brand{font-size:15px;font-weight:700;letter-spacing:-.5px}
+.hdr-sep{opacity:.3}
+.hdr-page{font-size:13px;opacity:.7;font-family:'DM Mono',monospace}
+.wrap{padding:28px 32px;max-width:1100px}
+.breadcrumb{font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'DM Mono',monospace}
+.page-h{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:16px}
 
-  textarea {
-    border: 1.5px solid var(--border);
-    background: var(--bg);
-    padding: 7px 10px;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 12px; color: var(--text);
-    outline: none; resize: vertical;
-    width: 100%; max-width: 420px; min-height: 70px;
-    transition: border-color 0.15s;
-  }
-  textarea:focus { border-color: var(--accent); }
+/* import bar */
+.import-bar{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);padding:12px 18px;display:flex;align-items:center;gap:12px;margin-bottom:16px;box-shadow:var(--shadow)}
+.import-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.import-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--divider);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--ink2);transition:border-color .15s}
+.import-btn:hover{border-color:var(--accent);color:var(--accent)}
+.import-file{font-size:12px;color:var(--muted)}
+.import-dl{margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;text-decoration:none}
+.import-dl:hover{text-decoration:underline}
 
-  .form-row.top-align { align-items: flex-start; }
-  .form-row.top-align .form-label { margin-top: 6px; }
+.actions{display:flex;gap:8px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px}
+.card-hdr{padding:12px 18px;border-bottom:1px solid var(--divider);display:flex;justify-content:space-between;align-items:center;background:var(--surface2)}
+.card-hdr-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:9px 16px;text-align:left;border-bottom:1px solid var(--divider);background:var(--surface2)}
+td{padding:10px 16px;border-bottom:1px solid var(--divider);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.clickrow:hover td{background:var(--accent-l);cursor:pointer}
+tr.clickrow.sel td{background:var(--accent-l)}
+.empty-cell{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.ev-name{font-weight:600}
+.ev-id{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.badge-active{background:var(--green-l);color:var(--green)}.badge-active::before{background:var(--green)}
+.badge-inactive{background:#f4f5f7;color:var(--muted)}.badge-inactive::before{background:var(--muted)}
+.badge-run{background:#e6f0ff;color:#0052cc}.badge-walk{background:#e3fcef;color:#006644}
+.badge-mixed{background:#fffae6;color:#974f00}.badge-other{background:#f4f5f7;color:#3d4f5e}
+.tbl-action{font-size:11px;color:var(--accent);cursor:pointer;margin-left:6px;text-decoration:none}
+.tbl-action:hover{text-decoration:underline}
 
-  .stage-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-  .stage-table th { font-size: 10px; padding: 6px 10px; background: #f0ece4; }
-  .stage-table td { padding: 6px 8px; font-size: 12px; }
-  .stage-table td:first-child {
-    text-align: center; font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600; width: 48px;
-  }
-  .stage-actions { display: flex; gap: 6px; margin-bottom: 16px; }
-  .desc-cell { max-width: 180px; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-h)}
+.btn-ghost{background:transparent;color:var(--ink2);border:1.5px solid var(--divider)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--red-l);color:var(--red);border:1.5px solid #ffd5cc}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 
-  /* Season selector in header area */
-  .season-selector {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-muted);
-  }
-  .season-selector select {
-    border: 1px solid var(--border);
-    background: var(--bg); padding: 3px 8px;
-    font-family: inherit; font-size: 12px;
-    color: var(--text); outline: none; cursor: pointer;
-    border-radius: 4px;
-  }
-  .season-selector select:focus { border-color: var(--accent); }
+/* panel below table */
+.panel{background:var(--surface);border:1.5px dashed var(--accent);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;display:none}
+.panel.open{display:block}
+.panel-hdr{background:var(--ink);color:#fff;padding:13px 20px;display:flex;justify-content:space-between;align-items:center}
+.panel-hdr-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.panel-close{background:none;border:none;color:#fff;opacity:.6;font-size:20px;cursor:pointer;line-height:1;padding:0 2px}.panel-close:hover{opacity:1}
+.panel-body{padding:24px 28px}
+.panel-footer{padding:14px 28px;border-top:1px solid var(--divider);background:var(--surface2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  /* Loading state */
-  .loading-row td { text-align: center; color: var(--text-muted); padding: 24px; font-style: italic; }
-  .spin { display: inline-block; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+.field{margin-bottom:16px}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;display:block}
+.req{color:var(--red)}
+.inp{width:100%;border:1.5px solid var(--divider);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:13px;background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,102,255,.1)}
+textarea.inp{resize:vertical;min-height:72px}
+.radios{display:flex;gap:16px;flex-wrap:wrap}
+.radio-opt{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.radio-opt input{accent-color:var(--accent);width:14px;height:14px}
+.season-row{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 14px;background:var(--accent-l);border-radius:6px;font-size:12px}
+.season-row label{font-weight:600;color:var(--accent)}
+.season-row select{border:1.5px solid #b3d1ff;border-radius:6px;padding:5px 10px;font-family:inherit;font-size:12px;background:#fff;outline:none}
 
-  /* API error banner */
-  .api-error {
-    background: #fff3cd; border: 1px solid #ffc107;
-    padding: 10px 14px; margin-bottom: 12px;
-    font-size: 12px; color: #856404;
-    display: none; border-radius: 4px;
-  }
-  .api-error.show { display: block; }
+/* stage table */
+.stage-section{margin-top:20px}
+.stage-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+.stage-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--divider);border-radius:6px;overflow:hidden}
+.stage-tbl th{padding:8px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--divider);text-align:left}
+.stage-tbl td{padding:6px 8px;border-bottom:1px solid var(--divider);vertical-align:middle}
+.stage-tbl tr:last-child td{border-bottom:none}
+.snum{font-family:'DM Mono',monospace;font-weight:700;color:var(--accent);text-align:center;font-size:13px}
+.sinp{width:100%;border:1.5px solid var(--divider);border-radius:4px;padding:6px 8px;font-family:inherit;font-size:12px;outline:none;transition:border-color .15s}
+.sinp:focus{border-color:var(--accent)}
+.sinp.sm{max-width:90px}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 6px;border-radius:4px}.del-btn:hover{color:var(--red)}
+.stage-actions{display:flex;gap:8px;margin-top:10px}
+
+.banner{padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:16px;display:none}
+.banner.err{display:block;background:var(--red-l);border:1px solid #ffd5cc;color:var(--red)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:11px 18px;font-size:13px;border-left:4px solid var(--accent);border-radius:6px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <span>CariFin Data Dashboard</span>
-  <div class="topbar-right">
-    <!-- Dynamic user — Flask injects via Jinja2 -->
-    <span>Hi, {{ current_user.username }} ({{ current_user.role | capitalize }})</span>
-
-    <!-- System Dropdown -->
-    <div class="sys-wrap" style="position:relative; display:inline-block;">
-      <button class="sys-btn" id="sysBtn" onclick="toggleSysMenu(event)">
-        System ▾
-      </button>
-      <div class="sys-dd" id="sysDd" style="display:none; position:absolute; right:0; top:100%; z-index:200; background:#fff; border:1px solid var(--border); min-width:200px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-        <a class="sys-dd-item" href="{{ url_for('admin.dashboard') }}">General Overview</a>
-        <a class="sys-dd-item active" href="{{ url_for('admin.event_management') }}">Event Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.season_management') }}">Season Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.bib_no_management') }}">Bib No. Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.bib_tag_management') }}">Bib Tag Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.institution_management') }}">Institution Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.user_management') }}">User Management</a>
-        <a class="sys-dd-item" href="{{ url_for('admin.forms') }}">Forms</a>
-      </div>
-    </div>
-
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-  </div>
+<div class="hdr">
+  <span class="hdr-brand">CariFin Data Dashboard</span>
+  <span class="hdr-sep">›</span>
+  <span class="hdr-page">System › Event Management</span>
 </div>
 
-<!-- PAGE HEADER -->
-<div class="page-header">
-  <div class="logo-box">🏔</div>
-  <div class="breadcrumb">
-    <span>System ›</span> Event Management
-    <!-- Season selector — events are always tied to a season -->
-    <span class="season-selector" style="margin-left: 16px;">
-      Season:
-      <select id="seasonSelect" onchange="onSeasonChange()">
-        <option value="">Loading…</option>
-      </select>
-    </span>
+<div class="wrap">
+  <div class="breadcrumb">System / Event Management</div>
+  <div class="page-h">Manage Events</div>
+  <div class="banner" id="banner"></div>
+
+  <div class="import-bar">
+    <span class="import-label">Import</span>
+    <label class="import-btn">📋 CSV<input type="file" accept=".csv" style="display:none" onchange="handleImport(this,'csv')"></label>
+    <label class="import-btn">📊 Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="handleImport(this,'excel')"></label>
+    <span class="import-file" id="importFile">No file loaded</span>
+    <a class="import-dl" onclick="downloadTemplate()">Download template ↓</a>
   </div>
-</div>
 
-<!-- MAIN -->
-<div class="main">
+  <div class="actions">
+    <button class="btn btn-primary" onclick="openNew()">+ Add New Event</button>
+    <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
 
-  <div class="section-title">Manage Events</div>
-
-  <!-- API error banner (shown if fetch fails) -->
-  <div class="api-error" id="apiError"></div>
-
-  <!-- ACTIVE EVENTS TABLE -->
   <div class="card">
-    <div class="card-header">Active Events</div>
+    <div class="card-hdr">
+      <span class="card-hdr-label" id="tableLabel">Active Events</span>
+      <span id="tableCount" style="font-size:11px;color:var(--muted)"></span>
+    </div>
     <table>
-      <thead>
-        <tr>
-          <th>ID#</th>
-          <th>Event Name</th>
-          <th>Type</th>
-          <th>Stages</th>
-          <th>Description</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="eventsTableBody">
-        <tr class="loading-row">
-          <td colspan="7"><span class="spin">⟳</span> Loading events…</td>
-        </tr>
-      </tbody>
+      <thead><tr>
+        <th>ID#</th><th>Event Name</th><th>Type</th><th>Stages</th><th>Description</th><th>Status</th>
+      </tr></thead>
+      <tbody id="evTbody"><tr><td colspan="6" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
 
-  <!-- ADD NEW EVENT button -->
-  <div class="section-actions" style="text-align:left; margin-bottom: 20px;">
-    <button class="btn" onclick="openForm('new')">+ Add New Event</button>
-  </div>
-
-  <!-- ADD/EDIT EVENT FORM -->
-  <div class="form-panel" id="eventForm">
-    <div class="form-panel-header">
-      <span id="formTitle">Add / Edit Event Form</span>
-      <button class="close-btn" onclick="closeForm()" title="Close">✕</button>
+  <!-- panel below table -->
+  <div class="panel" id="panel">
+    <div class="panel-hdr">
+      <span class="panel-hdr-title" id="panelTitle">Add New Event</span>
+      <button class="panel-close" onclick="closePanel()">&#x2715;</button>
     </div>
-    <div class="form-body">
-
-      <!-- Hidden edit ID -->
-      <input type="hidden" id="editingSeasonEventId">
-      <input type="hidden" id="editingEventId">
-
-      <!-- Event Name -->
-      <div class="form-row">
-        <span class="form-label">Event Name:</span>
-        <input type="text" class="wide" id="eventName" placeholder="e.g. Urban Challenge">
-      </div>
-
-      <!-- Event Type -->
-      <div class="form-row">
-        <span class="form-label">Event Type:</span>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="eventType" value="Run"> Run</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Walk" checked> Walk</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Mixed"> Mixed</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Other"> Other</label>
-        </div>
-      </div>
-
-      <!-- Description -->
-      <div class="form-row top-align">
-        <span class="form-label">Description:</span>
-        <textarea id="eventDescription" placeholder="Brief description of the event…"></textarea>
-      </div>
-
-      <!-- Stage Configuration -->
-      <div class="events-label" style="margin-top: 6px;">Stage Configuration</div>
-      <table class="stage-table">
-        <thead>
-          <tr>
-            <th>Stage</th>
-            <th>Distance</th>
-            <th>Location</th>
-            <th>Date</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="stageTableBody"></tbody>
-      </table>
-
-      <div class="stage-actions">
-        <button class="btn btn-ghost btn-sm" onclick="addStage()">Add Stage</button>
-        <button class="btn btn-ghost btn-sm" onclick="removeStage()">Remove Stage</button>
-      </div>
-
-    </div><!-- /form-body -->
-
-    <!-- FORM ACTIONS -->
-    <div class="form-actions">
-      <button class="btn" id="saveBtn" onclick="handleSave()">Save Event</button>
-      <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
-      <button class="btn btn-danger" id="deleteBtn" onclick="handleDelete()" style="margin-left:auto; display:none;">Delete Event</button>
-    </div>
-  </div>
-
-</div><!-- /main -->
-
-<!-- CONFIRM MODAL -->
-<div class="overlay" id="confirmOverlay">
-  <div class="modal">
-    <h3 id="confirmTitle">Confirm Action</h3>
-    <p id="confirmMsg">Are you sure?</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
-      <button class="btn" id="confirmOkBtn" onclick="confirmAction()">Confirm</button>
-    </div>
+    <div class="panel-body" id="panelBody"></div>
+    <div class="panel-footer" id="panelFooter"></div>
   </div>
 </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toastEl"></div>
 
 <script>
-/* ═══════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════ */
-let events         = [];         // loaded from API
-let seasons        = [];         // loaded from API
-let currentSeasonId = null;      // currently selected season
-let currentMode    = 'new';
-let editingSeasonEventId = null;
-let pendingAction  = null;
+var events=[], seasons=[], selId=null, selSeasonId=null;
 
-/* ═══════════════════════════════════════════
-   SYSTEM DROPDOWN
-═══════════════════════════════════════════ */
-function toggleSysMenu(e) {
-  e.stopPropagation();
-  const dd = document.getElementById('sysDd');
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+function api(url,opts){
+  return fetch(url,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts||{}))
+    .then(function(r){
+      if(!r.ok) return r.json().catch(function(){return{};}).then(function(e){throw new Error(e.error||'HTTP '+r.status);});
+      return r.json();
+    });
 }
-document.addEventListener('click', () => {
-  document.getElementById('sysDd').style.display = 'none';
-});
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function toast(m){var t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3000);}
+function banner(m){var el=document.getElementById('banner');el.textContent=m;el.className='banner err';}
+function hideBanner(){document.getElementById('banner').className='banner';}
 
-/* ═══════════════════════════════════════════
-   API HELPERS
-═══════════════════════════════════════════ */
-async function apiFetch(url, opts = {}) {
-  const defaults = {
-    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    credentials: 'same-origin'
-  };
-  const res = await fetch(url, { ...defaults, ...opts, headers: { ...defaults.headers, ...(opts.headers||{}) } });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
+function load(){
+  Promise.all([
+    api('/api/forms/seasons-list').catch(function(){return[];}),
+    api('/api/forms/events'+(selSeasonId?'?season_id='+selSeasonId:''))
+  ]).then(function(r){
+    seasons=r[0]; events=r[1]; renderTable(); hideBanner();
+  }).catch(function(e){
+    banner('Load failed: '+e.message);
+    document.getElementById('evTbody').innerHTML='<tr><td colspan="6" class="empty-cell">Failed to load.</td></tr>';
+  });
 }
 
-function showApiError(msg) {
-  const el = document.getElementById('apiError');
-  el.textContent = '⚠ ' + msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 6000);
-}
-
-/* ═══════════════════════════════════════════
-   INIT — load seasons, then load events
-═══════════════════════════════════════════ */
-async function init() {
-  try {
-    seasons = await apiFetch('/api/seasons');
-    const sel = document.getElementById('seasonSelect');
-    if (!seasons.length) {
-      sel.innerHTML = '<option value="">No seasons found</option>';
-      renderTable([]);
-      return;
-    }
-    sel.innerHTML = seasons.map(s => `<option value="${s.id}">${s.year}</option>`).join('');
-    // Default to latest season
-    currentSeasonId = seasons[seasons.length - 1].id;
-    sel.value = currentSeasonId;
-    await loadEvents();
-  } catch (err) {
-    showApiError('Could not load seasons: ' + err.message);
-    renderTable([]);
-  }
-}
-
-async function onSeasonChange() {
-  currentSeasonId = document.getElementById('seasonSelect').value;
-  await loadEvents();
-}
-
-/* ═══════════════════════════════════════════
-   LOAD EVENTS
-═══════════════════════════════════════════ */
-async function loadEvents() {
-  document.getElementById('eventsTableBody').innerHTML =
-    `<tr class="loading-row"><td colspan="7"><span class="spin">⟳</span> Loading…</td></tr>`;
-  try {
-    // Returns list of season_events with nested event + stages for this season
-    events = await apiFetch(`/api/seasons/${currentSeasonId}/events`);
-    renderTable();
-  } catch (err) {
-    showApiError('Could not load events: ' + err.message);
-    renderTable([]);
-  }
-}
-
-/* ═══════════════════════════════════════════
-   RENDER TABLE
-═══════════════════════════════════════════ */
-function renderTable() {
-  const tbody = document.getElementById('eventsTableBody');
-  if (!events.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No events for this season. Add one below.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = events.map(se => {
-    // se = SeasonEvent object: { id, event_id, event_name, event_type, description, status, stages: [...] }
-    const isActive = se.status === 'active';
-    const statusBadge = isActive
-      ? `<span class="status-dot dot-active"></span> Active`
-      : `<span class="status-dot dot-closed"></span> Inactive`;
-    const actions = isActive
-      ? `<button class="btn btn-sm" onclick="openForm('edit',${se.id})">Edit</button>
-         <button class="btn btn-sm btn-ghost" onclick="triggerArchive(${se.id})">Archive</button>`
-      : `<button class="btn btn-sm btn-ghost" onclick="triggerActivate(${se.id})">Activate</button>
-         <button class="btn btn-sm btn-danger" onclick="triggerDelete(${se.id})">Delete</button>`;
-    return `
-      <tr>
-        <td style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:center;">${se.event_id}</td>
-        <td><strong>${esc(se.event_name)}</strong></td>
-        <td>${esc(se.event_type)}</td>
-        <td style="text-align:center;">${(se.stages||[]).length}</td>
-        <td class="desc-cell">${esc(se.description || '—')}</td>
-        <td>${statusBadge}</td>
-        <td style="white-space:nowrap;">${actions}</td>
-      </tr>`;
+function renderTable(){
+  var tb=document.getElementById('evTbody');
+  var label=selSeasonId?'Events in Season '+((seasons.find(function(s){return s.id==selSeasonId;})||{}).year||''):'Active Events';
+  document.getElementById('tableLabel').textContent=label;
+  document.getElementById('tableCount').textContent=events.length+' event'+(events.length!=1?'s':'');
+  if(!events.length){tb.innerHTML='<tr><td colspan="6" class="empty-cell">No events found. Add one or import.</td></tr>';return;}
+  tb.innerHTML=events.map(function(e){
+    var st=e.status||'active', typ=(e.event_type||'run').toLowerCase();
+    var stages=e.stage_count!==undefined?e.stage_count:(e.stages||[]).length;
+    var desc=e.description?esc(e.description).substring(0,60)+(e.description.length>60?'…':''):'—';
+    return '<tr class="clickrow'+(e.id==selId?' sel':'')+'" onclick="selectEvent('+e.id+')">'
+      +'<td><span class="ev-id">'+e.id+'</span></td>'
+      +'<td><span class="ev-name">'+esc(e.name)+'</span></td>'
+      +'<td><span class="badge badge-'+typ+'">'+typ.charAt(0).toUpperCase()+typ.slice(1)+'</span></td>'
+      +'<td style="font-family:DM Mono,monospace;font-size:12px">'+stages+'</td>'
+      +'<td style="font-size:12px;color:var(--muted)">'+desc+'</td>'
+      +'<td><span class="badge badge-'+st+'">'+st.charAt(0).toUpperCase()+st.slice(1)+'</span>'
+        +(st==='active'
+          ?'<a class="tbl-action" onclick="event.stopPropagation();archiveEv('+e.id+')">[Archive]</a>'
+          :'<a class="tbl-action" onclick="event.stopPropagation();activateEv('+e.id+')">[Activate]</a>'
+        )
+        +'<a class="tbl-action" onclick="event.stopPropagation();selectEvent('+e.id+')">[Edit]</a>'
+      +'</td>'
+    +'</tr>';
   }).join('');
 }
 
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function selectEvent(id){
+  selId=id; renderTable();
+  var ev=events.find(function(e){return e.id==id;});
+  if(ev) renderForm(ev);
+  scrollToPanel();
 }
 
-/* ═══════════════════════════════════════════
-   STAGE ROWS
-═══════════════════════════════════════════ */
-function addStageRow(num, data = {}) {
-  const tbody = document.getElementById('stageTableBody');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${num}</td>
-    <td><input type="text" placeholder="e.g. 5K" value="${esc(data.distance || '')}"></td>
-    <td><input type="text" placeholder="Location" value="${esc(data.location || '')}"></td>
-    <td><input type="date" value="${data.stage_date || ''}"></td>
-    <td><button class="btn btn-sm btn-ghost" onclick="this.closest('tr').remove(); renumberStages();" title="Remove">✕</button></td>`;
-  tbody.appendChild(tr);
+function openNew(){selId=null; renderTable(); renderForm(null); scrollToPanel();}
+
+function scrollToPanel(){
+  setTimeout(function(){document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});},50);
 }
 
-function addStage()    { addStageRow(document.getElementById('stageTableBody').rows.length + 1); }
-function removeStage() { const tb = document.getElementById('stageTableBody'); if (tb.rows.length) tb.deleteRow(tb.rows.length - 1); }
-function renumberStages() { document.querySelectorAll('#stageTableBody tr').forEach((r,i) => r.cells[0].textContent = i+1); }
+function renderForm(ev){
+  var isNew=!ev;
+  document.getElementById('panelTitle').textContent=isNew?'Add New Event':'Edit Event — '+esc(ev?ev.name:'');
+  document.getElementById('panel').classList.add('open');
 
-function getStagesFromTable() {
-  return Array.from(document.querySelectorAll('#stageTableBody tr')).map((r, i) => ({
-    stage_number: i + 1,
-    distance:    r.cells[1].querySelector('input').value.trim(),
-    location:    r.cells[2].querySelector('input').value.trim(),
-    stage_date:  r.cells[3].querySelector('input').value || null,
-  }));
+  var name=ev?ev.name:'', typ=ev?ev.event_type||'run':'run', desc=ev?ev.description||'':'';
+  var stages=ev&&ev.stages?ev.stages:[];
+
+  // season selector row
+  var seasonOpts='<option value="">— No season context —</option>'
+    +seasons.map(function(s){return '<option value="'+s.id+'"'+(s.id==selSeasonId?' selected':'')+'>'+s.year+' ('+s.status+')</option>';}).join('');
+
+  document.getElementById('panelBody').innerHTML=
+    '<div class="season-row">'
+      +'<label>Season context:</label>'
+      +'<select id="panelSeason" onchange="selSeasonId=parseInt(this.value)||null">'
+        +seasonOpts
+      +'</select>'
+      +'<span style="color:var(--accent);font-size:11px">Select a season to save stages to it.</span>'
+    +'</div>'
+    +'<div class="field"><label class="field-label">Event Name <span class="req">*</span></label>'
+      +'<input class="inp" id="iName" value="'+esc(name)+'" placeholder="e.g. Urban Challenge"></div>'
+    +'<div class="field"><label class="field-label">Event Type</label>'
+      +'<div class="radios">'
+        +['run','walk','mixed','other'].map(function(v){
+          return '<label class="radio-opt"><input type="radio" name="iType" value="'+v+'"'+(typ===v?' checked':'')+'> '+v.charAt(0).toUpperCase()+v.slice(1)+'</label>';
+        }).join('')
+      +'</div></div>'
+    +'<div class="field"><label class="field-label">Description</label>'
+      +'<textarea class="inp" id="iDesc" placeholder="Brief description of the event…">'+esc(desc)+'</textarea></div>'
+    +'<div class="stage-section">'
+      +'<div class="stage-label">Stage Configuration</div>'
+      +'<table class="stage-tbl">'
+        +'<thead><tr><th>#</th><th>Distance</th><th>Location</th><th>Date</th><th></th></tr></thead>'
+        +'<tbody id="stageTbody">'
+          +(stages.length?stages.map(function(st,i){return stageRow(i+1,st.distance||'',st.location||'',st.stage_date||'');}).join('')
+            :stageRow(1,'','',''))
+        +'</tbody>'
+      +'</table>'
+      +'<div class="stage-actions">'
+        +'<button class="btn btn-ghost btn-sm" onclick="addStage()">+ Add Stage</button>'
+        +'<button class="btn btn-ghost btn-sm" onclick="removeLastStage()">− Remove Last</button>'
+      +'</div>'
+    +'</div>';
+
+  document.getElementById('panelFooter').innerHTML=
+    '<button class="btn btn-primary" id="saveBtn" onclick="saveEvent('+(ev?ev.id:'')+')">Save Event</button>'
+    +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
+    +(ev?'<button class="btn btn-danger" style="margin-left:auto" onclick="deleteEvent('+ev.id+')">Delete Event</button>':'');
 }
 
-/* ═══════════════════════════════════════════
-   OPEN / CLOSE FORM
-═══════════════════════════════════════════ */
-function openForm(mode, seasonEventId) {
-  currentMode = mode;
-  editingSeasonEventId = seasonEventId || null;
-
-  // Reset
-  document.getElementById('eventName').value = '';
-  document.getElementById('eventDescription').value = '';
-  document.querySelectorAll('input[name="eventType"]')[1].checked = true;
-  document.getElementById('stageTableBody').innerHTML = '';
-  document.getElementById('deleteBtn').style.display = 'none';
-  document.getElementById('editingSeasonEventId').value = '';
-  document.getElementById('editingEventId').value = '';
-  setSaveLoading(false);
-
-  if (mode === 'new') {
-    document.getElementById('formTitle').textContent = 'Add New Event';
-    addStageRow(1);
-  } else {
-    const se = events.find(e => e.id === seasonEventId);
-    if (!se) return;
-    document.getElementById('formTitle').textContent = `Edit Event – ${se.event_name}`;
-    document.getElementById('eventName').value = se.event_name;
-    document.getElementById('eventDescription').value = se.description || '';
-    document.getElementById('editingSeasonEventId').value = se.id;
-    document.getElementById('editingEventId').value = se.event_id;
-    document.querySelectorAll('input[name="eventType"]').forEach(r => r.checked = r.value === se.event_type);
-    (se.stages || []).forEach((s, i) => addStageRow(i + 1, s));
-    document.getElementById('deleteBtn').style.display = 'inline-block';
-  }
-
-  document.getElementById('eventForm').classList.add('active');
-  setTimeout(() => document.getElementById('eventForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+function stageRow(num,dist,loc,date){
+  return '<tr>'
+    +'<td class="snum">'+num+'</td>'
+    +'<td><input class="sinp sm" placeholder="e.g. 5K" value="'+esc(dist)+'"></td>'
+    +'<td><input class="sinp" placeholder="Location" value="'+esc(loc)+'"></td>'
+    +'<td><input class="sinp" type="date" value="'+esc(date)+'"></td>'
+    +'<td><button class="del-btn" onclick="this.closest(\'tr\').remove();renumber()">✕</button></td>'
+  +'</tr>';
+}
+function addStage(){var tb=document.getElementById('stageTbody');tb.insertAdjacentHTML('beforeend',stageRow(tb.querySelectorAll('tr').length+1,'','',''));renumber();}
+function removeLastStage(){var tb=document.getElementById('stageTbody'),rows=tb.querySelectorAll('tr');if(rows.length)tb.removeChild(rows[rows.length-1]);}
+function renumber(){document.getElementById('stageTbody').querySelectorAll('tr').forEach(function(r,i){var c=r.querySelector('.snum');if(c)c.textContent=i+1;});}
+function collectStages(){
+  var rows=document.getElementById('stageTbody').querySelectorAll('tr'),out=[];
+  rows.forEach(function(r){var ins=r.querySelectorAll('input');out.push({distance:ins[0].value.trim(),location:ins[1].value.trim(),stage_date:ins[2].value||null});});
+  return out;
 }
 
-function closeForm() {
-  document.getElementById('eventForm').classList.remove('active');
-  editingSeasonEventId = null;
+function saveEvent(id){
+  var name=(document.getElementById('iName').value||'').trim();
+  if(!name){toast('⚠ Event name required.');return;}
+  var typeEl=document.querySelector('input[name="iType"]:checked');
+  var sid=parseInt(document.getElementById('panelSeason').value)||null;
+  var body={name:name,event_type:typeEl?typeEl.value:'run',description:document.getElementById('iDesc').value.trim(),stages:collectStages(),season_id:sid};
+  var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
+  var p=!id?api('/api/forms/events',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/events/'+id,{method:'PUT',body:JSON.stringify(body)});
+  p.then(function(r){toast('✓ Event saved.');selId=r.id;return reload();})
+   .catch(function(e){banner('Save failed: '+e.message);})
+   .finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Event';}});
 }
 
-function setSaveLoading(loading) {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = loading;
-  btn.textContent = loading ? '⟳ Saving…' : 'Save Event';
+function deleteEvent(id){
+  var ev=events.find(function(e){return e.id==id;});
+  if(!confirm('Delete "'+(ev?ev.name:id)+'"?')) return;
+  api('/api/forms/events/'+id,{method:'DELETE'})
+    .then(function(){toast('✓ Deleted.');selId=null;closePanel();return reload();})
+    .catch(function(e){banner('Delete failed: '+e.message);});
+}
+function archiveEv(id){
+  if(!selSeasonId){toast('⚠ Select a season first.');return;}
+  api('/api/forms/events/'+id+'/status',{method:'PATCH',body:JSON.stringify({season_id:selSeasonId,status:'inactive'})})
+    .then(function(){toast('✓ Archived.');return reload();}).catch(function(e){banner(e.message);});
+}
+function activateEv(id){
+  if(!selSeasonId){toast('⚠ Select a season first.');return;}
+  api('/api/forms/events/'+id+'/status',{method:'PATCH',body:JSON.stringify({season_id:selSeasonId,status:'active'})})
+    .then(function(){toast('✓ Activated.');return reload();}).catch(function(e){banner(e.message);});
 }
 
-/* ═══════════════════════════════════════════
-   SAVE  (POST /api/events  or  PUT /api/season-events/:id)
-═══════════════════════════════════════════ */
-async function handleSave() {
-  const name = document.getElementById('eventName').value.trim();
-  if (!name) { showToast('⚠ Please enter an Event Name.'); return; }
-  if (!currentSeasonId) { showToast('⚠ Please select a Season first.'); return; }
-
-  const payload = {
-    name,
-    event_type:  document.querySelector('input[name="eventType"]:checked')?.value || 'Walk',
-    description: document.getElementById('eventDescription').value.trim(),
-    season_id:   currentSeasonId,
-    stages:      getStagesFromTable(),
-  };
-
-  setSaveLoading(true);
-  try {
-    if (currentMode === 'new') {
-      // POST creates Event + SeasonEvent + Stages in one call
-      const created = await apiFetch('/api/events', { method: 'POST', body: JSON.stringify(payload) });
-      showToast(`✓ "${name}" added to season.`);
-    } else {
-      // PUT updates Event fields + replaces stages
-      const seId = document.getElementById('editingSeasonEventId').value;
-      await apiFetch(`/api/season-events/${seId}`, { method: 'PUT', body: JSON.stringify(payload) });
-      showToast(`✓ "${name}" updated.`);
-    }
-    await loadEvents();
-    closeForm();
-  } catch (err) {
-    showApiError('Save failed: ' + err.message);
-    showToast('✕ Save failed: ' + err.message);
-  } finally {
-    setSaveLoading(false);
-  }
+function reload(){
+  return api('/api/forms/events'+(selSeasonId?'?season_id='+selSeasonId:''))
+    .then(function(r){events=r;renderTable();if(selId){var ev=events.find(function(e){return e.id==selId;});if(ev)renderForm(ev);}});
 }
 
-/* ═══════════════════════════════════════════
-   ARCHIVE  (PATCH /api/season-events/:id/status)
-═══════════════════════════════════════════ */
-function triggerArchive(seasonEventId) {
-  const se = events.find(e => e.id === seasonEventId);
-  pendingAction = async () => {
-    try {
-      await apiFetch(`/api/season-events/${seasonEventId}/status`, {
-        method: 'PATCH', body: JSON.stringify({ status: 'inactive' })
-      });
-      await loadEvents();
-      showToast(`✓ "${se.event_name}" archived.`);
-    } catch (err) { showApiError('Archive failed: ' + err.message); }
-  };
-  openConfirm('Archive Event', `Archive "${se?.event_name}"? It will be marked inactive.`);
+function handleImport(input,type){document.getElementById('importFile').textContent=input.files[0]?input.files[0].name:'No file loaded';}
+function downloadTemplate(){
+  var csv='name,event_type,description\nUrban Challenge,run,Multi-stage running event\n';
+  var a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='events_template.csv';a.click();
+}
+function exportCSV(){
+  var rows=[['ID','Name','Type','Stages','Description']].concat(events.map(function(e){return[e.id,e.name,e.event_type,e.stage_count||(e.stages||[]).length,e.description||''];}));
+  var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='events.csv';a.click();
 }
 
-/* ═══════════════════════════════════════════
-   ACTIVATE  (PATCH /api/season-events/:id/status)
-═══════════════════════════════════════════ */
-async function triggerActivate(seasonEventId) {
-  const se = events.find(e => e.id === seasonEventId);
-  try {
-    await apiFetch(`/api/season-events/${seasonEventId}/status`, {
-      method: 'PATCH', body: JSON.stringify({ status: 'active' })
-    });
-    await loadEvents();
-    showToast(`✓ "${se?.event_name}" is now Active.`);
-  } catch (err) { showApiError('Activate failed: ' + err.message); }
-}
-
-/* ═══════════════════════════════════════════
-   DELETE  (DELETE /api/season-events/:id)
-═══════════════════════════════════════════ */
-function triggerDelete(seasonEventId) {
-  const se = events.find(e => e.id === seasonEventId);
-  pendingAction = async () => {
-    try {
-      await apiFetch(`/api/season-events/${seasonEventId}`, { method: 'DELETE' });
-      await loadEvents();
-      showToast(`✓ "${se?.event_name}" removed from this season.`);
-    } catch (err) { showApiError('Delete failed: ' + err.message); }
-  };
-  openConfirm('Remove from Season', `Remove "${se?.event_name}" from this season? This also deletes its stages and results.`, true);
-}
-
-function handleDelete() {
-  if (!editingSeasonEventId) return;
-  triggerDelete(editingSeasonEventId);
-  closeForm();
-}
-
-/* ═══════════════════════════════════════════
-   CONFIRM MODAL
-═══════════════════════════════════════════ */
-function openConfirm(title, msg, danger = false) {
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMsg').textContent = msg;
-  const btn = document.getElementById('confirmOkBtn');
-  btn.className = danger ? 'btn btn-danger' : 'btn';
-  btn.textContent = danger ? 'Delete' : 'Confirm';
-  document.getElementById('confirmOverlay').classList.add('active');
-}
-function closeConfirm() {
-  document.getElementById('confirmOverlay').classList.remove('active');
-  pendingAction = null;
-}
-async function confirmAction() {
-  if (pendingAction) await pendingAction();
-  closeConfirm();
-}
-
-/* ═══════════════════════════════════════════
-   TOAST
-═══════════════════════════════════════════ */
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-// Boot
-init();
+function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderTable();}
+load();
 </script>
 </body>
 </html>

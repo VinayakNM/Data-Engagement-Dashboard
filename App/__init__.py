@@ -30,5 +30,13 @@ def create_app(overrides={}):
     from App.views.dashboards import dashboard_views
     app.register_blueprint(dashboard_views)
 
+    from App.views.admin_api import admin_api
+    app.register_blueprint(admin_api)
+
+    from App.views.hr_api import hr_api
+    app.register_blueprint(hr_api)
+
+    from App.views.forms import forms_views
+    app.register_blueprint(forms_views)
 
     return app

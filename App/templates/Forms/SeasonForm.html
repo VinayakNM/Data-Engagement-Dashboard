@@ -2,293 +2,309 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CariFin Data Dashboard – Season Management</title>
-<link rel="stylesheet" href="test.css">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CariFin — Season Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f1923;--ink2:#3d4f5e;--muted:#7a8fa0;--divider:#e4eaef;
+  --bg:#f2f5f8;--surface:#fff;--surface2:#f7f9fb;
+  --accent:#0066ff;--accent-h:#0052cc;--accent-l:#e6f0ff;
+  --green:#00875a;--green-l:#e3fcef;--red:#de350b;--red-l:#ffebe6;
+  --orange:#ff8b00;--orange-l:#fffae6;--purple:#6554c0;--purple-l:#eae6ff;
+  --radius:8px;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.05);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh}
+.hdr{background:var(--ink);color:#fff;height:54px;display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:100}
+.hdr-brand{font-size:15px;font-weight:700;letter-spacing:-.5px}
+.hdr-sep{opacity:.3}
+.hdr-page{font-size:13px;opacity:.7;font-family:'DM Mono',monospace}
+.wrap{padding:28px 32px;max-width:1100px}
+.breadcrumb{font-size:12px;color:var(--muted);margin-bottom:6px;font-family:'DM Mono',monospace}
+.page-h{font-size:24px;font-weight:700;letter-spacing:-.5px;margin-bottom:16px}
+.actions{display:flex;gap:8px;margin-bottom:20px}
+
+.card{background:var(--surface);border:1px solid var(--divider);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px}
+.card-hdr{padding:12px 18px;border-bottom:1px solid var(--divider);display:flex;justify-content:space-between;align-items:center;background:var(--surface2)}
+.card-hdr-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:9px 16px;text-align:left;border-bottom:1px solid var(--divider);background:var(--surface2)}
+td{padding:10px 16px;border-bottom:1px solid var(--divider);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.clickrow:hover td{background:var(--accent-l);cursor:pointer}
+tr.clickrow.sel td{background:var(--accent-l)}
+.empty-cell{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.yr{font-size:16px;font-weight:700;font-family:'DM Mono',monospace}
+.ev-list{font-size:11px;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl-action{font-size:11px;color:var(--accent);cursor:pointer;margin-left:6px;text-decoration:none}
+.tbl-action:hover{text-decoration:underline}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.badge-active{background:var(--green-l);color:var(--green)}.badge-active::before{background:var(--green)}
+.badge-planning{background:var(--orange-l);color:var(--orange)}.badge-planning::before{background:var(--orange)}
+.badge-closed{background:#f4f5f7;color:var(--muted)}.badge-closed::before{background:var(--muted)}
+.badge-archived{background:var(--purple-l);color:var(--purple)}.badge-archived::before{background:var(--purple)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-h)}
+.btn-ghost{background:transparent;color:var(--ink2);border:1.5px solid var(--divider)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--red-l);color:var(--red);border:1.5px solid #ffd5cc}.btn-danger:hover{background:var(--red);color:#fff}
+.btn-warn{background:var(--orange-l);color:var(--orange);border:1.5px solid #ffe5b3}.btn-warn:hover{background:var(--orange);color:#fff}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* panel below table */
+.panel{background:var(--surface);border:1.5px dashed var(--accent);border-radius:var(--radius);overflow:hidden;margin-bottom:24px;display:none}
+.panel.open{display:block}
+.panel-hdr{background:var(--ink);color:#fff;padding:13px 20px;display:flex;justify-content:space-between;align-items:center}
+.panel-hdr-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+.panel-close{background:none;border:none;color:#fff;opacity:.6;font-size:20px;cursor:pointer;line-height:1;padding:0 2px}.panel-close:hover{opacity:1}
+.panel-body{padding:24px 28px}
+.panel-footer{padding:14px 28px;border-top:1px solid var(--divider);background:var(--surface2);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+.field{margin-bottom:16px}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px;display:block}
+.req{color:var(--red)}
+.inp{width:100%;border:1.5px solid var(--divider);border-radius:6px;padding:8px 12px;font-family:inherit;font-size:13px;background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,102,255,.1)}
+.inp[readonly]{background:var(--surface2);color:var(--muted)}
+.radios{display:flex;gap:16px;flex-wrap:wrap}
+.radio-opt{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.radio-opt input{accent-color:var(--accent);width:14px;height:14px}
+.date-pair{display:flex;align-items:center;gap:8px}
+.date-sep{font-size:12px;color:var(--muted);white-space:nowrap}
+.section-sep{border:none;border-top:1px solid var(--divider);margin:20px 0}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px}
+
+.ev-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--divider);border-radius:6px;overflow:hidden}
+.ev-tbl th{padding:8px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--divider);text-align:left}
+.ev-tbl td{padding:7px 12px;border-bottom:1px solid var(--divider);vertical-align:middle}
+.ev-tbl tr:last-child td{border-bottom:none}
+.ev-tbl input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+.ev-tbl input[type=date]{border:1.5px solid var(--divider);border-radius:4px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;width:130px;transition:border-color .15s}
+.ev-tbl input[type=date]:focus{border-color:var(--accent)}
+.ev-tbl input[type=date]:disabled{background:var(--surface2);color:var(--muted)}
+
+.banner{padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:16px;display:none}
+.banner.err{display:block;background:var(--red-l);border:1px solid #ffd5cc;color:var(--red)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:11px 18px;font-size:13px;border-left:4px solid var(--accent);border-radius:6px;opacity:0;transform:translateY(8px);transition:.2s;pointer-events:none;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
 </head>
 <body>
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <span>CariFin Data Dashboard</span>
-  <div class="topbar-right">
-    <span>Hi, Admin123 (Admin)</span>
-    <a href="#">System ▾</a>
-    <a href="#">Logout</a>
-  </div>
+<div class="hdr">
+  <span class="hdr-brand">CariFin Data Dashboard</span>
+  <span class="hdr-sep">›</span>
+  <span class="hdr-page">System › Season Management</span>
 </div>
 
-<!-- PAGE HEADER -->
-<div class="page-header">
-  <div class="logo-box">🏔</div>
-  <div class="breadcrumb"><span>System &rsaquo;</span> Season Management</div>
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
-  <!-- SECTION TITLE + TOP ACTIONS -->
-  <div class="section-title">Manage Seasons</div>
-  <div class="section-actions">
-    <button class="btn" onclick="openForm('new')">Add New Season</button>
-    <button class="btn btn-ghost" onclick="openArchiveModal()">Archive Old Seasons</button>
+<div class="wrap">
+  <div class="breadcrumb">System / Season Management</div>
+  <div class="page-h">Manage Seasons</div>
+  <div class="banner" id="banner"></div>
+  <div class="actions">
+    <button class="btn btn-primary" onclick="openNew()">+ Add New Season</button>
+    <button class="btn btn-ghost" onclick="archiveOld()">Archive Old Seasons</button>
   </div>
 
-  <!-- REGISTERED INSTITUTIONS TABLE -->
   <div class="card">
-    <div class="card-header">Registered Institutions</div>
+    <div class="card-hdr">
+      <span class="card-hdr-label">Seasons List</span>
+      <span id="seaCount" style="font-size:11px;color:var(--muted)"></span>
+    </div>
     <table>
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th>Code</th>
-          <th>Start Date</th>
-          <th>End Date</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>2025</strong></td>
-          <td><span class="status-dot dot-active"></span> Active</td>
-          <td>01-01-2025</td>
-          <td>31-12-2025</td>
-          <td>
-            <span class="badge badge-active">Active</span>
-            Urban, Cross Country, City
-          </td>
-          <td>
-            <button class="btn btn-sm" onclick="openForm('edit', 2025)">Edit</button>
-            <button class="btn btn-sm btn-ghost" onclick="openForm('clubs', 2025)">Clubs</button>
-          </td>
-        </tr>
-        <tr>
-          <td><strong>2024</strong></td>
-          <td><span class="status-dot dot-closed"></span> Closed</td>
-          <td>01-01-2024</td>
-          <td>31-12-2024</td>
-          <td>
-            <span class="badge badge-closed">Closed</span>
-            Urban
-          </td>
-          <td>
-            <button class="btn btn-sm btn-ghost" onclick="openForm('view', 2024)">Re-open</button>
-            <button class="btn btn-sm btn-ghost" onclick="openForm('view', 2024)">View</button>
-          </td>
-        </tr>
-        <tr>
-          <td><strong>2023</strong></td>
-          <td><span class="status-dot dot-closed"></span> Closed</td>
-          <td>01-01-2023</td>
-          <td>31-12-2023</td>
-          <td>
-            <span class="badge badge-closed">Closed</span>
-            Cross Country, Urban
-          </td>
-          <td>
-            <button class="btn btn-sm btn-ghost" onclick="openForm('view', 2023)">Re-open</button>
-            <button class="btn btn-sm btn-ghost" onclick="openForm('view', 2023)">View</button>
-          </td>
-        </tr>
-      </tbody>
+      <thead><tr>
+        <th>Year</th><th>Status</th><th>Start Date</th><th>End Date</th><th>Events</th><th></th>
+      </tr></thead>
+      <tbody id="seaTbody"><tr><td colspan="6" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
 
-  <!-- ADD / EDIT SEASON FORM (dashed panel) -->
-  <div class="form-panel" id="seasonForm">
-    <div class="form-panel-header">
-      <span id="formTitle">Add / Edit Season Form</span>
-      <button class="close-btn" onclick="closeForm()" title="Close">✕</button>
+  <!-- panel below table -->
+  <div class="panel" id="panel">
+    <div class="panel-hdr">
+      <span class="panel-hdr-title" id="panelTitle">Season Form</span>
+      <button class="panel-close" onclick="closePanel()">&#x2715;</button>
     </div>
-    <div class="form-body">
-
-      <!-- Season Year -->
-      <div class="form-row">
-        <span class="form-label">Season Year:</span>
-        <input type="text" class="wide" id="seasonYear" placeholder="e.g. 2026">
-      </div>
-
-      <!-- Status -->
-      <div class="form-row">
-        <span class="form-label">Status:</span>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="status" value="active"> Active</label>
-          <label class="radio-option"><input type="radio" name="status" value="closed" checked> Closed</label>
-          <label class="radio-option"><input type="radio" name="status" value="archived"> Archived</label>
-          <label class="radio-option"><input type="radio" name="status" value="planning"> Planning</label>
-        </div>
-      </div>
-
-      <!-- Date fields -->
-      <div class="date-grid">
-        <div class="date-field">
-          <span class="form-label">Registration Opens:</span>
-          <input type="date" id="regOpens">
-        </div>
-        <div class="date-field">
-          <span class="form-label">Closes:</span>
-          <input type="date" id="regCloses">
-        </div>
-        <div class="date-field">
-          <span class="form-label">Season Start:</span>
-          <input type="date" id="seasonStart">
-        </div>
-        <div class="date-field">
-          <span class="form-label">End:</span>
-          <input type="date" id="seasonEnd">
-        </div>
-      </div>
-
-      <!-- Events -->
-      <div class="events-label">Events in this Season:</div>
-      <table class="events-table">
-        <thead>
-          <tr>
-            <th>Event</th>
-            <th>Included</th>
-            <th>Dates</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Urban Challenge 2025</td>
-            <td><label><input type="checkbox" checked> Yes</label></td>
-            <td><input type="text" placeholder="e.g. Mar 1 – Apr 30" value="Mar 1 – Apr 30"></td>
-          </tr>
-          <tr>
-            <td>Cross Country 2025</td>
-            <td><label><input type="checkbox" checked> Yes</label></td>
-            <td><input type="text" placeholder="e.g. Oct 15" value="Oct 15"></td>
-          </tr>
-          <tr>
-            <td>Football Tournament</td>
-            <td><label><input type="checkbox"> Yes</label></td>
-            <td><input type="text" placeholder="–"></td>
-          </tr>
-        </tbody>
-      </table>
-
-    </div><!-- /form-body -->
-
-    <!-- FORM ACTIONS -->
-    <div class="form-actions">
-      <button class="btn" onclick="handleSave()">Save Season</button>
-      <button class="btn btn-ghost" onclick="handleActivate()">Activate Season</button>
-      <button class="btn btn-ghost" onclick="handlePreview()">Preview Season Dashboard</button>
-      <button class="btn btn-ghost btn-danger" style="margin-left:auto" onclick="closeForm()">Cancel</button>
-    </div>
-  </div>
-  <!-- /form-panel -->
-
-</div><!-- /main -->
-
-<!-- ARCHIVE MODAL -->
-<div class="overlay" id="archiveOverlay">
-  <div class="modal">
-    <h3>Archive Old Seasons</h3>
-    <p>This will mark all closed seasons prior to the current active year as <strong>Archived</strong>. This action cannot be undone from the dashboard. Continue?</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeArchiveModal()">Cancel</button>
-      <button class="btn" onclick="doArchive()">Confirm Archive</button>
-    </div>
+    <div class="panel-body" id="panelBody"></div>
+    <div class="panel-footer" id="panelFooter"></div>
   </div>
 </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toastEl"></div>
 
 <script>
-  const formPanel = document.getElementById('seasonForm');
-  const formTitle = document.getElementById('formTitle');
+var seasons=[], allEvents=[], selId=null;
 
-  const seasonData = {
-    2025: { year: '2025', status: 'active', regOpens: '2024-11-01', regCloses: '2024-12-31', start: '2025-01-01', end: '2025-12-31' },
-    2024: { year: '2024', status: 'closed', regOpens: '2023-11-01', regCloses: '2023-12-31', start: '2024-01-01', end: '2024-12-31' },
-    2023: { year: '2023', status: 'closed', regOpens: '2022-11-01', regCloses: '2022-12-31', start: '2023-01-01', end: '2023-12-31' },
-  };
+function api(url,opts){
+  return fetch(url,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts||{}))
+    .then(function(r){
+      if(!r.ok) return r.json().catch(function(){return{};}).then(function(e){throw new Error(e.error||'HTTP '+r.status);});
+      return r.json();
+    });
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(iso){if(!iso)return '—';var p=iso.split('-');return p[2]+'-'+p[1]+'-'+p[0];}
+function toast(m){var t=document.getElementById('toastEl');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('show');},3000);}
+function banner(m){var el=document.getElementById('banner');el.textContent=m;el.className='banner err';}
+function hideBanner(){document.getElementById('banner').className='banner';}
 
-  function openForm(mode, year) {
-    formPanel.classList.add('active');
+function load(){
+  Promise.all([api('/api/forms/seasons'),api('/api/forms/events-list').catch(function(){return[];})])
+    .then(function(r){seasons=r[0];allEvents=r[1];renderList();hideBanner();})
+    .catch(function(e){
+      banner('Load failed: '+e.message);
+      document.getElementById('seaTbody').innerHTML='<tr><td colspan="6" class="empty-cell">Failed to load.</td></tr>';
+    });
+}
 
-    // Reset
-    document.getElementById('seasonYear').value = '';
-    document.getElementById('regOpens').value = '';
-    document.getElementById('regCloses').value = '';
-    document.getElementById('seasonStart').value = '';
-    document.getElementById('seasonEnd').value = '';
-    document.querySelectorAll('input[name="status"]')[1].checked = true; // default Closed
+function renderList(){
+  var tb=document.getElementById('seaTbody');
+  document.getElementById('seaCount').textContent=seasons.length+' season'+(seasons.length!=1?'s':'');
+  if(!seasons.length){tb.innerHTML='<tr><td colspan="6" class="empty-cell">No seasons yet. Click + Add New Season.</td></tr>';return;}
+  tb.innerHTML=seasons.map(function(s){
+    var evNames=(s.events||[]).map(function(e){return e.name;}).join(', ')||'—';
+    return '<tr class="clickrow'+(s.id==selId?' sel':'')+'" onclick="selectSeason('+s.id+')">'
+      +'<td><span class="yr">'+s.year+'</span></td>'
+      +'<td><span class="badge badge-'+s.status+'">'+s.status.charAt(0).toUpperCase()+s.status.slice(1)+'</span></td>'
+      +'<td style="font-family:DM Mono,monospace;font-size:12px">'+fmt(s.start_date)+'</td>'
+      +'<td style="font-family:DM Mono,monospace;font-size:12px">'+fmt(s.end_date)+'</td>'
+      +'<td><span class="ev-list" title="'+esc(evNames)+'">'+esc(evNames)+'</span></td>'
+      +'<td>'
+        +(s.status==='active'
+          ?'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+s.id+',\'closed\')">[Close]</a>'
+          :'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[Re-open]</a>'
+        )
+        +'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[View]</a>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
+}
 
-    if (mode === 'new') {
-      formTitle.textContent = 'Add New Season';
-    } else if (mode === 'edit' && year) {
-      formTitle.textContent = `Edit Season – ${year}`;
-      const d = seasonData[year];
-      if (d) {
-        document.getElementById('seasonYear').value = d.year;
-        document.querySelectorAll('input[name="status"]').forEach(r => {
-          r.checked = r.value === d.status;
-        });
-        document.getElementById('regOpens').value = d.regOpens;
-        document.getElementById('regCloses').value = d.regCloses;
-        document.getElementById('seasonStart').value = d.start;
-        document.getElementById('seasonEnd').value = d.end;
-      }
-    } else if (mode === 'view' || mode === 'clubs') {
-      formTitle.textContent = `Season ${year} – ${mode === 'clubs' ? 'Clubs' : 'View / Re-open'}`;
-      const d = seasonData[year];
-      if (d) {
-        document.getElementById('seasonYear').value = d.year;
-        document.querySelectorAll('input[name="status"]').forEach(r => {
-          r.checked = r.value === d.status;
-        });
-        document.getElementById('seasonStart').value = d.start;
-        document.getElementById('seasonEnd').value = d.end;
-      }
-    }
+function selectSeason(id){selId=id;renderList();var s=seasons.find(function(x){return x.id==id;});if(s)renderForm(s);scrollToPanel();}
+function openNew(){selId=null;renderList();renderForm(null);scrollToPanel();}
+function scrollToPanel(){setTimeout(function(){document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});},50);}
 
-    // Scroll to form
-    setTimeout(() => formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-  }
+function renderForm(s){
+  var isNew=!s;
+  document.getElementById('panelTitle').textContent=isNew?'Add New Season':'Season '+( s?s.year:'')+' — '+(s?s.status.charAt(0).toUpperCase()+s.status.slice(1):'');
+  document.getElementById('panel').classList.add('open');
 
-  function closeForm() {
-    formPanel.classList.remove('active');
-  }
+  var yr=s?s.year:'', st=s?s.status||'planning':'planning';
 
-  function handleSave() {
-    const yr = document.getElementById('seasonYear').value.trim();
-    if (!yr) { showToast('Please enter a Season Year.'); return; }
-    showToast(`Season ${yr} saved successfully.`);
-  }
+  var evRows=allEvents.map(function(e){
+    var linked=s?(s.events||[]).find(function(x){return x.id==e.id;}):null;
+    var startV=linked&&linked.start_date?linked.start_date:'';
+    var endV=linked&&linked.end_date?linked.end_date:'';
+    var chk=linked?'checked':'';
+    return '<tr id="evrow_'+e.id+'">'
+      +'<td>'+esc(e.name)+'</td>'
+      +'<td><input type="checkbox" class="ev-cb" data-id="'+e.id+'" '+chk+' onchange="toggleEvDates('+e.id+',this.checked)"></td>'
+      +'<td><input type="date" class="ev-start" data-id="'+e.id+'" value="'+startV+'"'+(linked?'':' disabled')+'> &ndash; '
+        +'<input type="date" class="ev-end" data-id="'+e.id+'" value="'+endV+'"'+(linked?'':' disabled')+'></td>'
+    +'</tr>';
+  }).join('');
 
-  function handleActivate() {
-    const yr = document.getElementById('seasonYear').value.trim();
-    if (!yr) { showToast('Please enter a Season Year first.'); return; }
-    showToast(`Season ${yr} has been activated.`);
-  }
+  document.getElementById('panelBody').innerHTML=
+    '<div class="form-grid">'
+      +'<div class="field"><label class="field-label">Season Year <span class="req">*</span></label>'
+        +'<input class="inp" id="iYear" type="number" min="2000" max="2099" value="'+yr+'" placeholder="e.g. 2025" style="width:140px"></div>'
+      +'<div class="field"><label class="field-label">Status</label>'
+        +'<div class="radios">'
+          +['planning','active','closed','archived'].map(function(v){
+            return '<label class="radio-opt"><input type="radio" name="iSt" value="'+v+'"'+(st===v?' checked':'')+'> '+v.charAt(0).toUpperCase()+v.slice(1)+'</label>';
+          }).join('')
+        +'</div></div>'
+      +'<div class="field"><label class="field-label">Registration Opens</label>'
+        +'<div class="date-pair">'
+          +'<input class="inp" type="date" id="iRegOpen" value="'+(s&&s.reg_open||'')+'">'
+          +'<span class="date-sep">Closes:</span>'
+          +'<input class="inp" type="date" id="iRegClose" value="'+(s&&s.reg_close||'')+'">'
+        +'</div></div>'
+      +'<div class="field"><label class="field-label">Season Start</label>'
+        +'<div class="date-pair">'
+          +'<input class="inp" type="date" id="iStart" value="'+(s&&s.start_date||'')+'">'
+          +'<span class="date-sep">End:</span>'
+          +'<input class="inp" type="date" id="iEnd" value="'+(s&&s.end_date||'')+'">'
+        +'</div></div>'
+    +'</div>'
+    +'<hr class="section-sep">'
+    +'<div class="section-label">Events in this Season <span style="font-weight:400;color:var(--muted);font-size:10px">(tick to include — set per-event start/end dates)</span></div>'
+    +(allEvents.length
+      ?'<table class="ev-tbl"><thead><tr><th>Event</th><th>Include?</th><th>Start – End Dates</th></tr></thead><tbody>'+evRows+'</tbody></table>'
+      :'<p style="font-size:12px;color:var(--muted)">No events exist yet — create events first.</p>'
+    );
 
-  function handlePreview() {
-    showToast('Opening Season Dashboard preview…');
-  }
+  document.getElementById('panelFooter').innerHTML=
+    '<button class="btn btn-primary" id="saveBtn" onclick="saveSeason('+(s?s.id:'')+')">Save Season</button>'
+    +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
+    +(s&&s.status!=='active'?'<button class="btn btn-ghost" onclick="quickStatus('+s.id+',\'active\')">Activate Season</button>':'')
+    +(s&&s.status==='active'?'<button class="btn btn-warn" onclick="quickStatus('+s.id+',\'closed\')">Close Season</button>':'')
+    +(s?'<button class="btn btn-danger" style="margin-left:auto" onclick="deleteSeason('+s.id+')">Delete</button>':'');
+}
 
-  function openArchiveModal() {
-    document.getElementById('archiveOverlay').classList.add('active');
-  }
-  function closeArchiveModal() {
-    document.getElementById('archiveOverlay').classList.remove('active');
-  }
-  function doArchive() {
-    closeArchiveModal();
-    showToast('Old seasons archived successfully.');
-  }
+function toggleEvDates(eid,on){
+  var row=document.getElementById('evrow_'+eid);
+  row.querySelector('.ev-start').disabled=!on;
+  row.querySelector('.ev-end').disabled=!on;
+  if(!on){row.querySelector('.ev-start').value='';row.querySelector('.ev-end').value='';}
+}
 
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 3000);
-  }
+function saveSeason(id){
+  var yr=parseInt(document.getElementById('iYear').value);
+  if(!yr||yr<2000||yr>2099){toast('⚠ Valid year required (2000–2099).');return;}
+  var stEl=document.querySelector('input[name="iSt"]:checked');
+  var events=[];
+  document.querySelectorAll('.ev-cb').forEach(function(cb){
+    var eid=parseInt(cb.dataset.id);
+    var row=document.getElementById('evrow_'+eid);
+    events.push({event_id:eid,included:cb.checked,
+      start_date:row.querySelector('.ev-start').value||null,
+      end_date:row.querySelector('.ev-end').value||null});
+  });
+  var body={year:yr,status:stEl?stEl.value:'planning',
+    reg_open:document.getElementById('iRegOpen').value||null,
+    reg_close:document.getElementById('iRegClose').value||null,
+    start_date:document.getElementById('iStart').value||null,
+    end_date:document.getElementById('iEnd').value||null,
+    events:events};
+  var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
+  var p=!id?api('/api/forms/seasons',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify(body)});
+  p.then(function(r){toast('✓ Season saved.');selId=r.id;return load();})
+   .then(function(){var s=seasons.find(function(x){return x.id==selId;});if(s)renderForm(s);})
+   .catch(function(e){banner('Save failed: '+e.message);})
+   .finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Season';}});
+}
+
+function quickStatus(id,status){
+  api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify({status:status})})
+    .then(function(){toast('✓ Season '+status+'.');return load();})
+    .then(function(){renderList();var s=seasons.find(function(x){return x.id==id;});if(s)renderForm(s);})
+    .catch(function(e){banner(e.message);});
+}
+
+function archiveOld(){
+  var closed=seasons.filter(function(s){return s.status==='closed';});
+  if(!closed.length){toast('No closed seasons to archive.');return;}
+  if(!confirm('Archive '+closed.length+' closed season(s)?')) return;
+  Promise.all(closed.map(function(s){return api('/api/forms/seasons/'+s.id,{method:'PUT',body:JSON.stringify({status:'archived'})});}))
+    .then(function(){toast('✓ Archived.');return load();}).then(renderList).catch(function(e){banner(e.message);});
+}
+
+function deleteSeason(id){
+  var s=seasons.find(function(x){return x.id==id;});
+  if(!confirm('Delete season '+(s?s.year:id)+'?')) return;
+  api('/api/forms/seasons/'+id,{method:'DELETE'})
+    .then(function(){toast('✓ Deleted.');selId=null;closePanel();return load();})
+    .catch(function(e){banner('Delete failed: '+e.message);});
+}
+
+function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderList();}
+load();
 </script>
 </body>
 </html>

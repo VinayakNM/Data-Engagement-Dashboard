@@ -35,8 +35,6 @@ def seed():
         # ---------- ADMIN ----------
         if not Admin.query.filter_by(email='admin@carifin.com').first():
             admin = Admin(
-		firstname='Admin',
-		lastname='User',
                 firstname='Admin',
                 lastname='User',
                 username='admin',
