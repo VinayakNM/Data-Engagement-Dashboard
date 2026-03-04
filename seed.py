@@ -1,7 +1,7 @@
 # seed.py
 from App import create_app
 from App.database import db
-from App.models import Institution, Admin, HR, Scorer, PulseLeader
+from App.models import Institution, Admin, HR, Scorer, PulseLeader, Season
 from datetime import datetime
 
 def seed():
@@ -31,6 +31,19 @@ def seed():
         # Get institution IDs for later
         cbtt = Institution.query.filter_by(code='CBTT').first()
         fcit = Institution.query.filter_by(code='FCIT').first()
+
+        # ---------- SEASON ----------
+        if not Season.query.filter_by(year=2026).first():
+            season2026 = Season(year=2026, description="CariFin Games 2026")
+            db.session.add(season2026)
+            print("  + Season: 2026")
+
+        if not Season.query.filter_by(year=2025).first():
+            season2025 = Season(year=2025, description="CariFin Games 2025")
+            db.session.add(season2025)
+            print("  + Season: 2025")
+
+        db.session.commit()
 
         # ---------- ADMIN ----------
         if not Admin.query.filter_by(email='admin@carifin.com').first():

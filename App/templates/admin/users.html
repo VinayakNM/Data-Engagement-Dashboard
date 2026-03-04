@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+{% block content %}
+<div class="topbar">
+    <span>CariFin Data Dashboard</span>
+    <div class="topbar-right">
+        <span>Hi, {{ current_user.firstname }} (Admin)</span>
+        <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('auth_views.logout') }}">Logout</a>
+    </div>
+</div>
+
+<div class="main">
+    <h1>User Management</h1>
+    
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Institution</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.firstname }} {{ user.lastname }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ user.institution.code if user.institution else 'N/A' }}</td>
+                    <td>
+                        {% if user.is_active %}
+                        <span class="badge badge-active">Active</span>
+                        {% else %}
+                        <span class="badge badge-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="#">Edit</a> |
+                        <a href="#">Deactivate</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

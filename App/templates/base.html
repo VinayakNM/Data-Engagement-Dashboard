@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CariFin Data Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .sys-dropdown { position: relative; }
+        .sys-dropdown-toggle {
+            color: #aaa;
+            cursor: pointer;
+            font-size: inherit;
+            transition: color 0.15s;
+            user-select: none;
+            padding: 4px 0;
+        }
+        .sys-dropdown-toggle:hover { color: var(--highlight); }
+        .sys-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            min-width: 180px;
+            z-index: 200;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .sys-dropdown-menu.open { display: flex; }
+        .sys-dropdown-menu a {
+            display: block;
+            padding: 10px 14px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .sys-dropdown-menu a:last-child { border-bottom: none; }
+        .sys-dropdown-menu a:hover { background: var(--bg); color: var(--accent); }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <span>CariFin Data Dashboard</span>
+        <div class="topbar-right">
+            <span>Hi, {% if current_user %}{{ current_user.firstname }} ({{ current_user.role|capitalize }}){% endif %}</span>
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('admin_views.list_users') }}">Users</a>
+            <div class="sys-dropdown">
+                <span class="sys-dropdown-toggle" onclick="toggleSysMenu(event)">System ▾</span>
+                <div class="sys-dropdown-menu" id="sysMenu">
+                    <a href="{{ url_for('admin_views.institution_form') }}">Manage Institutions</a>
+                    <a href="{{ url_for('admin_views.event_form') }}">Manage Events</a>
+                    <a href="{{ url_for('admin_views.season_form') }}">Manage Seasons</a>
+                </div>
+            </div>
+            {% elif current_user.role == 'hr' %}
+            <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
+            {% endif %}
+            <a href="{{ url_for('auth_views.logout') }}">Logout</a>
+        </div>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div class="logo-box">🏔</div>
+        <div class="breadcrumb">
+            <span>{% block breadcrumb %}{% endblock %}</span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="toast show" style="position: static; margin-bottom: 16px; opacity: 1; transform: none; pointer-events: auto;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+        }
+
+        function toggleSysMenu(e) {
+            e.stopPropagation();
+            document.getElementById('sysMenu').classList.toggle('open');
+        }
+
+        // close when clicking anywhere else
+        document.addEventListener('click', function() {
+            const m = document.getElementById('sysMenu');
+            if (m) m.classList.remove('open');
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
