@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Register for Event{% endblock %}
+{% block breadcrumb %}HR &rsaquo; Register{% endblock %}
+{% block content %}
+
+<div class="form-panel" style="border: none;">
+  <div class="form-panel-header">
+    <span>Register Participants for Event</span>
+  </div>
+  <div class="form-body">
+    <form method="POST" action="{{ url_for('hr_views.register') }}">
+      
+      <div class="form-row">
+        <span class="form-label">Select Event:</span>
+        <select name="season_event_id" required class="wide">
+          <option value="">-- Choose an event --</option>
+          {% for event in events %}
+          <option value="{{ event.id }}">{{ event.name }} ({{ event.date }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-row" style="align-items: flex-start;">
+        <span class="form-label">Select Participants:</span>
+        <div style="flex: 1; max-height: 300px; overflow-y: auto; border: 1.5px solid var(--border); padding: 10px;">
+          {% for p in participants %}
+          <div style="margin-bottom: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" name="participant_ids" value="{{ p.id }}">
+              <span>{{ p.first_name }} {{ p.last_name }} ({{ p.division or 'No division' }})</span>
+            </label>
+          </div>
+          {% else %}
+          <p style="color: var(--text-muted);">No participants found. <a href="{{ url_for('hr_views.add_participant') }}">Add one first</a>.</p>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="btn">Register Selected</button>
+        <a href="{{ url_for('hr_views.dashboard') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Optional: Select/deselect all functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="participant_ids"]');
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.type = 'button';
+    selectAllBtn.className = 'btn btn-sm btn-ghost';
+    selectAllBtn.textContent = 'Select All';
+    selectAllBtn.style.marginBottom = '10px';
+    
+    selectAllBtn.onclick = function() {
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      checkboxes.forEach(cb => cb.checked = !allChecked);
+      selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+    };
+    
+    document.querySelector('.form-body').insertBefore(selectAllBtn, document.querySelector('.form-body').children[2]);
+  });
+</script>
+
+{% endblock %}

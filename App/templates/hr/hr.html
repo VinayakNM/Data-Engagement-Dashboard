@@ -6,25 +6,29 @@
 <div class="section-title">{{ institution.name }} Dashboard</div>
 
 <!-- Stats Cards -->
-<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-  <div class="metric-card" style="background: var(--surface); border: 1.5px solid var(--border); padding: 16px; text-align: center;">
-    <div class="metric-value" style="font-size: 32px; font-weight: 600; font-family: 'IBM Plex Mono', monospace;">{{ reg_count }}</div>
-    <div class="metric-label" style="font-size: 11px; text-transform: uppercase;">Total Registered</div>
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+  <div class="metric-card">
+    <div class="metric-value">{{ total_participants }}</div>
+    <div class="metric-label">Total Participants</div>
   </div>
-  <div class="metric-card" style="background: var(--surface); border: 1.5px solid var(--border); padding: 16px; text-align: center;">
-    <div class="metric-value" style="font-size: 32px; font-weight: 600; font-family: 'IBM Plex Mono', monospace;">{{ part_count }}</div>
-    <div class="metric-label" style="font-size: 11px; text-transform: uppercase;">Participated</div>
+  <div class="metric-card">
+    <div class="metric-value">{{ reg_count }}</div>
+    <div class="metric-label">Registered This Season</div>
   </div>
-  <div class="metric-card" style="background: var(--surface); border: 1.5px solid var(--border); padding: 16px; text-align: center;">
-    <div class="metric-value" style="font-size: 32px; font-weight: 600; font-family: 'IBM Plex Mono', monospace;">{{ no_show_count }}</div>
-    <div class="metric-label" style="font-size: 11px; text-transform: uppercase;">No-Shows</div>
+  <div class="metric-card">
+    <div class="metric-value">{{ part_count }}</div>
+    <div class="metric-label">Participated</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">{{ no_show_count }}</div>
+    <div class="metric-label">No-Shows</div>
   </div>
 </div>
 
 <!-- Action Buttons -->
 <div class="section-actions" style="margin-bottom: 20px;">
   <a href="{{ url_for('hr_views.add_participant') }}" class="btn">Add Participant</a>
-  <a href="#" class="btn btn-ghost">Register for Event</a>
+  <a href="{{ url_for('hr_views.register') }}" class="btn btn-ghost">Register for Event</a>
 </div>
 
 <!-- Participants Table -->
@@ -45,12 +49,17 @@
         <td>{{ p.first_name }} {{ p.last_name }}</td>
         <td>{{ p.email or 'N/A' }}</td>
         <td>{{ p.division or 'N/A' }}</td>
+        <!-- Status column -->
         <td>
-          {% if p.has_result %}
-          <span class="badge badge-active">Participated</span>
-          {% else %}
-          <span class="badge badge-closed">No-Show</span>
-          {% endif %}
+            {% if p.has_result %}
+            <span class="badge badge-active">Participated</span>
+            {% elif p.is_no_show %}
+            <span class="badge badge-closed">No-Show</span>
+            {% elif p.is_registered %}
+            <span class="badge badge-planning">Registered (Event Pending)</span>
+            {% else %}
+            <span class="badge badge-archived">Not Registered</span>
+            {% endif %}
         </td>
       </tr>
       {% else %}

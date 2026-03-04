@@ -1,6 +1,7 @@
+from App.models import Participant
 from flask import Blueprint, request, flash, redirect, url_for, render_template
 from flask_jwt_extended import jwt_required, current_user
-from App.controllers.hr_controller import get_hr_stats
+from App.controllers.hr_controller import get_hr_stats, get_available_events, register_participants
 from datetime import datetime
 
 
@@ -45,3 +46,30 @@ def add_participant():
         return redirect(url_for('hr_views.dashboard'))
     
     return render_template('hr/add_participant.html')
+
+
+@hr_views.route('/hr/register', methods=['GET', 'POST'])
+@jwt_required()
+def register():
+    if current_user.role != 'hr':
+        return "Access Denied", 403
+    
+    if request.method == 'POST':
+        season_event_id = request.form.get('season_event_id')
+        participant_ids = request.form.getlist('participant_ids')
+        
+        if not season_event_id or not participant_ids:
+            flash('Please select an event and at least one participant', 'danger')
+            return redirect(url_for('hr_views.register'))
+        
+        count = register_participants(participant_ids, season_event_id)
+        flash(f'{count} participants registered successfully!', 'success')
+        return redirect(url_for('hr_views.dashboard'))
+    
+    # GET request - show form
+    participants = Participant.query.filter_by(institution_id=current_user.institution_id).all()
+    events = get_available_events(current_user.institution_id)
+    
+    return render_template('hr/register.html', 
+                         participants=participants, 
+                         events=events)

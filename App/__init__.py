@@ -29,6 +29,8 @@ def create_app(overrides={}):
 
     #from App.views.dashboards import dashboard_views
     #app.register_blueprint(dashboard_views)
+    #from App.views.dashboards import dashboard_views
+    #app.register_blueprint(dashboard_views)
 
     from App.views.admin_views import admin_views
     app.register_blueprint(admin_views)

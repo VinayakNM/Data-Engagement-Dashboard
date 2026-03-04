@@ -51,10 +51,10 @@
             <span>Hi, {% if current_user %}{{ current_user.firstname }} ({{ current_user.role|capitalize }}){% endif %}</span>
             {% if current_user.role == 'admin' %}
             <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('admin_views.list_users') }}">Users</a>
             <div class="sys-dropdown">
                 <span class="sys-dropdown-toggle" onclick="toggleSysMenu(event)">System ▾</span>
                 <div class="sys-dropdown-menu" id="sysMenu">
+                    <a href="{{ url_for('admin_views.list_users') }}">Users</a>
                     <a href="{{ url_for('admin_views.institution_form') }}">Manage Institutions</a>
                     <a href="{{ url_for('admin_views.event_form') }}">Manage Events</a>
                     <a href="{{ url_for('admin_views.season_form') }}">Manage Seasons</a>

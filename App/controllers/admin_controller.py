@@ -1,6 +1,7 @@
 from App.models import *
 from App.database import db
 from sqlalchemy import func
+from datetime import date
 
 
 
@@ -171,34 +172,46 @@ def get_participation_by_institution(season_id=None):
     return [{'code': r[0], 'count': r[1]} for r in results]
 
 def get_participation_status_breakdown(season_id=None):
-    """Get counts for active, no-show, DNF for pie chart."""
+    """Get counts for participated, no-show, pending for pie chart."""
     if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
-            return {'active': 0, 'no_show': 0, 'dnf': 0} #Return defaults
+            return {'participated': 0, 'no_show': 0, 'pending': 0}
         season_id = current_season.id
     
+    today = date.today()
+    
     # Get all registrations for the season
-    registrations = db.session.query(Registration.id)\
+    registrations = db.session.query(Registration)\
         .join(SeasonEvent)\
         .filter(SeasonEvent.season_id == season_id)\
-        .count()
+        .all()
     
-    # Get registrations with results (participated)
-    participated = db.session.query(Registration.id)\
-        .join(SeasonEvent)\
-        .filter(SeasonEvent.season_id == season_id)\
-        .join(Result)\
-        .distinct().count()
+    participated = 0
+    no_show = 0
+    pending = 0
     
-    # For now, treat all registrations without results as "No-Show"
-    # Can add DNF logic later if you have a flag
-    no_show = registrations - participated
+    for reg in registrations:
+        has_result = len(reg.results) > 0
+        
+        # Get event date
+        event_date = None
+        if reg.season_event and reg.season_event.end_date:
+            event_date = reg.season_event.end_date
+        elif reg.season_event and reg.season_event.start_date:
+            event_date = reg.season_event.start_date
+        
+        if has_result:
+            participated += 1
+        elif event_date and event_date < today:
+            no_show += 1
+        else:
+            pending += 1
     
     return {
-        'active': participated,
+        'participated': participated,
         'no_show': no_show,
-        'dnf': 0  # Placeholder for now
+        'pending': pending
     }
 
 def get_admin_data():
