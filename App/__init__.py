@@ -24,6 +24,10 @@ def create_app(overrides={}):
         return User.query.get(identity)
 
     # Register blueprints
+    
+    from App.views.index import index_views
+    app.register_blueprint(index_views)
+
     from App.views.auth_views import auth_blueprint
     app.register_blueprint(auth_blueprint)
 
