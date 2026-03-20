@@ -15,6 +15,7 @@ class User(db.Model):
     password = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    must_change_password = db.Column(db.Boolean, default=False)
 
     institution_id = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
     institution = db.relationship('Institution', backref=db.backref('users', lazy=True))
