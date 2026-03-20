@@ -14,6 +14,7 @@ class User(db.Model):
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
 
     institution_id = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
     institution = db.relationship('Institution', backref=db.backref('users', lazy=True))
@@ -29,6 +30,7 @@ class User(db.Model):
         self.username = username
         self.email = email
         self.set_password(password)
+        self.is_active = True
         self.institution_id = institution_id
 
     def get_json(self):

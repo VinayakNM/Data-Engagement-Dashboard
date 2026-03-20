@@ -71,4 +71,27 @@
   </table>
 </div>
 
+@app.route('/hr/upload', methods=['POST'])
+@login_required
+def hr_upload_csv():
+    if 'csv_file' not in request.files:
+        flash('No file selected')
+        return redirect(request.url)
+    
+    file = request.files['csv_file']
+
+    if file.filename == '':
+        flash('No file selected')
+        return redirect(request.url)
+    
+    if file and file.filename.endswith('.csv'):
+        count = process_process_participants_csv(file, current_user.institution_id)
+        flash(f'Successfully imported {count} participants!')
+        return redirect(url_for('hr_views'))
+    
+    flash('Invalid file type. Please upload a CSV file.')
+    return redirect (request.url)
+
+
+
 {% endblock %}
