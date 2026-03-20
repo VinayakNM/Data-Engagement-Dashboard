@@ -1,7 +1,7 @@
 from App.models import *
 from flask import Blueprint, request, flash, redirect, url_for, render_template
 from flask_jwt_extended import jwt_required, current_user
-from App.controllers.admin_controller import create_hr_user
+from App.controllers.admin_controller import create_user_by_admin, generate_temp_password
 from App.controllers.user_controller import generate_username
 from App.controllers.admin_controller import (
     get_admin_data,
@@ -63,40 +63,56 @@ def dashboard():
                          dnf_pct=dnf_pct)
 
 
+from App.controllers.admin_controller import create_user_by_admin, generate_temp_password
+
 @admin_views.route('/admin/users/create', methods=['POST'])
 @jwt_required()
-def create_hr():
+def create_user():
     if current_user.role != 'admin':
         return "Access Denied", 403
-
-
-    # Get form data (form in admin.html)
+    
+    # Get form data
     firstname = request.form.get('firstname')
     lastname = request.form.get('lastname')
-    # username = request.form.get('username')
     email = request.form.get('email')
-    password = request.form.get('password')
+    role = request.form.get('role')
     institution_id = request.form.get('institution_id')
-
-    # Get institution code for username
+    
+    # Generate username
+    from App.controllers.user_controller import generate_username
     from App.models import Institution
-    inst = Institution.query.get(institution_id)
-    if not inst:
-        flash('Institution not found', 'danger')
-        return redirect(url_for('admin_views.dashboard'))
     
-    username = generate_username(firstname, lastname, inst.code)
-
-    # if not all([firstname, lastname, username, email, password, institution_id]):
-    #    flash('All fields are required', 'danger')
-    #    return redirect(url_for('admin_views.dashboard'))
+    if role == 'hr':
+        inst = Institution.query.get(institution_id)
+        if not inst:
+            flash('Institution not found', 'danger')
+            return redirect(url_for('admin_views.dashboard'))
+        username = generate_username(firstname, lastname, inst.code)
+    else:
+        # For admin/scorer, use role-based username
+        base = f"{role}_{firstname[0].upper()}{lastname}".lower()
+        username = base
     
-    hr, error = create_hr_user(firstname, lastname, username, email, password, institution_id)
+    # Generate temporary password
+    temp_password = generate_temp_password()
+    
+    # Create user
+    user, error = create_user_by_admin(
+        firstname=firstname,
+        lastname=lastname,
+        username=username,
+        email=email,
+        password=temp_password,
+        role=role,
+        institution_id=institution_id if role == 'hr' else None
+    )
+    
     if error:
         flash(error, 'danger')
     else:
-        flash(f'HR user {username} created successfully', 'success')
-
+        flash(f'{role.capitalize()} user created! Username: {username}, Temporary password: {temp_password}', 'success')
+        # In production, email this instead of displaying
+    
     return redirect(url_for('admin_views.dashboard'))
 
     

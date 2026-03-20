@@ -12,15 +12,21 @@
     <div class="topbar">
         <span>CariFin Data Dashboard</span>
         <div class="topbar-right">
-            <span>Hi, {% if current_user %}{{ current_user.firstname }} ({{ current_user.role|capitalize }}){% endif %}</span>
-            {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('admin_views.list_users') }}">Users</a>
-            {% elif current_user.role == 'hr' %}
-            <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
+            {% if current_user %}
+                <span>Hi, {{ current_user.firstname }} ({{ current_user.role|capitalize }})</span>
+                
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('admin_views.list_users') }}">Users</a>
+                {% elif current_user.role == 'hr' %}
+                <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
+                {% endif %}
+                
+                <a href="{{ url_for('auth_views.logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth_views.login') }}">Login</a>
             {% endif %}
-            <a href="{{ url_for('auth_views.logout') }}">Logout</a>
         </div>
     </div>
 

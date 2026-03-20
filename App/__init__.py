@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from .models import *
 from .views import *
 from .controllers import *
@@ -27,7 +27,18 @@ def create_app(overrides={}):
             return dict(current_user=current_user)
         except RuntimeError:
             # Outside of JWT context, current_user is not available
-            return dict(current_user=None)
+            pass
+
+        # Fallback to session if available
+        if 'user_id' in session:
+            from App.models import User
+            user = User.query.get(session['user_id'])
+            if user:
+                return dict(current_user=user)
+    
+        return dict(current_user=None)
+        
+
 
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
