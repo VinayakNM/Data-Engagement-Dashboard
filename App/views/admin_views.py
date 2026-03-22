@@ -30,25 +30,51 @@ def dashboard():
     institutions = get_admin_data()
     
     # Get metrics
-    current_season = Season.query.order_by(Season.year.desc()).first()
+    # Support filter params from URL query string
+    filter_year = request.args.get('season', type=int)
+    filter_inst = request.args.get('institution')
+    filter_event = request.args.get('event', type=int)
+    filter_division = request.args.get('division')
+
+    # Resolve season — use filter year if provided, else active season, else most recent
+    if filter_year:
+        current_season = Season.query.filter_by(year=filter_year).first()
+    else:
+        current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first()
+        if not current_season:
+            current_season = Season.query.order_by(Season.year.desc()).first()
     season_id = current_season.id if current_season else None
-    
-    total_participants = get_total_participants()
-    active_participants = get_active_participants(season_id)
-    participation_rate = get_participation_rate(season_id)
-    institution_stats = get_institution_stats(season_id)
-    stage_completion = get_stage_completion() or []  # Default to empty list
-    participation_by_inst = get_participation_by_institution(season_id) or []  # Default to empty list
-    status_breakdown = get_participation_status_breakdown(season_id) or {'active': 0, 'no_show': 0, 'dnf': 0}
-    
-    # Safely access keys with defaults
-    total_reg = status_breakdown.get('active', 0) + status_breakdown.get('no_show', 0) + status_breakdown.get('dnf', 0)
-    
-    # Calculate percentages for pie chart (avoid division by zero)
-    active_pct = round((status_breakdown.get('active', 0) / total_reg * 100), 1) if total_reg > 0 else 0
-    no_show_pct = round((status_breakdown.get('no_show', 0) / total_reg * 100), 1) if total_reg > 0 else 0
-    dnf_pct = round((status_breakdown.get('dnf', 0) / total_reg * 100), 1) if total_reg > 0 else 0
-    
+
+    # All seasons for the filter dropdown
+    all_seasons = Season.query.order_by(Season.year.desc()).all()
+
+    # Events for the event filter dropdown
+    events = Event.query.order_by(Event.name).all()
+
+    # Distinct divisions from Participant and Registration tables
+    div_rows = db.session.query(Participant.division).filter(
+        Participant.division.isnot(None),
+        Participant.division != ''
+    ).distinct().all()
+    divisions = sorted(set(r[0] for r in div_rows if r[0]))
+
+    total_participants  = get_total_participants(season_id, filter_event, filter_division, filter_inst)
+    active_participants = get_active_participants(season_id, filter_event, filter_division, filter_inst)
+    participation_rate  = get_participation_rate(season_id, filter_event, filter_division, filter_inst)
+    institution_stats   = get_institution_stats(season_id, filter_event, filter_division, filter_inst)
+    stage_completion    = get_stage_completion() or []
+    participation_by_inst  = get_participation_by_institution(season_id, filter_event, filter_division, filter_inst) or []
+    status_breakdown = get_participation_status_breakdown(season_id, filter_event, filter_division, filter_inst) or {'participated': 0, 'no_show': 0, 'pending': 0}
+
+    participated_count = status_breakdown.get('participated', 0)
+    no_show_count      = status_breakdown.get('no_show', 0) + status_breakdown.get('pending', 0)
+    total_reg   = participated_count + no_show_count
+    active_pct  = round((participated_count / total_reg * 100), 1) if total_reg > 0 else 0
+    no_show_pct = round((no_show_count      / total_reg * 100), 1) if total_reg > 0 else 0
+
+    # FIX: bar chart max for proportional heights
+    max_count = max((i['count'] for i in participation_by_inst), default=1)
+
     return render_template('admin/admin.html',
                          institutions=institutions,
                          institution_stats=institution_stats,
@@ -58,9 +84,13 @@ def dashboard():
                          stage_completion=stage_completion,
                          participation_by_inst=participation_by_inst,
                          current_season=current_season,
+                         all_seasons=all_seasons,
+                         events=events,
+                         divisions=divisions,
+                         filter_year=filter_year or (current_season.year if current_season else None),
+                         max_count=max_count,
                          active_pct=active_pct,
-                         no_show_pct=no_show_pct,
-                         dnf_pct=dnf_pct)
+                         no_show_pct=no_show_pct)
 
 
 @admin_views.route('/admin/users/create', methods=['POST'])

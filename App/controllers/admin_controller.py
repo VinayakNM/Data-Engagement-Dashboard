@@ -4,87 +4,124 @@ from sqlalchemy import func
 from datetime import date
 
 
+def _base_reg_query(season_id, event_id=None, division=None, institution_code=None):
+    """
+    Returns a base Registration query pre-filtered by season, and optionally
+    by event, division, and institution. Used by all metric functions so that
+    every chart/counter respects the same active filters.
+    """
+    q = db.session.query(Registration)\
+        .join(SeasonEvent)\
+        .filter(SeasonEvent.season_id == season_id)
 
-def get_total_participants():
-    """Get total number of participants across all institutions."""
-    return Participant.query.count()
+    if event_id:
+        q = q.filter(SeasonEvent.event_id == event_id)
 
-def get_active_participants(season_id=None):
-    """Get participants registered in current season."""
+    if division:
+        # division is stored on both Participant and Registration
+        q = q.join(Participant, Registration.participant_id == Participant.id)\
+             .filter(
+                 db.or_(
+                     Registration.division == division,
+                     Participant.division == division
+                 )
+             )
+    elif institution_code:
+        # only join Participant if we didn't already for division
+        q = q.join(Participant, Registration.participant_id == Participant.id)
+
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            q = q.filter(Participant.institution_id == inst.id)
+
+    return q
+
+
+def get_total_participants(season_id=None, event_id=None, division=None, institution_code=None):
+    """Get total participants registered, respecting all active filters."""
     if not season_id:
-        # Get current season (most recent)
+        current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first()
+        if not current_season:
+            return 0
+        season_id = current_season.id
+
+    return _base_reg_query(season_id, event_id, division, institution_code)\
+        .with_entities(Registration.participant_id).distinct().count()
+
+
+def get_active_participants(season_id=None, event_id=None, division=None, institution_code=None):
+    """Get participants who have at least one result (participated)."""
+    if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
             return 0
         season_id = current_season.id
-    
-    # Count participants with registrations in this season
-    return db.session.query(Participant.id)\
-        .join(Registration)\
-        .join(SeasonEvent)\
-        .filter(SeasonEvent.season_id == season_id)\
-        .distinct().count()
 
-def get_participation_rate(season_id=None):
+    return _base_reg_query(season_id, event_id, division, institution_code)\
+        .join(Result, Registration.id == Result.registration_id)\
+        .with_entities(Registration.participant_id).distinct().count()
+
+
+def get_participation_rate(season_id=None, event_id=None, division=None, institution_code=None):
     """Calculate participation rate (participants with results vs registered)."""
     if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
             return 0
         season_id = current_season.id
-    
-    # Total registered in season
-    total_reg = db.session.query(Registration.id)\
-        .join(SeasonEvent)\
-        .filter(SeasonEvent.season_id == season_id)\
-        .count()
-    
+
+    total_reg = _base_reg_query(season_id, event_id, division, institution_code).count()
     if total_reg == 0:
         return 0
-    
-    # Total with results
-    total_participated = db.session.query(Registration.id)\
-        .join(SeasonEvent)\
-        .filter(SeasonEvent.season_id == season_id)\
-        .join(Result)\
-        .distinct().count()
-    
+
+    total_participated = _base_reg_query(season_id, event_id, division, institution_code)\
+        .join(Result, Registration.id == Result.registration_id)\
+        .with_entities(Registration.id).distinct().count()
+
     return round((total_participated / total_reg) * 100, 1)
 
-def get_institution_stats(season_id=None):
-    """Get participation stats by institution."""
+
+def get_institution_stats(season_id=None, event_id=None, division=None, institution_code=None):
+    """Get participation stats by institution, respecting all active filters."""
     if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
             return []
         season_id = current_season.id
-    
+
     institutions = Institution.query.all()
     stats = []
-    
+
     for inst in institutions:
-        # Count participants for this institution
+        # Skip institutions that don't match the institution filter
+        if institution_code and inst.code != institution_code:
+            continue
+
         participant_count = Participant.query.filter_by(institution_id=inst.id).count()
-        
-        # Count registrations in current season
-        reg_count = db.session.query(Registration.id)\
-            .join(Participant)\
-            .filter(Participant.institution_id == inst.id)\
+
+        base = db.session.query(Registration)\
             .join(SeasonEvent)\
             .filter(SeasonEvent.season_id == season_id)\
-            .count()
-        
-        # Count participants with results
-        part_count = db.session.query(Registration.participant_id)\
-            .join(Participant)\
-            .filter(Participant.institution_id == inst.id)\
-            .join(SeasonEvent)\
-            .filter(SeasonEvent.season_id == season_id)\
-            .join(Result)\
-            .distinct().count()
-        
+            .join(Participant, Registration.participant_id == Participant.id)\
+            .filter(Participant.institution_id == inst.id)
+
+        if event_id:
+            base = base.filter(SeasonEvent.event_id == event_id)
+        if division:
+            base = base.filter(
+                db.or_(
+                    Registration.division == division,
+                    Participant.division == division
+                )
+            )
+
+        reg_count  = base.count()
+        part_count = base.join(Result, Registration.id == Result.registration_id)\
+                         .with_entities(Registration.participant_id).distinct().count()
+
         part_rate = round((part_count / reg_count * 100), 1) if reg_count > 0 else 0
-        
+
         stats.append({
             'id': inst.id,
             'code': inst.code,
@@ -95,7 +132,7 @@ def get_institution_stats(season_id=None):
             'participation_rate': part_rate,
             'user_count': len(inst.users)
         })
-    
+
     return stats
 
 def get_stage_completion(event_id=None):
@@ -151,63 +188,72 @@ def get_stage_completion(event_id=None):
     return completion_data
 
 
-def get_participation_by_institution(season_id=None):
-    """Get participation counts by institution for charts."""
+def get_participation_by_institution(season_id=None, event_id=None, division=None, institution_code=None):
+    """Get participation counts by institution for the bar chart."""
     if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
             return []
         season_id = current_season.id
-    
-    results = db.session.query(
+
+    q = db.session.query(
         Institution.code,
-        func.count(Participant.id).label('count')
-    ).join(Participant)\
-     .join(Registration)\
-     .join(SeasonEvent)\
-     .filter(SeasonEvent.season_id == season_id)\
-     .group_by(Institution.code)\
-     .all()
-    
+        func.count(func.distinct(Registration.participant_id)).label('count')
+    ).join(Participant, Institution.id == Participant.institution_id)\
+     .join(Registration, Participant.id == Registration.participant_id)\
+     .join(SeasonEvent, Registration.season_event_id == SeasonEvent.id)\
+     .filter(SeasonEvent.season_id == season_id)
+
+    if event_id:
+        q = q.filter(SeasonEvent.event_id == event_id)
+    if division:
+        q = q.filter(
+            db.or_(
+                Registration.division == division,
+                Participant.division == division
+            )
+        )
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            q = q.filter(Institution.id == inst.id)
+
+    results = q.group_by(Institution.code).all()
     return [{'code': r[0], 'count': r[1]} for r in results]
 
-def get_participation_status_breakdown(season_id=None):
+
+def get_participation_status_breakdown(season_id=None, event_id=None, division=None, institution_code=None):
     """Get counts for participated, no-show, pending for pie chart."""
     if not season_id:
         current_season = Season.query.order_by(Season.year.desc()).first()
         if not current_season:
             return {'participated': 0, 'no_show': 0, 'pending': 0}
         season_id = current_season.id
-    
+
     today = date.today()
-    
-    # Get all registrations for the season
-    registrations = db.session.query(Registration)\
-        .join(SeasonEvent)\
-        .filter(SeasonEvent.season_id == season_id)\
-        .all()
-    
+
+    registrations = _base_reg_query(season_id, event_id, division, institution_code).all()
+
     participated = 0
     no_show = 0
     pending = 0
-    
+
     for reg in registrations:
         has_result = len(reg.results) > 0
-        
-        # Get event date
+
         event_date = None
         if reg.season_event and reg.season_event.end_date:
             event_date = reg.season_event.end_date
         elif reg.season_event and reg.season_event.start_date:
             event_date = reg.season_event.start_date
-        
+
         if has_result:
             participated += 1
         elif event_date and event_date < today:
             no_show += 1
         else:
             pending += 1
-    
+
     return {
         'participated': participated,
         'no_show': no_show,

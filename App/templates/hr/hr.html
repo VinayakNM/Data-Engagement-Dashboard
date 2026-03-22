@@ -1,45 +1,69 @@
 {% extends "base.html" %}
 {% block title %}HR Dashboard{% endblock %}
 {% block breadcrumb %}HR Dashboard{% endblock %}
-{% block content %}
 
+{% block extra_css %}
+<style>
+.upload-bar{background:var(--surface);border:1.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.upload-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);}
+.upload-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1.5px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;background:var(--bg);color:var(--text);transition:border-color .15s;}
+.upload-btn:hover{border-color:var(--accent);}
+.upload-file{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);}
+.dl-tpl{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);cursor:pointer;text-decoration:underline;}
+.dl-tpl:hover{color:var(--accent);}
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="section-title">{{ institution.name }} Dashboard</div>
 
 <!-- Stats Cards -->
-<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
-  <div class="metric-card">
-    <div class="metric-value">{{ total_participants }}</div>
-    <div class="metric-label">Total Participants</div>
+<div class="metrics-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
+    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ reg_count }}</div>
+    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">Total Registered</div>
   </div>
-  <div class="metric-card">
-    <div class="metric-value">{{ reg_count }}</div>
-    <div class="metric-label">Registered This Season</div>
+  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
+    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ part_count }}</div>
+    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">Participated</div>
   </div>
-  <div class="metric-card">
-    <div class="metric-value">{{ part_count }}</div>
-    <div class="metric-label">Participated</div>
-  </div>
-  <div class="metric-card">
-    <div class="metric-value">{{ no_show_count }}</div>
-    <div class="metric-label">No-Shows</div>
+  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
+    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ no_show_count }}</div>
+    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">No-Shows</div>
   </div>
 </div>
 
 <!-- Action Buttons -->
-<div class="section-actions" style="margin-bottom: 20px;">
-  <a href="{{ url_for('hr_views.add_participant') }}" class="btn">Add Participant</a>
+<div class="section-actions" style="margin-bottom:16px;">
+  <a href="{{ url_for('hr_views.add_participant') }}" class="btn">+ Add Participant</a>
   <a href="{{ url_for('hr_views.register') }}" class="btn btn-ghost">Register for Event</a>
 </div>
 
+<!-- CSV Upload Bar -->
+<form method="POST" action="{{ url_for('hr_views.upload_csv') }}" enctype="multipart/form-data">
+  <div class="upload-bar">
+    <span class="upload-label">Batch Import</span>
+    <label class="upload-btn">
+      📋 Choose CSV
+      <input type="file" name="csv_file" accept=".csv" style="display:none"
+             onchange="document.getElementById('fname').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+    </label>
+    <span class="upload-file" id="fname">No file chosen</span>
+    <button type="submit" class="btn btn-sm">Upload &amp; Import</button>
+    <a class="dl-tpl" onclick="downloadTemplate()">Download template ↓</a>
+  </div>
+</form>
+
 <!-- Participants Table -->
 <div class="card">
-  <div class="card-header">Participant Roster</div>
+  <div class="card-header">Participant Roster ({{ participants|length }})</div>
   <table>
     <thead>
       <tr>
         <th>Name</th>
         <th>Email</th>
         <th>Division</th>
+        <th>Sex</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -47,28 +71,39 @@
       {% for p in participants %}
       <tr>
         <td>{{ p.first_name }} {{ p.last_name }}</td>
-        <td>{{ p.email or 'N/A' }}</td>
-        <td>{{ p.division or 'N/A' }}</td>
-        <!-- Status column -->
+        <td style="font-size:11px;color:var(--text-muted);">{{ p.email or '—' }}</td>
+        <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ p.division or '—' }}</span></td>
+        <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ p.sex or '—' }}</td>
         <td>
-            {% if p.has_result %}
+          {% if p.has_result %}
             <span class="badge badge-active">Participated</span>
-            {% elif p.is_no_show %}
+          {% elif p.is_no_show %}
             <span class="badge badge-closed">No-Show</span>
-            {% elif p.is_registered %}
-            <span class="badge badge-planning">Registered (Event Pending)</span>
-            {% else %}
-            <span class="badge badge-archived">Not Registered</span>
-            {% endif %}
+          {% else %}
+            <span class="badge badge-planning">Pending</span>
+          {% endif %}
         </td>
       </tr>
       {% else %}
       <tr>
-        <td colspan="4" style="text-align: center; padding: 20px;">No participants found.</td>
+        <td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;">
+          No participants yet — add manually or import a CSV.
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+function downloadTemplate() {
+  var csv = 'first_name,last_name,email,sex,div,birth_date\nJohn,Doe,john.doe@example.com,M,M2029,1990-01-15\nJane,Smith,jane.smith@example.com,F,F3039,1985-06-20\n';
+  var a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = 'participants_template.csv';
+  a.click();
+}
+</script>
 {% endblock %}
