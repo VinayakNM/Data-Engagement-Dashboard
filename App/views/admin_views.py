@@ -11,7 +11,10 @@ from App.controllers.admin_controller import (
     get_institution_stats,
     get_stage_completion,
     get_participation_by_institution,
-    get_participation_status_breakdown
+    get_participation_status_breakdown,
+    get_stage_funnel,
+    get_gender_split,
+    get_age_group_distribution,
 )
 
 
@@ -62,7 +65,7 @@ def dashboard():
     active_participants = get_active_participants(season_id, filter_event, filter_division, filter_inst)
     participation_rate  = get_participation_rate(season_id, filter_event, filter_division, filter_inst)
     institution_stats   = get_institution_stats(season_id, filter_event, filter_division, filter_inst)
-    stage_completion    = get_stage_completion() or []
+    stage_completion    = get_stage_completion(season_id, filter_event, filter_inst) or []
     participation_by_inst  = get_participation_by_institution(season_id, filter_event, filter_division, filter_inst) or []
     status_breakdown = get_participation_status_breakdown(season_id, filter_event, filter_division, filter_inst) or {'participated': 0, 'no_show': 0, 'pending': 0}
 
@@ -74,6 +77,11 @@ def dashboard():
 
     # FIX: bar chart max for proportional heights
     max_count = max((i['count'] for i in participation_by_inst), default=1)
+
+    # ── Analytics panels ──────────────────────────────────────────────────────
+    stage_funnel     = get_stage_funnel(season_id, filter_event, filter_inst)
+    gender_split     = get_gender_split(season_id, filter_event, filter_inst)
+    age_groups       = get_age_group_distribution(season_id, filter_event, filter_inst)
 
     return render_template('admin/admin.html',
                          institutions=institutions,
@@ -90,7 +98,10 @@ def dashboard():
                          filter_year=filter_year or (current_season.year if current_season else None),
                          max_count=max_count,
                          active_pct=active_pct,
-                         no_show_pct=no_show_pct)
+                         no_show_pct=no_show_pct,
+                         stage_funnel=stage_funnel,
+                         gender_split=gender_split,
+                         age_groups=age_groups)
 
 
 @admin_views.route('/admin/users/create', methods=['POST'])

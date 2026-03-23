@@ -135,55 +135,72 @@ def get_institution_stats(season_id=None, event_id=None, division=None, institut
 
     return stats
 
-def get_stage_completion(event_id=None):
-    """Get completion rates for each stage of an event."""
-    if not event_id:
-        # Get Urban Challenge event
-        urban = Event.query.filter_by(name='Urban Challenge').first()
-        if not urban:
+def get_stage_completion(season_id=None, event_id=None, institution_code=None):
+    """Get completion rates for each stage of an event, respecting active filters."""
+    # Resolve season
+    if not season_id:
+        current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first()
+        if not current_season:
+            current_season = Season.query.order_by(Season.year.desc()).first()
+        if not current_season:
             return []
-        event_id = urban.id
-    
-    # Get current season
-    current_season = Season.query.order_by(Season.year.desc()).first()
-    if not current_season:
-        return []
-    
-    # Get season_event
+        season_id = current_season.id
+
+    # Resolve event — use filter or fall back to Urban Challenge then first available
+    if not event_id:
+        urban = Event.query.filter_by(name='Urban Challenge').first()
+        if urban:
+            event_id = urban.id
+        else:
+            # Find first event linked to this season
+            se_any = SeasonEvent.query.filter_by(season_id=season_id).first()
+            if se_any:
+                event_id = se_any.event_id
+            else:
+                return []
+
     season_event = SeasonEvent.query.filter_by(
-        season_id=current_season.id,
-        event_id=event_id
+        season_id=season_id, event_id=event_id
     ).first()
-    
     if not season_event:
         return []
-    
-    # Get stages for this event
-    stages = Stage.query.filter_by(season_event_id=season_event.id).order_by(Stage.stage_number).all()
-    
-    # Get total registrations for this event
-    total_reg = Registration.query.filter_by(season_event_id=season_event.id).count()
-    
+
+    stages = Stage.query.filter_by(
+        season_event_id=season_event.id
+    ).order_by(Stage.stage_number).all()
+    if not stages:
+        return []
+
+    # Base registrations — optionally filtered by institution
+    base_q = db.session.query(Registration.id).filter(
+        Registration.season_event_id == season_event.id
+    )
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            base_q = base_q.join(
+                Participant, Registration.participant_id == Participant.id
+            ).filter(Participant.institution_id == inst.id)
+
+    total_reg = base_q.count()
     if total_reg == 0:
-        return [{'stage': s.stage_number, 'completion': 0} for s in stages]
-    
+        return [{'stage': s.stage_number, 'completion': 0, 'completed': 0, 'total': 0} for s in stages]
+
+    reg_ids = [r[0] for r in base_q.all()]
     completion_data = []
     for stage in stages:
-        # Count participants who have results for this stage
-        completed = db.session.query(Result.registration_id)\
-            .join(Registration)\
-            .filter(Registration.season_event_id == season_event.id)\
-            .filter(Result.stage_id == stage.id)\
-            .distinct().count()
+        completed = db.session.query(func.count(func.distinct(Result.registration_id)))            .filter(
+                Result.stage_id == stage.id,
+                Result.registration_id.in_(reg_ids)
+            ).scalar() or 0
 
         completion_rate = round((completed / total_reg) * 100, 1) if total_reg > 0 else 0
         completion_data.append({
             'stage': stage.stage_number,
             'completion': completion_rate,
             'completed': completed,
-            'total': total_reg
+            'total': total_reg,
         })
-    
 
     return completion_data
 
@@ -290,3 +307,150 @@ def create_hr_user(firstname, lastname, username, email, password, institution_i
 def get_all_users():
     """Return all users with their details."""
     return User.query.all()
+
+def get_stage_funnel(season_id=None, event_id=None, institution_code=None):
+    """
+    Funnel: for each stage of an event, return how many distinct participants
+    completed it. Respects season, event and institution filters.
+    Returns: { event_name, stages: [{stage, label, count, pct_of_stage1}] }
+    """
+    if not season_id:
+        current_season = Season.query.order_by(Season.year.desc()).first()
+        if not current_season:
+            return {}
+        season_id = current_season.id
+
+    # Pick event — use filter_event or fall back to Urban Challenge
+    if event_id:
+        event = Event.query.get(event_id)
+    else:
+        event = Event.query.filter_by(name='Urban Challenge').first()
+        if not event:
+            event = Event.query.first()
+    if not event:
+        return {}
+
+    season_event = SeasonEvent.query.filter_by(
+        season_id=season_id, event_id=event.id
+    ).first()
+    if not season_event:
+        return {}
+
+    stages = Stage.query.filter_by(
+        season_event_id=season_event.id
+    ).order_by(Stage.stage_number).all()
+    if not stages:
+        return {}
+
+    # Base registrations (optionally filtered by institution)
+    base = db.session.query(Registration.id).filter(
+        Registration.season_event_id == season_event.id
+    )
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            base = base.join(Participant, Registration.participant_id == Participant.id)\
+                       .filter(Participant.institution_id == inst.id)
+    reg_ids = [r[0] for r in base.all()]
+    if not reg_ids:
+        return {}
+
+    funnel = []
+    stage1_count = None
+    for s in stages:
+        count = db.session.query(func.count(func.distinct(Result.registration_id)))\
+            .filter(Result.stage_id == s.id,
+                    Result.registration_id.in_(reg_ids)).scalar() or 0
+        if stage1_count is None:
+            stage1_count = count
+        pct = round(count / stage1_count * 100, 1) if stage1_count else 0
+        funnel.append({
+            'stage':        s.stage_number,
+            'label':        f'Stage {s.stage_number}' + (f' ({s.distance})' if s.distance else ''),
+            'count':        count,
+            'pct_of_stage1': pct,
+        })
+
+    return {'event_name': event.name, 'stages': funnel, 'total_registered': len(reg_ids)}
+
+
+def get_gender_split(season_id=None, event_id=None, institution_code=None):
+    """
+    Returns: [{'sex': 'M', 'count': n}, {'sex': 'F', 'count': n}]
+    Based on participants registered in the filtered season/event/institution.
+    """
+    if not season_id:
+        current_season = Season.query.order_by(Season.year.desc()).first()
+        if not current_season:
+            return []
+        season_id = current_season.id
+
+    q = db.session.query(
+        Participant.sex,
+        func.count(func.distinct(Participant.id)).label('count')
+    ).join(Registration, Participant.id == Registration.participant_id)\
+     .join(SeasonEvent, Registration.season_event_id == SeasonEvent.id)\
+     .filter(SeasonEvent.season_id == season_id,
+             Participant.sex.isnot(None),
+             Participant.sex != '')
+
+    if event_id:
+        q = q.filter(SeasonEvent.event_id == event_id)
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            q = q.filter(Participant.institution_id == inst.id)
+
+    rows = q.group_by(Participant.sex).all()
+    return [{'sex': r[0].upper(), 'count': r[1]} for r in rows]
+
+
+def get_age_group_distribution(season_id=None, event_id=None, institution_code=None):
+    """
+    Returns age group counts and gender breakdown per group using the DIV field.
+    Div codes like M2029, F3039 encode both sex and age band.
+    Returns: [{'group': '20-29', 'M': n, 'F': n, 'total': n}, ...]
+    """
+    if not season_id:
+        current_season = Season.query.order_by(Season.year.desc()).first()
+        if not current_season:
+            return []
+        season_id = current_season.id
+
+    q = db.session.query(
+        Participant.division,
+        func.count(func.distinct(Participant.id)).label('count')
+    ).join(Registration, Participant.id == Registration.participant_id)\
+     .join(SeasonEvent, Registration.season_event_id == SeasonEvent.id)\
+     .filter(SeasonEvent.season_id == season_id,
+             Participant.division.isnot(None),
+             Participant.division != '')
+
+    if event_id:
+        q = q.filter(SeasonEvent.event_id == event_id)
+    if institution_code:
+        inst = Institution.query.filter_by(code=institution_code).first()
+        if inst:
+            q = q.filter(Participant.institution_id == inst.id)
+
+    rows = q.group_by(Participant.division).all()
+
+    # Aggregate into age band buckets
+    AGE_BANDS = ['20-29', '30-39', '40-49', '50-59', '60+']
+    DIV_TO_BAND = {
+        '2029': '20-29', '3039': '30-39', '4049': '40-49',
+        '5059': '50-59', '60+': '60+', '60P': '60+',
+    }
+    buckets = {b: {'group': b, 'M': 0, 'F': 0, 'total': 0} for b in AGE_BANDS}
+
+    for div, count in rows:
+        div = str(div).strip().upper()
+        sex  = div[0] if div and div[0] in ('M', 'F') else None
+        band_key = div[1:] if sex else div
+        band = DIV_TO_BAND.get(band_key)
+        if not band or not sex:
+            continue
+        buckets[band][sex]     = buckets[band].get(sex, 0) + count
+        buckets[band]['total'] += count
+
+    return [b for b in buckets.values() if b['total'] > 0]
