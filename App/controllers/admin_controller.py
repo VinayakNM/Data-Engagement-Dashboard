@@ -98,7 +98,8 @@ def get_institution_stats(season_id=None, event_id=None, division=None, institut
         if institution_code and inst.code != institution_code:
             continue
 
-        participant_count = Participant.query.filter_by(institution_id=inst.id).count()
+        participant_count = db.session.query(func.count(func.distinct(Participant.id)))            .join(Registration, Participant.id == Registration.participant_id)            .join(SeasonEvent, Registration.season_event_id == SeasonEvent.id)            .filter(SeasonEvent.season_id == season_id,
+                    Participant.institution_id == inst.id)            .scalar() or 0
 
         base = db.session.query(Registration)\
             .join(SeasonEvent)\
@@ -355,23 +356,22 @@ def get_stage_funnel(season_id=None, event_id=None, institution_code=None):
     if not reg_ids:
         return {}
 
+    total_registered = len(reg_ids)
     funnel = []
-    stage1_count = None
     for s in stages:
         count = db.session.query(func.count(func.distinct(Result.registration_id)))\
             .filter(Result.stage_id == s.id,
                     Result.registration_id.in_(reg_ids)).scalar() or 0
-        if stage1_count is None:
-            stage1_count = count
-        pct = round(count / stage1_count * 100, 1) if stage1_count else 0
+        # Use total registered as baseline so bars are always <= 100%
+        pct = round(count / total_registered * 100, 1) if total_registered else 0
         funnel.append({
-            'stage':        s.stage_number,
-            'label':        f'Stage {s.stage_number}' + (f' ({s.distance})' if s.distance else ''),
-            'count':        count,
+            'stage':         s.stage_number,
+            'label':         f'Stage {s.stage_number}' + (f' ({s.distance})' if s.distance else ''),
+            'count':         count,
             'pct_of_stage1': pct,
         })
 
-    return {'event_name': event.name, 'stages': funnel, 'total_registered': len(reg_ids)}
+    return {'event_name': event.name, 'stages': funnel, 'total_registered': total_registered}
 
 
 def get_gender_split(season_id=None, event_id=None, institution_code=None):

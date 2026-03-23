@@ -350,9 +350,20 @@ def form_get_institutions():
         # HR users assigned to this institution
         hr_users = [u for u in i.users if u.role == 'hr']
 
+        # Participant count for the current/most recent season only
+        current_season = Season.query.filter_by(status='active')            .order_by(Season.year.desc()).first()
+        if not current_season:
+            current_season = Season.query.order_by(Season.year.desc()).first()
+        season_participant_count = 0
+        if current_season:
+            season_participant_count = db.session.query(
+                func.count(func.distinct(P.id))
+            ).join(R, P.id == R.participant_id)             .join(SE, R.season_event_id == SE.id)             .filter(SE.season_id == current_season.id,
+                     P.institution_id == i.id)             .scalar() or 0
+
         result.append({
             **i.get_json(),
-            'participant_count': len(i.participants),
+            'participant_count': season_participant_count,
             'user_count':        len(i.users),
             'hr_users': [{'id': u.id, 'username': u.username, 'email': u.email}
                          for u in hr_users],

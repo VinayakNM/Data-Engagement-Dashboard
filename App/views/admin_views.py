@@ -141,6 +141,204 @@ def create_hr():
     return redirect(url_for('admin_views.dashboard'))
 
     
+
+
+@admin_views.route('/admin/import-season', methods=['POST'])
+@jwt_required()
+def import_season_excel():
+    """Upload an Excel registration file and seed it into a chosen season."""
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+
+    from datetime import date
+    import io
+
+    try:
+        import pandas as pd
+    except ImportError:
+        flash('pandas not installed on this server.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    season_year = request.form.get('season_year', type=int)
+    file = request.files.get('excel_file')
+
+    if not season_year:
+        flash('Please select a season.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+    if not file or not file.filename:
+        flash('Please choose an Excel file to upload.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        flash('Only .xlsx / .xls files are supported.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    # ── Resolve season ────────────────────────────────────────────────────
+    season = Season.query.filter_by(year=season_year).first()
+    if not season:
+        flash(f'Season {season_year} not found. Create it first.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    # ── Read file ─────────────────────────────────────────────────────────
+    try:
+        df = pd.read_excel(io.BytesIO(file.read()))
+    except Exception as e:
+        flash(f'Could not read file: {e}', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    # ── Column detection helpers ──────────────────────────────────────────
+    col_map = {c.strip().upper(): c for c in df.columns}
+
+    def find_col(*candidates):
+        for c in candidates:
+            if c.upper() in col_map:
+                return col_map[c.upper()]
+        return None
+
+    def parse_date(val):
+        from datetime import datetime, date as date_
+        if val is None: return None
+        if isinstance(val, datetime): return val.date()
+        if isinstance(val, date_): return val
+        s = str(val).strip()
+        if s in ('', 'nan', 'NaT', 'None'): return None
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y'):
+            try: return datetime.strptime(s.split(' ')[0], fmt).date()
+            except ValueError: continue
+        return None
+
+    TEAM_MAP = {
+        'cbtt': 'CBTT', 'first citizens': 'FCIT', 'fcb': 'FCIT',
+        'sagicor': 'SAGC', 'scotiabank': 'SCOT', 'scotia': 'SCOT',
+        'ttmb': 'TTMB', 'ttutc': 'TTUT', 'utc': 'TTUT',
+        'min. of finance': 'MOF', 'ministry of finance': 'MOF',
+    }
+
+    col_first = find_col('FIRST NAME', 'FIRSTNAME', 'FIRST')
+    col_last  = find_col('LAST NAME',  'LASTNAME',  'LAST')
+    col_team  = find_col('TEAM NAME',  'TEAM',      'INSTITUTION', 'CLUB')
+    col_email = find_col('EMAIL', 'E-MAIL')
+    col_sex   = find_col('SEX', 'GENDER')
+    col_div   = find_col('DIV', 'DIVISION', 'AGE GROUP')
+    col_bdate = find_col('BIRTHDATE', 'BIRTH DATE', 'DOB', 'DATE OF BIRTH')
+
+    if not all([col_first, col_last, col_team]):
+        flash('File missing required columns (FIRST NAME, LAST NAME, TEAM NAME).', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    df = df[df[col_team].notna() & df[col_first].notna() & df[col_last].notna()]
+
+    # Detect stage TIME columns
+    stage_nums = [n for n in range(1, 10)
+                  if col_map.get(f'TIME{n}') and df[col_map[f'TIME{n}']].notna().any()]
+    if not stage_nums:
+        stage_nums = []
+
+    # ── Resolve event & season-event ─────────────────────────────────────
+    event = Event.query.filter_by(name='Urban Challenge').first()
+    if not event:
+        event = Event.query.first()
+    if not event:
+        flash('No events found. Create an event first.', 'danger')
+        return redirect(url_for('admin_views.dashboard'))
+
+    se = SeasonEvent.query.filter_by(season_id=season.id, event_id=event.id).first()
+    if not se:
+        se = SeasonEvent(season_id=season.id, event_id=event.id, status='active',
+                         start_date=date(season.year, 3, 1),
+                         end_date=date(season.year, 11, 30))
+        db.session.add(se)
+        db.session.flush()
+
+    # Ensure stages exist
+    month_map = {1: 2, 2: 5, 3: 9, 4: 10, 5: 11}
+    for snum in stage_nums:
+        if not Stage.query.filter_by(season_event_id=se.id, stage_number=snum).first():
+            db.session.add(Stage(
+                season_event_id=se.id, stage_number=snum,
+                distance='5K', location="Queen's Park Savannah",
+                stage_date=date(season.year, month_map.get(snum, 3), 15)))
+    db.session.commit()
+    stage_by_num = {s.stage_number: s for s in
+                    Stage.query.filter_by(season_event_id=se.id).all()}
+
+    # ── Institution cache ─────────────────────────────────────────────────
+    inst_cache = {}
+    for raw in df[col_team].dropna().unique():
+        code = TEAM_MAP.get(str(raw).strip().lower())
+        if code and code not in inst_cache:
+            inst = Institution.query.filter_by(code=code).first()
+            if inst:
+                inst_cache[code] = inst
+
+    # ── Import rows ───────────────────────────────────────────────────────
+    created = registered = results_added = skipped = 0
+
+    for _, row in df.iterrows():
+        code = TEAM_MAP.get(str(row[col_team]).strip().lower())
+        if not code or code not in inst_cache:
+            skipped += 1
+            continue
+
+        first = str(row[col_first]).strip()
+        last  = str(row[col_last]).strip()
+        if not first or not last or first == 'nan' or last == 'nan':
+            skipped += 1
+            continue
+
+        inst  = inst_cache[code]
+        email = (str(row[col_email]).strip()
+                 if col_email and pd.notna(row.get(col_email)) else None)
+        bdate = parse_date(row.get(col_bdate)) if col_bdate else None
+        sex   = (str(row[col_sex]).strip()
+                 if col_sex and pd.notna(row.get(col_sex)) else None)
+        div   = (str(row[col_div]).strip()
+                 if col_div and pd.notna(row.get(col_div)) else None)
+        if email == 'nan': email = None
+        if sex   == 'nan': sex   = None
+        if div   == 'nan': div   = None
+
+        p = Participant.query.filter_by(
+            first_name=first, last_name=last, institution_id=inst.id).first()
+        if not p:
+            p = Participant(first_name=first, last_name=last,
+                            institution_id=inst.id,
+                            email=email, birth_date=bdate, sex=sex, division=div)
+            db.session.add(p)
+            db.session.flush()
+            created += 1
+
+        reg = Registration.query.filter_by(
+            participant_id=p.id, season_event_id=se.id).first()
+        if not reg:
+            reg = Registration(participant_id=p.id,
+                               season_event_id=se.id, division=div)
+            db.session.add(reg)
+            db.session.flush()
+            registered += 1
+
+        for snum in stage_nums:
+            time_col = col_map.get(f'TIME{snum}')
+            if not time_col: continue
+            time_val = row.get(time_col)
+            if pd.isna(time_val) or str(time_val).strip() in ('', 'nan'): continue
+            stage = stage_by_num.get(snum)
+            if not stage: continue
+            if not Result.query.filter_by(
+                    registration_id=reg.id, stage_id=stage.id).first():
+                db.session.add(Result(registration_id=reg.id,
+                                      stage_id=stage.id,
+                                      finish_time=str(time_val).strip()))
+                results_added += 1
+
+    db.session.commit()
+
+    flash(
+        f'✓ Season {season_year} import complete — '
+        f'{created} participants added, {registered} registered, '
+        f'{results_added} results recorded, {skipped} rows skipped.',
+        'success'
+    )
+    return redirect(url_for('admin_views.dashboard'))
 @admin_views.route('/admin/system/institutions')
 @jwt_required()
 def institution_form():
