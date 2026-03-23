@@ -20,7 +20,11 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
 
-        user = User.query.filter_by(email=email).first()
+        try:
+            user = User.query.filter_by(email=email).first()
+        except Exception as e:
+            flash('Database error — the app may not be initialised yet. Contact the administrator.', 'danger')
+            return render_template('login.html')
         if not user:
             flash('User not found', 'danger')
             return redirect(url_for('auth_views.login'))

@@ -36,20 +36,20 @@ def seed():
 
         # ---------- SEASONS ----------
         seasons = [
-            (2026, 'CariFin Games 2026 - 35th Anniversary'),
-            (2025, 'CariFin Games 2025'),
-            (2024, 'CariFin Games 2024'),
+            (2025, 'CariFin Games 2025', 'active'),
+            (2024, 'CariFin Games 2024', 'closed'),
+            (2026, 'CariFin Games 2026 - 35th Anniversary', 'planning'),
         ]
-        for year, desc in seasons:
+        for year, desc, status in seasons:
             season = Season.query.filter_by(year=year).first()
             if not season:
-                season = Season(year=year, description=desc)
+                season = Season(year=year, description=desc, status=status)
                 db.session.add(season)
-                print(f"  + Season: {year}")
+                print(f"  + Season: {year} ({status})")
         db.session.commit()
 
-        # Get current season (2026)
-        current_season = Season.query.filter_by(year=2026).first()
+        # Get current season (2025 — active)
+        current_season = Season.query.filter_by(year=2025).first()
 
         # ---------- EVENTS ----------
         events = [
@@ -77,8 +77,9 @@ def seed():
                 se_urban = SeasonEvent(
                     season_id=current_season.id,
                     event_id=urban.id,
-                    start_date=date(2026, 3, 1),
-                    end_date=date(2026, 4, 30)
+                    status='active',
+                    start_date=date(2025, 3, 1),
+                    end_date=date(2025, 11, 30)
                 )
                 db.session.add(se_urban)
                 print(f"  + Linked Urban Challenge to 2026 season")
@@ -88,8 +89,9 @@ def seed():
                 se_cross = SeasonEvent(
                     season_id=current_season.id,
                     event_id=cross.id,
-                    start_date=date(2026, 10, 15),
-                    end_date=date(2026, 10, 15)
+                    status='active',
+                    start_date=date(2025, 10, 15),
+                    end_date=date(2025, 10, 15)
                 )
                 db.session.add(se_cross)
                 print(f"  + Linked Cross Country to 2026 season")
@@ -116,11 +118,11 @@ def seed():
             
             if se_urban:
                 stages = [
-                    (1, "5K", "Queen's Park Savannah", date(2026, 3, 1)),
-                    (2, "5K", "Brian Lara Promenade", date(2026, 3, 8)),
-                    (3, "3K", "Hasely Crawford Stadium", date(2026, 3, 15)),
-                    (4, "5K", "Mucurapo", date(2026, 3, 22)),
-                    (5, "3K", "Chaguanas", date(2026, 3, 29)),
+                    (1, "5K", "Queen's Park Savannah", date(2025, 3, 1)),
+                    (2, "5K", "Brian Lara Promenade", date(2025, 3, 8)),
+                    (3, "3K", "Hasely Crawford Stadium", date(2025, 3, 15)),
+                    (4, "5K", "Mucurapo", date(2025, 3, 22)),
+                    (5, "3K", "Chaguanas", date(2025, 3, 29)),
                 ]
                 
                 for stage_num, distance, location, stage_date in stages:
