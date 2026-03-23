@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Enter Event Results</h2>
+<form method="POST">
+    <label> Select Participant:</label>
+    <select name="participant_id" class="form-control" required>
+        {% for p in participants %}
+            <option value="{{p.id}}">{{p.firstname}} {{p.lastname}}</option>
+        {% endfor %}
+    </select>
+
+    <label class="mt-3">Finish Time (eg: 00:25:00):</label>
+    <input type="text" name="finish_time" class="form-control" placeholder="HH:MM:SS" required>
+
+    <button type="submit" class="btn btn-primary mt-3">Submit Result</button>
+
+</form>
+{% endblock %}
