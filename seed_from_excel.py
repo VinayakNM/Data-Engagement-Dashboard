@@ -1,20 +1,3 @@
-"""
-seed_from_excel.py — Dynamic Excel seeder for CariFin Data Dashboard
----------------------------------------------------------------------
-Usage:
-    python seed_from_excel.py                          # uses most recent season
-    python seed_from_excel.py --season 2024            # targets a specific season
-    python seed_from_excel.py --file my_data.xlsx      # custom file path
-    python seed_from_excel.py --season 2024 --file registration_list_2024.xlsx
-    python seed_from_excel.py --dry-run                # parse + report, no DB writes
-
-Auto-detects:
-  • Date columns (any col whose name contains DATE or BIRTH, or whose values
-    parse as dates in YYYY-MM-DD / DD/MM/YYYY / MM/DD/YYYY / datetime formats)
-  • Stage count — scans TIME1..TIME9, creates a stage for each that has data
-  • Column name variants (case-insensitive, strips whitespace)
-"""
-
 import os, sys, argparse
 from datetime import datetime, date
 
