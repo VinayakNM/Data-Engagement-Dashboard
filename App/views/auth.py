@@ -21,34 +21,42 @@ def login():
         password = request.form.get('password')
 
         user = User.query.filter_by(email=email).first()
-        if not user: 
+        if not user:
             flash('User not found', 'danger')
-            return redirect(url_for('auth_views.login'))
+            return redirect(url_for('auth.login'))
+
         if not user.check_password(password):
             flash('Invalid password', 'danger')
-            return redirect(url_for('auth_views.login'))
+            return redirect(url_for('auth.login'))
+
+        if not user.is_active:
+            flash('Account deactivated', 'danger')
+            return redirect(url_for('auth.login'))
+
+        # Update last login
+        from datetime import datetime
+        user.last_login = datetime.utcnow()
         db.session.add(user)
         db.session.commit()
 
-        # Create JWT token
-        token = create_access_token(identity=user.id)
+        session['user_id'] = user.id
+        session['user_role'] = user.role
+        session['institution_id'] = user.institution_id
 
-        #Redirect based on role
-        if user.role == 'admin':
-            response = redirect(url_for('admin_views.dashboard'))
-        elif user.role == 'hr':
-            response = redirect(url_for('hr_views.dashboard'))
-        elif user.role == 'scorer':
-            response = redirect(url_for('scorer_views.dashboard'))
-        else:
-            response = redirect(url_for('index_views.index_page'))
-
-        # Set cookie
-        set_access_cookies(response, token)
         flash('Login successful!', 'success')
-        return response
 
-    # GET request – show login form
+        # Redirect based on role
+        if user.role == 'admin':
+            return redirect(url_for('admin_views.dashboard'))
+        elif user.role == 'hr':
+            return redirect(url_for('hr_views.dashboard'))
+        elif user.role == 'scorer':
+            return redirect(url_for('scorer_views.dashboard'))
+        elif user.role == 'pulse_leader':
+            return redirect(url_for('pulse.dashboard'))
+        else:
+            return redirect(url_for('index_views.index_page'))
+
     return render_template('login.html')
 
 @auth_views.route('/logout', methods=['GET'])

@@ -9,6 +9,9 @@ def seed():
     with app.app_context():
         print("Seeding database...")
 
+        db.create_all()
+        print(" + Tables created!")
+
         # ---------- INSTITUTIONS ----------
         institutions = [
             ('Central Bank of Trinidad and Tobago', 'CBTT'),

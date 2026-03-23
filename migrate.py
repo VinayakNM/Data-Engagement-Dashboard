@@ -29,6 +29,13 @@ MIGRATIONS = [
     ("institution", "ALTER TABLE institution ADD COLUMN contact_email  VARCHAR(120)"),
     ("institution", "ALTER TABLE institution ADD COLUMN phone          VARCHAR(30)"),
     ("institution", "ALTER TABLE institution ADD COLUMN status         VARCHAR(20) DEFAULT 'active'"),
+
+    # User — is_active + last_login (auth_views.py references these)
+    ("users", "ALTER TABLE users ADD COLUMN is_active  BOOLEAN NOT NULL DEFAULT 1"),
+    ("users", "ALTER TABLE users ADD COLUMN last_login DATETIME"),
+
+    # Registration — division column
+    ("registration", "ALTER TABLE registration ADD COLUMN division VARCHAR(20)"),
 ]
 
 conn = sqlite3.connect(DB)

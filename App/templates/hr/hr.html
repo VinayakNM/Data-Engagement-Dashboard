@@ -94,16 +94,28 @@
     </tbody>
   </table>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-function downloadTemplate() {
-  var csv = 'first_name,last_name,email,sex,div,birth_date\nJohn,Doe,john.doe@example.com,M,M2029,1990-01-15\nJane,Smith,jane.smith@example.com,F,F3039,1985-06-20\n';
-  var a = document.createElement('a');
-  a.href = 'data:text/csv,' + encodeURIComponent(csv);
-  a.download = 'participants_template.csv';
-  a.click();
-}
-</script>
+@app.route('/hr/upload', methods=['POST'])
+@login_required
+def hr_upload_csv():
+    if 'csv_file' not in request.files:
+        flash('No file selected')
+        return redirect(request.url)
+    
+    file = request.files['csv_file']
+
+    if file.filename == '':
+        flash('No file selected')
+        return redirect(request.url)
+    
+    if file and file.filename.endswith('.csv'):
+        count = process_process_participants_csv(file, current_user.institution_id)
+        flash(f'Successfully imported {count} participants!')
+        return redirect(url_for('hr_views'))
+    
+    flash('Invalid file type. Please upload a CSV file.')
+    return redirect (request.url)
+
+
+
 {% endblock %}

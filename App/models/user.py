@@ -8,19 +8,25 @@ class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     firstname = db.Column(db.String(20), nullable=False)
-    lastname  = db.Column(db.String(50), nullable=False)
-    username  = db.Column(db.String(20), nullable=False, unique=True)
-    email     = db.Column(db.String(120), nullable=False, unique=True)
-    password  = db.Column(db.String(256), nullable=False)
-    role      = db.Column(db.String(20), nullable=False)
+    lastname = db.Column(db.String(50), nullable=False)
+    username = db.Column(db.String(20), nullable=False, unique=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    password = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+
     institution_id = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
     institution    = db.relationship('Institution', backref=db.backref('users', lazy=True))
     __mapper_args__ = {'polymorphic_identity': 'user', 'polymorphic_on': role}
 
     def __init__(self, firstname, lastname, username, email, password, institution_id=None):
-        self.firstname = firstname; self.lastname = lastname
-        self.username  = username;  self.email    = email
-        self.set_password(password); self.institution_id = institution_id
+        self.firstname = firstname
+        self.lastname = lastname
+        self.username = username
+        self.email = email
+        self.set_password(password)
+        self.is_active = True
+        self.institution_id = institution_id
 
     def get_json(self):
         return {'id': self.id, 'firstname': self.firstname, 'lastname': self.lastname,
