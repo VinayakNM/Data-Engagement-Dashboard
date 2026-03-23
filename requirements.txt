@@ -14,5 +14,5 @@ python-dotenv==1.0.1
 rich==13.4.2
 setuptools==69.5.1
 pandas==2.2.2
-numpy==2.2.2
+numpy==2.0.2
 matplotlib==3.7.1
