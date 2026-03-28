@@ -7,10 +7,11 @@ from App.views import auth_views
 from flask_jwt_extended import JWTManager
 from App.database import db
 from App.config import load_config
-
+from app.controllers.admin_controller import admin_bp
 
 def create_app(overrides={}):
     app = Flask(__name__)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     # ... config ...
     load_config(app, overrides)
