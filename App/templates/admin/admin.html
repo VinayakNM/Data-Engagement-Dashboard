@@ -135,11 +135,6 @@
     height: 140px;
     border-radius: 50%;
     margin: 0 auto;
-    background: conic-gradient(
-      var(--active) 0deg {{ active_pct * 3.6 }}deg,
-      var(--closed) {{ active_pct * 3.6 }}deg {{ (active_pct + no_show_pct) * 3.6 }}deg,
-      var(--archived) {{ (active_pct + no_show_pct) * 3.6 }}deg 360deg
-    );
   }
   
   .pie-legend {
@@ -204,6 +199,15 @@
 {% endblock %}
 
 {% block content %}
+<div class="container mt-5">
+  <h2>Admin:Upload Master Participant Sheet</h2>
+  <p class="text-muted">Ensure CSV has headers: <b>first_name, last_name, email, institution_id</b></p>
+
+  <form method="POST" enctype="multipart/form-data" class="mt-4">
+    <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+    <button type="submit" class="btn btn-primary mt-3">Upload & Process Master List</button>  
+  </form>
+</div>
 
 <!-- Current Season Indicator -->
 <div style="text-align: right; margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted);">
@@ -286,7 +290,7 @@
     <div class="chart-header">Participation by Institution</div>
     <div class="chart-placeholder">
       {% for inst in participation_by_inst[:5] %}
-      <div class="bar" style="height: {{ (inst.count / active_participants * 100) if active_participants > 0 else 20 }}px; min-height: 30px;">
+      <div class="bar" style="height: {% if active_participants > 0 %}{{ (inst.count / active_participants * 100)|int }}{% else %}20{% endif %}px; min-height: 30px;">
         <span class="bar-value">{{ inst.count }}</span>
         <span class="bar-label">{{ inst.code }}</span>
       </div>
@@ -297,7 +301,7 @@
   <div class="chart-container">
     <div class="chart-header">Participation Status</div>
     <div style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
-      <div class="pie-container"></div>
+      <div class="pie-container" style="background: conic-gradient(var(--active) 0deg {{ (active_pct * 3.6)|int }}deg, var(--closed) {{ (active_pct * 3.6)|int }}deg {{ ((active_pct + no_show_pct) * 3.6)|int }}deg, var(--archived) {{ ((active_pct + no_show_pct) * 3.6)|int }}deg 360deg);"></div>
       <div class="pie-legend">
         <div class="legend-item">
           <span class="legend-color"></span>
@@ -396,7 +400,7 @@
     <div class="stage-row">
       <div class="stage-label">Stage {{ stage.stage }}</div>
       <div class="progress-bar">
-        <div class="progress-fill" style="width: {{ stage.completion }}%;"></div>
+        <div class="progress-fill" style="width: {{ stage.completion }}%; "></div>
       </div>
       <div class="stage-percent">{{ stage.completion }}%</div>
     </div>
