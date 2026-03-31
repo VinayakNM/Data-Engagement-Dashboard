@@ -67,5 +67,19 @@ def user_tests_command(type):
     
 app.cli.add_command(test)
 
+with app.app_context():
+    from App.models import Admin
+    if not Admin.query.filter_by(email='admin@carifin.com').first():
+        admin = Admin(
+            firstname='Admin',
+            lastname='User',
+            username='admin',
+            email='admin@carifin.com',
+            password='Admin123!'
+        )
+        db.session.add(admin)
+        db.session.commit()
+        print('Admin user created')
+
 if __name__ == "__main__":
     app.run()

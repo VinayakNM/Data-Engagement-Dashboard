@@ -13,7 +13,7 @@ from App.controllers.admin_controller import (
     get_participation_by_institution,
     get_participation_status_breakdown
 )
-
+from App.database import db
 
 admin_views = Blueprint('admin_views', __name__, template_folder='../templates')
 
@@ -63,8 +63,6 @@ def dashboard():
                          dnf_pct=dnf_pct)
 
 
-from App.controllers.admin_controller import create_user_by_admin, generate_temp_password
-
 @admin_views.route('/admin/users/create', methods=['POST'])
 @jwt_required()
 def create_user():
@@ -110,8 +108,10 @@ def create_user():
     if error:
         flash(error, 'danger')
     else:
-        flash(f'{role.capitalize()} user created! Username: {username}, Temporary password: {temp_password}', 'success')
-        # In production, email this instead of displaying
+        # DO NOT show password on screen – just a friendly message
+        flash(f'{role.capitalize()} user created! Username: {username}. A temporary password will be sent to their email.', 'success')
+        # In production, email the temp_password. For demo, you can see it in the terminal.
+        print(f"Temporary password for {username}: {temp_password}")
     
     return redirect(url_for('admin_views.dashboard'))
 
@@ -127,37 +127,81 @@ def list_users():
     return render_template('admin/users.html', users=users)
 
 
+# ================== INSTITUTION MANAGEMENT ==================
 @admin_views.route('/admin/institutions')
 @jwt_required()
 def institutions():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    return render_template('admin/institutions.html', title="Institution Management")
+    
+    from App.controllers.admin_controller import get_institution_stats
+    current_season = Season.query.order_by(Season.year.desc()).first()
+    season_id = current_season.id if current_season else None
+    institution_stats = get_institution_stats(season_id)
+    
+    return render_template('admin/institutions.html', institution_stats=institution_stats)
 
+
+@admin_views.route('/admin/institutions/add', methods=['POST'])
+@jwt_required()
+def add_institution():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    
+    code = request.form.get('code')
+    name = request.form.get('name')
+    contact = request.form.get('contact')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    
+    if not code or not name:
+        flash('Code and name are required', 'danger')
+        return redirect(url_for('admin_views.institutions'))
+    
+    if Institution.query.filter_by(code=code).first():
+        flash(f'Institution with code {code} already exists', 'danger')
+        return redirect(url_for('admin_views.institutions'))
+    
+    inst = Institution(
+        name=name,
+        code=code,
+        # contact=contact,
+        # email=email,
+        # phone=phone,
+        # is_active=True
+    )
+    db.session.add(inst)
+    db.session.commit()
+    
+    flash(f'Institution {code} added successfully', 'success')
+    return redirect(url_for('admin_views.institutions'))
+
+
+# ================== OTHER MANAGEMENT PAGES (placeholders) ==================
 @admin_views.route('/admin/events')
 @jwt_required()
 def events():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    return render_template('admin/Forms/EventForm.html', title="Event Management")
+    return render_template('admin/coming_soon.html', title='Event Management')
 
 @admin_views.route('/admin/seasons')
 @jwt_required()
 def seasons():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    return render_template('admin/Forms/SeasonForm.html', title="Season Management")
+    return render_template('admin/coming_soon.html', title='Season Management')
 
 @admin_views.route('/admin/bibs')
 @jwt_required()
 def bibs():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    return render_template('admin/bibs.html', title="Bib Management")
+    return render_template('admin/coming_soon.html', title='Bib Management')
 
 @admin_views.route('/admin/notifications')
 @jwt_required()
 def notifications():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    return render_template('admin/notifications.html', title="Notifications")
+    return render_template('admin/coming_soon.html', title='Notifications')

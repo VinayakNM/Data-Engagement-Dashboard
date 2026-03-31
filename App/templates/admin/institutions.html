@@ -3,397 +3,99 @@
 {% block breadcrumb %}Institution Management{% endblock %}
 {% block content %}
 
-<div class="section-title">Manage Institutions</div>
-<div class="section-actions">
-  <button class="btn" id="addInstitutionBtn">+ Add New Institution</button>
-  <button class="btn btn-ghost" id="assignHRBtn">Assign HR Users</button>
-</div>
-
-<!-- Registered Institutions Table -->
 <div class="card">
-  <div class="card-header">Registered Institutions</div>
+  <div class="card-header">
+    <span>Registered Institutions</span>
+    <button class="btn btn-sm" id="addInstitutionBtn">+ Add Institution</button>
+  </div>
   <div style="overflow-x: auto;">
-    <table id="institutionsTable">
+     <table>
       <thead>
-        <tr>
-          <th>ID#</th>
+         <tr>
+          <th>ID</th>
           <th>Code</th>
           <th>Name</th>
           <th>Users</th>
           <th>Participants</th>
+          <th>Registrations</th>
+          <th>Participation %</th>
           <th>Status</th>
-          <th></th>
         </tr>
       </thead>
-      <tbody id="institutionsTableBody">
-        <!-- Rendered by JS -->
+      <tbody>
+        {% for stat in institution_stats %}
+        <tr>
+          <td>{{ stat.id }}</td>
+          <td><strong>{{ stat.code }}</strong></td>
+          <td>{{ stat.name }}</td>
+          <td>{{ stat.user_count }}</td>
+          <td>{{ stat.participants }}</td>
+          <td>{{ stat.registrations }}</td>
+          <td>{{ stat.participation_rate }}%</td>
+          <td><span class="status-dot dot-active"></span> Active</td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Add/Edit Institution Form Panel (hidden by default) -->
-<div class="form-panel" id="institutionFormPanel" style="display: none;">
-  <div class="form-panel-header">
-    <span id="formTitle">Add / Edit Institution</span>
-    <button class="close-btn" id="closeFormBtn" title="Close">✕</button>
-  </div>
-  <div class="form-body">
-    <div class="form-row">
-      <span class="form-label">Institution Code:</span>
-      <input type="text" class="wide" id="instCode" placeholder="e.g. CBTT">
-    </div>
-    <div class="form-row">
-      <span class="form-label">Full Name:</span>
-      <input type="text" class="wide" id="instName" placeholder="e.g. Central Bank of Trinidad and Tobago">
-    </div>
-    <div class="form-row">
-      <span class="form-label">Contact Person:</span>
-      <input type="text" class="wide" id="instContact" placeholder="e.g. Johnson Doe">
-    </div>
-    <div class="form-row">
-      <span class="form-label">Contact Email:</span>
-      <input type="text" class="wide" id="instEmail" placeholder="e.g. hr@central-bank.org.tt">
-    </div>
-    <div class="form-row">
-      <span class="form-label">Phone:</span>
-      <input type="text" class="wide" id="instPhone" placeholder="e.g. 1-868-XXX-XXXX">
-    </div>
-
-    <div class="events-label" style="margin-top:6px;">HR User Assignment</div>
-    <table class="hr-table">
-      <thead>
-        <tr><th>ID#</th><th>Username</th><th>User Email</th><th>Action</th></tr>
-      </thead>
-      <tbody id="hrTableBody">
-        <!-- Rendered by JS -->
-      </tbody>
-    </table>
-    <div style="margin-bottom:16px;">
-      <button class="btn btn-ghost btn-sm" id="addHRRowBtn">+ Add HR User</button>
-    </div>
-
-    <div class="participation-label">Participation History</div>
-    <ul class="participation-list" id="participationList">
-      <!-- Rendered by JS -->
-    </ul>
-  </div>
-  <div class="form-actions">
-    <button class="btn" id="saveInstitutionBtn">Save Institution</button>
-    <button class="btn btn-ghost" id="deactivateBtn" style="display:none;">Deactivate</button>
-    <button class="btn btn-ghost" id="activateBtn" style="display:none;">Activate</button>
-    <button class="btn btn-ghost" id="analyticsBtn" style="display:none;">View Analytics</button>
-    <button class="btn btn-ghost" id="cancelFormBtn">Cancel</button>
-  </div>
-</div>
-
-<!-- Modals (Add HR Row, Assign HR, Confirm) -->
-<div class="overlay" id="addHROverlay">
+<!-- Add Institution Modal -->
+<div class="overlay" id="addInstitutionModal">
   <div class="modal">
-    <h3>Add HR User</h3>
-    <div class="modal-field"><label>Username</label><input type="text" id="newHRUsername" placeholder="e.g. CBTT_JDoe1"></div>
-    <div class="modal-field"><label>User Email</label><input type="text" id="newHREmail" placeholder="e.g. jdoe@cbtt.com"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="closeAddHRModal">Cancel</button>
-      <button class="btn" id="confirmAddHRBtn">Add</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="assignHROverlay">
-  <div class="modal">
-    <h3>Assign HR User</h3>
-    <div class="modal-field"><label>Institution</label><select id="hrInstSelect"></select></div>
-    <div class="modal-field"><label>Username</label><input type="text" id="hrUsername" placeholder="e.g. CBTT_JDoe1"></div>
-    <div class="modal-field"><label>User Email</label><input type="text" id="hrEmail" placeholder="e.g. jdoe@cbtt.com"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="closeAssignHRModal">Cancel</button>
-      <button class="btn" id="confirmAssignHRBtn">Assign</button>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="confirmOverlay">
-  <div class="modal">
-    <h3 id="confirmTitle">Confirm Action</h3>
-    <p id="confirmMsg">Are you sure?</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="closeConfirmModal">Cancel</button>
-      <button class="btn" id="confirmOkBtn">Confirm</button>
-    </div>
+    <h3>Add New Institution</h3>
+    <form method="POST" action="{{ url_for('admin_views.add_institution') }}">
+      <div class="modal-field">
+        <label>Institution Code</label>
+        <input type="text" name="code" required>
+      </div>
+      <div class="modal-field">
+        <label>Full Name</label>
+        <input type="text" name="name" required>
+      </div>
+      <div class="modal-field">
+        <label>Contact Person (optional)</label>
+        <input type="text" name="contact">
+      </div>
+      <div class="modal-field">
+        <label>Contact Email (optional)</label>
+        <input type="email" name="email">
+      </div>
+      <div class="modal-field">
+        <label>Phone (optional)</label>
+        <input type="text" name="phone">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="closeModalBtn">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-  // Data store (will be populated from backend)
-  let institutions = [];
-  let nextId = 4;
-  let currentMode = 'new';
-  let editingId = null;
-  let pendingAction = null;
-  let formHRUsers = [];
-
-  // Load initial data from the server
-  async function loadInstitutions() {
-    const response = await fetch('/admin/api/institutions');
-    if (response.ok) {
-      institutions = await response.json();
-      renderTable();
-    } else {
-      console.error('Failed to load institutions');
-    }
-  }
-
-  function renderTable() {
-    const tbody = document.getElementById('institutionsTableBody');
-    if (!institutions.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No institutions found.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = institutions.map(inst => {
-      const isActive = inst.is_active;
-      const statusCell = isActive
-        ? `<span class="status-dot dot-active"></span> Active`
-        : `<span class="status-dot dot-closed"></span> Inactive`;
-      const actions = `
-        <button class="btn btn-sm edit-institution" data-id="${inst.id}">Edit</button>
-        <button class="btn btn-sm btn-ghost view-users" data-id="${inst.id}">View Users</button>`;
-      return `
-        <tr>
-          <td style="font-weight:600;text-align:center;">${inst.id}</td>
-          <td><strong>${inst.code}</strong></td>
-          <td>${inst.name}</td>
-          <td style="text-align:center;">${inst.user_count || 0}</td>
-          <td class="participants-cell"><strong>♦ ${inst.participant_count || 0}</strong><br><button class="btn btn-sm btn-ghost view-participants" data-id="${inst.id}">View Participants</button></td>
-          <td>${statusCell}</td>
-          <td style="white-space:nowrap;">${actions}</td>
-        </tr>
-      `;
-    }).join('');
-    // Attach event listeners for buttons
-    document.querySelectorAll('.edit-institution').forEach(btn => {
-      btn.addEventListener('click', () => openForm('edit', btn.dataset.id));
-    });
-    document.querySelectorAll('.view-users').forEach(btn => {
-      btn.addEventListener('click', () => alert('View users feature coming soon'));
-    });
-    document.querySelectorAll('.view-participants').forEach(btn => {
-      btn.addEventListener('click', () => alert('View participants feature coming soon'));
-    });
-  }
-
-  async function openForm(mode, id) {
-    currentMode = mode;
-    editingId = id || null;
-    // Reset form
-    document.getElementById('instCode').value = '';
-    document.getElementById('instName').value = '';
-    document.getElementById('instContact').value = '';
-    document.getElementById('instEmail').value = '';
-    document.getElementById('instPhone').value = '';
-    document.getElementById('deactivateBtn').style.display = 'none';
-    document.getElementById('activateBtn').style.display = 'none';
-    document.getElementById('analyticsBtn').style.display = 'none';
-    document.getElementById('instCode').readOnly = false;
-    formHRUsers = [];
-
-    if (mode === 'new') {
-      document.getElementById('formTitle').innerText = 'Add New Institution';
-      renderHRTable();
-      renderHistory([]);
-    } else {
-      // Fetch institution data from server
-      const response = await fetch(`/admin/api/institutions/${id}`);
-      if (!response.ok) {
-        alert('Failed to load institution');
-        return;
-      }
-      const inst = await response.json();
-      document.getElementById('formTitle').innerText = `Edit Institution – ${inst.code}`;
-      document.getElementById('instCode').value = inst.code;
-      document.getElementById('instCode').readOnly = true;
-      document.getElementById('instName').value = inst.name;
-      document.getElementById('instContact').value = inst.contact || '';
-      document.getElementById('instEmail').value = inst.email || '';
-      document.getElementById('instPhone').value = inst.phone || '';
-      formHRUsers = inst.hrUsers || [];
-      renderHRTable();
-      renderHistory(inst.history || []);
-      if (inst.is_active) {
-        document.getElementById('deactivateBtn').style.display = 'inline-block';
-      } else {
-        document.getElementById('activateBtn').style.display = 'inline-block';
-      }
-      document.getElementById('analyticsBtn').style.display = 'inline-block';
-    }
-
-    document.getElementById('institutionFormPanel').style.display = 'block';
-    setTimeout(() => document.getElementById('institutionFormPanel').scrollIntoView({ behavior: 'smooth' }), 50);
-  }
-
-  function closeForm() {
-    document.getElementById('institutionFormPanel').style.display = 'none';
-    editingId = null;
-    formHRUsers = [];
-  }
-
-  function renderHRTable() {
-    const tbody = document.getElementById('hrTableBody');
-    if (!formHRUsers.length) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No HR users assigned.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = formHRUsers.map((u, i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td>${u.username}</td>
-        <td>${u.email}</td>
-        <td><button class="btn btn-sm btn-ghost remove-hr" data-index="${i}">Remove</button></td>
-      </tr>
-    `).join('');
-    document.querySelectorAll('.remove-hr').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = parseInt(btn.dataset.index);
-        formHRUsers.splice(idx, 1);
-        renderHRTable();
-      });
-    });
-  }
-
-  function renderHistory(history) {
-    const list = document.getElementById('participationList');
-    if (!history.length) {
-      list.innerHTML = '<li>No history available.</li>';
-      return;
-    }
-    list.innerHTML = history.map(h => `<li>${h}</li>`).join('');
-  }
-
-  // Event Listeners
-  document.getElementById('addInstitutionBtn').addEventListener('click', () => openForm('new'));
-  document.getElementById('assignHRBtn').addEventListener('click', async () => {
-    // Populate institution dropdown for assign modal
-    const select = document.getElementById('hrInstSelect');
-    select.innerHTML = institutions.map(i => `<option value="${i.id}">${i.code} – ${i.name}</option>`).join('');
-    document.getElementById('assignHROverlay').classList.add('active');
+  document.getElementById('addInstitutionBtn').addEventListener('click', function() {
+    document.getElementById('addInstitutionModal').classList.add('active');
   });
-  document.getElementById('closeAssignHRModal').addEventListener('click', () => document.getElementById('assignHROverlay').classList.remove('active'));
-  document.getElementById('confirmAssignHRBtn').addEventListener('click', async () => {
-    const instId = parseInt(document.getElementById('hrInstSelect').value);
-    const username = document.getElementById('hrUsername').value.trim();
-    const email = document.getElementById('hrEmail').value.trim();
-    if (!username || !email) { alert('Please fill in both fields'); return; }
-    const response = await fetch('/admin/api/assign-hr', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ institution_id: instId, username, email })
-    });
-    if (response.ok) {
-      alert('HR user assigned');
-      loadInstitutions();
-      document.getElementById('assignHROverlay').classList.remove('active');
-    } else {
-      alert('Error assigning HR user');
-    }
+  document.getElementById('closeModalBtn').addEventListener('click', function() {
+    document.getElementById('addInstitutionModal').classList.remove('active');
   });
-
-  document.getElementById('addHRRowBtn').addEventListener('click', () => {
-    document.getElementById('newHRUsername').value = '';
-    document.getElementById('newHREmail').value = '';
-    document.getElementById('addHROverlay').classList.add('active');
-  });
-  document.getElementById('closeAddHRModal').addEventListener('click', () => document.getElementById('addHROverlay').classList.remove('active'));
-  document.getElementById('confirmAddHRBtn').addEventListener('click', () => {
-    const username = document.getElementById('newHRUsername').value.trim();
-    const email = document.getElementById('newHREmail').value.trim();
-    if (!username || !email) { alert('Please fill in both fields'); return; }
-    formHRUsers.push({ username, email });
-    renderHRTable();
-    document.getElementById('addHROverlay').classList.remove('active');
-  });
-
-  document.getElementById('saveInstitutionBtn').addEventListener('click', async () => {
-    const code = document.getElementById('instCode').value.trim();
-    const name = document.getElementById('instName').value.trim();
-    const contact = document.getElementById('instContact').value.trim();
-    const email = document.getElementById('instEmail').value.trim();
-    const phone = document.getElementById('instPhone').value.trim();
-    if (!code || !name) { alert('Code and Name are required'); return; }
-    const data = { code, name, contact, email, phone, hr_users: formHRUsers };
-    let url, method;
-    if (currentMode === 'new') {
-      url = '/admin/api/institutions';
-      method = 'POST';
-    } else {
-      url = `/admin/api/institutions/${editingId}`;
-      method = 'PUT';
-    }
-    const response = await fetch(url, {
-      method,
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(data)
-    });
-    if (response.ok) {
-      alert('Institution saved');
-      loadInstitutions();
-      closeForm();
-    } else {
-      alert('Error saving institution');
-    }
-  });
-
-  document.getElementById('deactivateBtn').addEventListener('click', async () => {
-    if (confirm('Deactivate this institution?')) {
-      const response = await fetch(`/admin/api/institutions/${editingId}/deactivate`, { method: 'POST' });
-      if (response.ok) {
-        alert('Institution deactivated');
-        loadInstitutions();
-        closeForm();
-      } else {
-        alert('Error');
-      }
-    }
-  });
-  document.getElementById('activateBtn').addEventListener('click', async () => {
-    if (confirm('Activate this institution?')) {
-      const response = await fetch(`/admin/api/institutions/${editingId}/activate`, { method: 'POST' });
-      if (response.ok) {
-        alert('Institution activated');
-        loadInstitutions();
-        closeForm();
-      } else {
-        alert('Error');
-      }
-    }
-  });
-  document.getElementById('analyticsBtn').addEventListener('click', () => alert('Analytics coming soon'));
-  document.getElementById('closeFormBtn').addEventListener('click', closeForm);
-  document.getElementById('cancelFormBtn').addEventListener('click', closeForm);
-
-  document.getElementById('closeConfirmModal').addEventListener('click', () => document.getElementById('confirmOverlay').classList.remove('active'));
-  document.getElementById('confirmOkBtn').addEventListener('click', () => {
-    if (pendingAction) pendingAction();
-    document.getElementById('confirmOverlay').classList.remove('active');
-  });
-
-  function openConfirm(title, msg, action) {
-    document.getElementById('confirmTitle').innerText = title;
-    document.getElementById('confirmMsg').innerText = msg;
-    pendingAction = action;
-    document.getElementById('confirmOverlay').classList.add('active');
-  }
-
-  // Load initial data
-  loadInstitutions();
 </script>
 
 <style>
-  .hr-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-  .hr-table th, .hr-table td { padding: 8px; border: 1px solid var(--border); text-align: left; }
-  .participation-list { margin: 10px 0; list-style: disc; padding-left: 20px; }
-  .participants-cell strong { font-size: 16px; }
-  .modal-field { margin-bottom: 12px; }
-  .modal-field label { display: block; font-weight: 600; margin-bottom: 4px; }
-  .modal-field input, .modal-field select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+.modal-field {
+  margin-bottom: 16px;
+}
+.modal-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.modal-field input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
 </style>
 {% endblock %}
