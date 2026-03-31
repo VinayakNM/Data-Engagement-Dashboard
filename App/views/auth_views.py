@@ -127,6 +127,14 @@ def reset_password():
     return render_template('reset_password.html')
 
 
+@auth_views.route('/toggle-sidebar', methods=['POST'])
+def toggle_sidebar():
+    if 'sidebar_collapsed' in session:
+        session.pop('sidebar_collapsed')
+    else:
+        session['sidebar_collapsed'] = True
+    return '', 200
+
 @auth_views.route('/logout', methods=['GET'])
 def logout():
     response = redirect(url_for('auth_views.login'))

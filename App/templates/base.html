@@ -5,64 +5,143 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CariFin Data Dashboard{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- TOP BAR -->
-    <div class="topbar">
-        <span>CariFin Data Dashboard</span>
-        <div class="topbar-right">
-            {% if current_user %}
-                <span>Hi, {{ current_user.firstname }} ({{ current_user.role|capitalize }})</span>
-                
-                {% if current_user.role == 'admin' %}
-                <a href="{{ url_for('admin_views.dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('admin_views.list_users') }}">Users</a>
-                {% elif current_user.role == 'hr' %}
-                <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar {% if session.get('sidebar_collapsed') %}collapsed{% endif %}" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🏔</span>
+                    <span class="logo-text">CariFin</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+                    <span class="material-icons">menu</span>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    {% if current_user and current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin_views.dashboard') }}" class="nav-item {% if request.endpoint == 'admin_views.dashboard' %}active{% endif %}">
+                        <span class="material-icons">dashboard</span>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    {% elif current_user and current_user.role == 'hr' %}
+                    <a href="{{ url_for('hr_views.dashboard') }}" class="nav-item {% if request.endpoint == 'hr_views.dashboard' %}active{% endif %}">
+                        <span class="material-icons">dashboard</span>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if current_user and current_user.role == 'admin' %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Management</div>
+                    <a href="{{ url_for('admin_views.list_users') }}" class="nav-item {% if request.endpoint == 'admin_views.list_users' %}active{% endif %}">
+                        <span class="material-icons">people</span>
+                        <span class="nav-text">User Management</span>
+                    </a>
+                    <a href="{{ url_for('admin_views.institutions') }}" class="nav-item {% if request.endpoint == 'admin_views.institutions' %}active{% endif %}">
+                        <span class="material-icons">business</span>
+                        <span class="nav-text">Institution Management</span>
+                    </a>
+                    <a href="{{ url_for('admin_views.events') }}" class="nav-item {% if request.endpoint == 'admin_views.events' %}active{% endif %}">
+                        <span class="material-icons">event</span>
+                        <span class="nav-text">Event Management</span>
+                    </a>
+                    <a href="{{ url_for('admin_views.seasons') }}" class="nav-item {% if request.endpoint == 'admin_views.seasons' %}active{% endif %}">
+                        <span class="material-icons">calendar_month</span>
+                        <span class="nav-text">Season Management</span>
+                    </a>
+                    <a href="{{ url_for('admin_views.bibs') }}" class="nav-item {% if request.endpoint == 'admin_views.bibs' %}active{% endif %}">
+                        <span class="material-icons">confirmation_number</span>
+                        <span class="nav-text">Bib Management</span>
+                    </a>
+                </div>
                 {% endif %}
-                
-                <a href="{{ url_for('auth_views.logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('auth_views.login') }}">Login</a>
-            {% endif %}
-        </div>
+
+                {% if current_user and current_user.role == 'hr' %}
+                <div class="nav-section">
+                    <div class="nav-section-title">Participants</div>
+                    <a href="{{ url_for('hr_views.participant_roster') }}" class="nav-item {% if request.endpoint == 'hr_views.participant_roster' %}active{% endif %}">
+                        <span class="material-icons">groups</span>
+                        <span class="nav-text">Participant Roster</span>
+                    </a>
+                    <a href="{{ url_for('hr_views.add_participant') }}" class="nav-item">
+                        <span class="material-icons">person_add</span>
+                        <span class="nav-text">Add Participant</span>
+                    </a>
+                    <a href="{{ url_for('hr_views.register') }}" class="nav-item">
+                        <span class="material-icons">how_to_reg</span>
+                        <span class="nav-text">Register for Event</span>
+                    </a>
+                </div>
+                {% endif %}
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Account</div>
+                    <a href="{{ url_for('auth_views.logout') }}" class="nav-item">
+                        <span class="material-icons">logout</span>
+                        <span class="nav-text">Logout</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR (Simplified) -->
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <span class="breadcrumb">{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+                <div class="top-bar-right">
+                    {% if current_user %}
+                    <span class="user-info">
+                        <span class="user-avatar">{{ current_user.firstname[0] }}{{ current_user.lastname[0] }}</span>
+                        <span class="user-name">{{ current_user.firstname }} {{ current_user.lastname }}</span>
+                        <span class="user-role">{{ current_user.role|upper }}</span>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- PAGE CONTENT -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
     </div>
-
-    <!-- PAGE HEADER -->
-    <div class="page-header">
-        <div class="logo-box">🏔
-            <!-- <img src="{{ url_for('static', filename='images\carifin_logo.png') }}" alt="🏔" style="width: 36px; height: 36px; object-fit: contain;"> -->
-        </div>
-        <div class="breadcrumb">
-            <span>{% block breadcrumb %}{% endblock %}</span>
-        </div>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div class="main">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="toast show" style="position: static; margin-bottom: 16px; opacity: 1; transform: none; pointer-events: auto;">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-    </div>
-
-    <!-- TOAST NOTIFICATION -->
-    <div class="toast" id="toast"></div>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            
+            // Save state to session (optional)
+            fetch('/toggle-sidebar', { method: 'POST' });
+        }
+        
         function showToast(msg) {
             const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            clearTimeout(t._timer);
-            t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+            if (t) {
+                t.textContent = msg;
+                t.classList.add('show');
+                setTimeout(() => t.classList.remove('show'), 3000);
+            }
         }
     </script>
     {% block extra_js %}{% endblock %}

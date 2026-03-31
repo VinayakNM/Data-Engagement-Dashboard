@@ -125,3 +125,32 @@ def list_users():
     from App.controllers.admin_controller import get_all_users
     users = get_all_users()
     return render_template('admin/users.html', users=users)
+
+
+@admin_views.route('/admin/institutions')
+@jwt_required()
+def institutions():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    return render_template('admin/institutions.html', title="Institution Management")
+
+@admin_views.route('/admin/events')
+@jwt_required()
+def events():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    return render_template('admin/Forms/EventForm.html', title="Event Management")
+
+@admin_views.route('/admin/seasons')
+@jwt_required()
+def seasons():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    return render_template('admin/Forms/SeasonForm.html', title="Season Management")
+
+@admin_views.route('/admin/bibs')
+@jwt_required()
+def bibs():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    return render_template('admin/bibs.html', title="Bib Management")

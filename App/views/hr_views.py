@@ -16,6 +16,14 @@ def dashboard():
     return render_template('hr/hr.html', **stats)
 
 
+@hr_views.route('/hr/participants')
+@jwt_required()
+def participant_roster():
+    if current_user.role != 'hr':
+        return "Access Denied", 403
+    participants = Participant.query.filter_by(institution_id=current_user.institution_id).all()
+    return render_template('hr/participants.html', participants=participants)
+
 
 from App.controllers.participant_controller import create_participant
 
