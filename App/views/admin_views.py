@@ -154,3 +154,10 @@ def bibs():
     if current_user.role != 'admin':
         return "Access Denied", 403
     return render_template('admin/bibs.html', title="Bib Management")
+
+@admin_views.route('/admin/notifications')
+@jwt_required()
+def notifications():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    return render_template('admin/notifications.html', title="Notifications")
