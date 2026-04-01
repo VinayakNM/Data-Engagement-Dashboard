@@ -1,51 +1,6 @@
 from App.models import Participant, Registration, Result, Institution
 from App.database import db
 from datetime import date
-import csv
-import io
-from flask import Blueprint, render_template, request, flash, redirect, url_for
-from flask_login import login_required, current_user
-from app.controllers.hr_controller import register_participants
-
-@hr_bp. route('/import-roster', methods=['GET', 'POST'])
-@login_required
-def import_roster():
-    if request.method == 'POST':
-        file = request.files.get('csv_file')
-        season_event_id = request.form.get('season_event_id')
-
-        if not file or not file.filename.endswith('.csv'):
-            flash("Please upload a valid CVS file.")
-            return redirect(request.url)
-        
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        csv_input = csv.DictReader(stream)
-
-        new_participant_ids = []
-        for row in csv_input:
-            participant=Participant.query.filter_by(email=row['email']).first()
-
-            if not participant:
-                participant = Participant(
-                    first_name=row['first_name'],
-                    last_name=row['last_name'],
-                    email=row['email'],
-                    institution_id=current_user.institution_id
-                )
-
-                db.session.add(participant)
-                db.session.flush()
-            
-            new_participant_ids.append(participant.id)
-
-        reg_count = register_participants(new_participant_ids, season_event_id)
-
-        db.session.commit()
-        flash(f"Imported participants and created {reg_count} new registrations!")
-        return redirect(url_for('hr.dashboard'))
-    
-    events = get_available_events(current_user.institution_id)
-    return render_template('hr_import.html', events=events)
 
 
 def get_hr_stats(institution_id):
@@ -110,6 +65,7 @@ def get_hr_stats(institution_id):
         'institution': Institution.query.get(institution_id)
     }
 
+
 def get_available_events(institution_id):
     """Get events available for registration."""
     from App.models import SeasonEvent, Event, Season
@@ -132,6 +88,7 @@ def get_available_events(institution_id):
         })
     
     return events
+
 
 def register_participants(participant_ids, season_event_id):
     """Register multiple participants for an event."""

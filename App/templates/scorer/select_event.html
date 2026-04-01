@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Enter Results - Select Event{% endblock %}
+{% block breadcrumb %}Scorer &rsaquo; Enter Results{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">Select Event</div>
+  <div class="form-body">
+    <div class="form-row">
+      <span class="form-label">Event:</span>
+      <select id="eventSelect" required>
+        <option value="">-- Choose an event --</option>
+        {% for event in events %}
+        <option value="{{ event.id }}">{{ event.name }} ({{ event.date }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn" id="continueBtn">Continue</button>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById('continueBtn').addEventListener('click', function() {
+    const selected = document.getElementById('eventSelect').value;
+    if (selected) {
+      window.location.href = "{{ url_for('scorer_views.show_participants_for_event', season_event_id=0) }}".replace('/0', '/' + selected);
+    } else {
+      alert('Please select an event');
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Import Participants{% endblock %}
+{% block breadcrumb %}HR &rsaquo; Import Participants{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">Import Participants via CSV</div>
+  <div class="form-body">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('hr_views.import_participants') }}">
+      <div class="form-row">
+        <span class="form-label">CSV File:</span>
+        <input type="file" name="csv_file" accept=".csv" required>
+        <small>File must contain columns: first_name, last_name, email</small>
+      </div>
+      <div class="form-row">
+        <span class="form-label">Event:</span>
+        <select name="season_event_id" required>
+          <option value="">-- Select an event --</option>
+          {% for event in events %}
+          <option value="{{ event.id }}">{{ event.name }} ({{ event.date }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Upload & Register</button>
+        <a href="{{ url_for('hr_views.dashboard') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

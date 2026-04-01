@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Upload Results{% endblock %}
+{% block breadcrumb %}Scorer &rsaquo; Upload Results{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">Upload Results (CSV)</div>
+  <div class="form-body">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('scorer_views.upload_results') }}">
+      <div class="form-row">
+        <span class="form-label">CSV File:</span>
+        <input type="file" name="csv_file" accept=".csv" required>
+        <small>Columns: participant_id, finish_time (HH:MM:SS), placement (optional)</small>
+      </div>
+      <div class="form-row">
+        <span class="form-label">Event:</span>
+        <select name="season_event_id" required>
+          <option value="">-- Select an event --</option>
+          {% for event in events %}
+          <option value="{{ event.id }}">{{ event.name }} ({{ event.date }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Upload & Process</button>
+        <a href="{{ url_for('scorer_views.dashboard') }}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

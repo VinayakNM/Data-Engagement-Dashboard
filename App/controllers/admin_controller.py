@@ -1,49 +1,49 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 import csv
 import io
-from App.models import Participant, Institution
+from App.models import *
 from App.database import db
 from sqlalchemy import func
 from datetime import date
 
-admin_bp = Blueprint('admin', __name__)
+# admin_bp = Blueprint('admin', __name__)
+# 
+# @admin_bp.route('/import-masterlist', methods=['GET', 'POST'])
+# def import_master():
+#     if request.method == 'POST':
+#         file = request.files.get('csv_file')
+# 
+#         if not file or not file.filename.endswith('.csv'):
+#             flash("Please upload a valid CSV file.")
+#             return redirect(request.url)
+#         
+#         #Reading CSV 
+#         stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+#         csv_input = csv.DictReader(stream)
+# 
+#         count=0
+#         for row in csv_input:
+#             exists = Participant.query.filter_by(email=row['email']).first()
+#             if not exists:
+#                 new_p = Participant(
+#                     first_name=row['first_name'],
+#                     last_name=row['last_name'],
+#                     email=row['email'],
+#                     institution_id=row['institution_id']
+#                 )
+#                 db.session.add(new_p)
+#                 count += 1
+# 
+#         db.session.commit()
+#         flash(f"Success! Imported {count} new participants to the Master List.")
+#         return redirect(url_for('admin.dashboard'))
+#     return render_template('admin_import.html')
 
-@admin_bp.route('/import-masterlist', methods=['GET', 'POST'])
-def import_master():
-    if request.method == 'POST':
-        file = request.files.get('csv_file')
-
-        if not file or not file.filename.endswith('.csv'):
-            flash("Please upload a valid CSV file.")
-            return redirect(request.url)
-        
-        #Reading CSV 
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        csv_input = csv.DictReader(stream)
-
-        count=0
-        for row in csv_input:
-            exists = Participant.query.filter_by(email=row['email']).first()
-            if not exists:
-                new_p = Participant(
-                    first_name=row['first_name'],
-                    last_name=row['last_name'],
-                    email=row['email'],
-                    institution_id=row['institution_id']
-                )
-                db.session.add(new_p)
-                count += 1
-
-        db.session.commit()
-        flash(f"Success! Imported {count} new participants to the Master List.")
-        return redirect(url_for('admin.dashboard'))
-    return render_template('admin_import.html')
-
-@admin_bp.route('/dashboard')
-def dashboard():
-    total = get_total_participants()
-    return render_template('admin_dashboard.html', total_participants=total)
-
+# @admin_bp.route('/dashboard')
+# def dashboard():
+#     total = get_total_participants()
+#     return render_template('admin_dashboard.html', total_participants=total)
+ 
 def get_total_participants():
     """Get total number of participants across all institutions."""
     return Participant.query.count()
