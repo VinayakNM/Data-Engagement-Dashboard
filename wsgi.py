@@ -68,6 +68,7 @@ def user_tests_command(type):
 app.cli.add_command(test)
 
 with app.app_context():
+    db.create_all()
     from App.models import Admin
     if not Admin.query.filter_by(email='admin@carifin.com').first():
         admin = Admin(
