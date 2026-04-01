@@ -108,9 +108,8 @@ def create_user():
     if error:
         flash(error, 'danger')
     else:
-        # DO NOT show password on screen – just a friendly message
-        flash(f'{role.capitalize()} user created! Username: {username}. A temporary password will be sent to their email.', 'success')
-        # In production, email the temp_password. For demo, you can see it in the terminal.
+        flash(f'{role.capitalize()} user created! Username: {username}, Temporary password: {temp_password}', 'success')
+        # Email the temp_password
         print(f"Temporary password for {username}: {temp_password}")
     
     return redirect(url_for('admin_views.dashboard'))
