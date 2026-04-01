@@ -334,6 +334,7 @@ class Result(db.Model):
 
     registration = db.relationship('Registration', backref=db.backref('results', lazy=True))
     stage = db.relationship('Stage', backref=db.backref('results', lazy=True))
+    is_error=db.Column(db.Boolean, default=False)
 
     __table_args__ = (db.UniqueConstraint('registration_id', 'stage_id', name='_result_reg_stage_uc'),)
 

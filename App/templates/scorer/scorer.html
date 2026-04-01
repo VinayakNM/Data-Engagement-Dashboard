@@ -1,3 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .scorer-container{
+        padding:20px;
+        font-family:sans-serif;
+    }
+
+    .status-indicator{
+        color:#2ecc71;
+        font-weight:bold;
+        margin-bottom: 20px;
+    }
+
+    .row-error{
+        background-color: #fff1f0;
+        border-left:5px solid #ff4d4f;
+    }
+
+    .tag-verified{
+        color:#52c41a;
+        font-weight:bold;
+    }
+
+    .tag-error{
+        color:#ff4d4f;
+        font-weight:bold;
+    }
+
+    .table-custom{
+        width:100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .table-custom th, .table-custom td{
+        padding:12px;
+        border-bottom:1px solid #eee;
+        text-align:left;
+    }
+
+    .btn-flag{
+        padding: 5px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: 1px solid #ff4d4f;
+    }
+
+    .btn-flag:hover{
+        background:#ff4d4f;
+        color:white;
+    }
+</style>
+
 <div class="scorer-container">
     <header>
         <h1>Live Race Scorer</h1>
@@ -6,15 +61,57 @@
 
     <section class="entry-tools">
         <div class="search-bar">
-            <input type="text" placeholder="Search Bib # or Name...">
+            <input type="text" id="scorerSearch" placeholder="Search Participant or Time..." class="form-control" onkeyup="filterTable()">
         </div>
     </section>
 
     <section class="recent-finishes">
-        <h3>Recent Times Recorded</h3>
-        <ul id="liveFeed">
-            <li>Bib 104 - 00:24:15 - <span class="tag">Verified</span></li>
-            <li>Bib 502 - 00:25:01 - <span class="tag-pending">Pending</span></li>
-        </ul>
+        <h3>Master Score Log</h3>
+        <table class="table-custom" id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Participant Name</th>
+                    <th>Time Recorded</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for res in results %}
+                <tr class="{{'row-error' if res.is_error else''}}">
+                     <td>{{res.registration.participation.first_name}} {{res.registration.participation.last_name}}</td>
+                     <td>{{res.result_value}}</td>
+                     <td>
+                        {% if res.is_error %}
+                        <span class="tag-error">ERROR FLAG</span>
+                        {% else %}
+                        <span class="tag-verified">VERIFIED</span>
+                        {% endif %}
+                     </td>
+
+                     <td>
+                        <form actions="{{url_for('scorer.flag_result', result_id=res.id)}}" method="POST">
+                            <button type="submit" class="btn-flag">
+                                {{'Clear Flag' if res.is_error else 'Flag Error'}}
+                            </button>
+                        </form>
+                     </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </section>
 </div>
+
+<script>
+    function filterTable(){
+        let input = document.getElementById("scorerSearch").value.toUpperCase();
+        let rows=document.getElementById("resultsTable").getElementsByTagName("tr");
+        for (let i=1; i<rows.length; i++){
+            rows[i].style.display = rows[i].style.display = rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+        }
+    }
+</script>
+{% endblock %}
+
