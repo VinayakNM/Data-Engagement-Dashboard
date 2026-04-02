@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 from .models import *
 from .views import *
 from .controllers import *
@@ -7,10 +7,11 @@ from App.views import auth_views
 from flask_jwt_extended import JWTManager
 from App.database import db
 from App.config import load_config
-
+# from App.controllers.admin_controller import admin_bp
 
 def create_app(overrides={}):
     app = Flask(__name__)
+    # app.register_blueprint(admin_bp, url_prefix='/admin')
 
     # ... config ...
     load_config(app, overrides)
@@ -27,7 +28,18 @@ def create_app(overrides={}):
             return dict(current_user=current_user)
         except RuntimeError:
             # Outside of JWT context, current_user is not available
-            return dict(current_user=None)
+            pass
+
+        # Fallback to session if available
+        if 'user_id' in session:
+            from App.models import User
+            user = User.query.get(session['user_id'])
+            if user:
+                return dict(current_user=user)
+    
+        return dict(current_user=None)
+        
+
 
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):

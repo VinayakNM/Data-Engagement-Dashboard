@@ -5,7 +5,8 @@ from App.controllers.participant_controller import create_participant
 from App.models import Participant
 from App.database import db
 from datetime import datetime
-import csv, io
+import csv
+import io
 
 hr_views = Blueprint('hr_views', __name__, template_folder='../templates')
 
@@ -18,6 +19,15 @@ def dashboard():
     stats  = get_hr_stats(current_user.institution_id)
     events = get_available_events(current_user.institution_id)
     return render_template('hr/hr.html', **stats, events=events)
+
+
+@hr_views.route('/hr/participants')
+@jwt_required()
+def participant_roster():
+    if current_user.role != 'hr':
+        return "Access Denied", 403
+    participants = Participant.query.filter_by(institution_id=current_user.institution_id).all()
+    return render_template('hr/participants.html', participants=participants)
 
 
 @hr_views.route('/hr/participants/add', methods=['GET', 'POST'])
@@ -144,6 +154,7 @@ def register():
     events = get_available_events(current_user.institution_id)
     return render_template('hr/register.html', participants=participants, events=events)
 
+
 # ── EXPORTS ──────────────────────────────────────────────────────────────────
 
 @hr_views.route('/hr/export/roster')
@@ -152,7 +163,6 @@ def export_roster():
     """Export institution participant roster as CSV."""
     if current_user.role != 'hr':
         return "Access Denied", 403
-    import csv, io
     from flask import Response
     from App.models import Participant
     from App.controllers.hr_controller import get_hr_stats
@@ -165,8 +175,8 @@ def export_roster():
     writer.writerow(['First Name', 'Last Name', 'Email', 'Sex', 'Division',
                      'Birth Date', 'Status'])
     for p in stats['participants']:
-        if p.has_result:     status = 'Participated'
-        elif p.is_no_show:   status = 'No-Show'
+        if p.has_result:      status = 'Participated'
+        elif p.is_no_show:    status = 'No-Show'
         elif p.is_registered: status = 'Registered'
         else:                 status = 'Unregistered'
         writer.writerow([p.first_name, p.last_name, p.email or '',
@@ -186,7 +196,6 @@ def export_results():
     """Export stage results for this institution as CSV."""
     if current_user.role != 'hr':
         return "Access Denied", 403
-    import csv, io
     from flask import Response
     from App.models import Participant, Registration, Result, Stage, SeasonEvent, Season, Event
 

@@ -483,11 +483,11 @@
   </div>
 </div>
 
-<!-- Create HR User Form -->
+<!-- Create New User Form -->
 <section class="card" style="margin-bottom: 20px;">
-  <div class="card-header">Create New HR User</div>
+  <div class="card-header">Create New User</div>
   <div class="form-body">
-    <form action="{{ url_for('admin_views.create_hr') }}" method="POST">
+    <form action="{{ url_for('admin_views.create_user') }}" method="POST">
       <div class="form-row">
         <span class="form-label">First Name:</span>
         <input type="text" name="firstname" required class="wide">
@@ -501,24 +501,43 @@
         <input type="email" name="email" required class="wide">
       </div>
       <div class="form-row">
-        <span class="form-label">Password:</span>
-        <input type="password" name="password" required class="wide">
+        <span class="form-label">Role:</span>
+        <select name="role" id="roleSelect" required class="wide" onchange="toggleInstitutionField()">
+          <option value="">-- Select Role --</option>
+          <option value="admin">Admin</option>
+          <option value="hr">HR</option>
+          <option value="scorer">Scorer (CariFin Team)</option>
+        </select>
       </div>
-      <div class="form-row">
+      <div class="form-row" id="institutionField" style="display: none;">
         <span class="form-label">Institution:</span>
-        <select name="institution_id" required class="wide">
-          <option value="">Select Institution</option>
+        <select name="institution_id" class="wide">
+          <option value="">-- Select Institution --</option>
           {% for inst in institutions %}
           <option value="{{ inst.id }}">{{ inst.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn">Create HR User</button>
+        <button type="submit" class="btn">Create User</button>
       </div>
     </form>
   </div>
 </section>
+
+<script>
+function toggleInstitutionField() {
+    const role = document.getElementById('roleSelect').value;
+    const institutionField = document.getElementById('institutionField');
+    if (role === 'hr') {
+        institutionField.style.display = 'flex';
+        document.querySelector('[name="institution_id"]').required = true;
+    } else {
+        institutionField.style.display = 'none';
+        document.querySelector('[name="institution_id"]').required = false;
+    }
+}
+</script>
 
 <!-- Institutions Table -->
 <div class="card">

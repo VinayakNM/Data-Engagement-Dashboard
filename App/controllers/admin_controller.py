@@ -1,8 +1,12 @@
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+import csv
+import io
 from App.models import *
 from App.database import db
 from sqlalchemy import func
 from datetime import date
-
+import secrets
+import string
 
 def _base_reg_query(season_id, event_id=None, division=None, institution_code=None):
     """
@@ -281,29 +285,65 @@ def get_participation_status_breakdown(season_id=None, event_id=None, division=N
 def get_admin_data():
     return Institution.query.all()
 
-def create_hr_user(firstname, lastname, username, email, password, institution_id):
-    """Create a new HR user"""
-    inst = Institution.query.get(institution_id)
-    
-    if not inst:
-        return None, "Institution not found."
-    
-    #Checking if account already exists
-    if HR.query.filter_by(email=email).first():
-        return None, "Email already registered."
-    
-    hr = HR(
-        firstname=firstname,
-        lastname=lastname,
-        username=username,
-        email=email,
-        password=password,
-        institution_id=institution_id
-    )
-    db.session.add(hr)
-    db.session.commit()
-    return hr, None
 
+def generate_temp_password(length=10):
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def create_user_by_admin(firstname, lastname, username, email, password, role, institution_id=None):
+    """Create a user of any role (admin, hr, scorer)"""
+    
+    # Map role to model class
+    role_map = {
+        'admin': Admin,
+        'hr': HR,
+        'scorer': Scorer
+    }
+    
+    if role not in role_map:
+        return None, f"Invalid role: {role}"
+    
+    UserClass = role_map[role]
+    
+    # Check if email already exists
+    if User.query.filter_by(email=email).first():
+        return None, "Email already registered"
+    
+    # For admin and scorer, institution_id should be None
+    if role in ['admin', 'scorer']:
+        institution_id = None
+    
+    # For HR, institution_id is required
+    if role == 'hr' and not institution_id:
+        return None, "Institution required for HR users"
+    
+    # Create the user
+    if role == 'hr':
+        user = UserClass(
+            firstname=firstname,
+            lastname=lastname,
+            username=username,
+            email=email,
+            password=password,
+            institution_id=institution_id
+        )
+    else:
+        user = UserClass(
+            firstname=firstname,
+            lastname=lastname,
+            username=username,
+            email=email,
+            password=password
+        )
+    
+    # Set must_change_password flag
+    user.must_change_password = True
+    
+    db.session.add(user)
+    db.session.commit()
+    
+    return user, None
 
 def get_all_users():
     """Return all users with their details."""

@@ -1,0 +1,2742 @@
+diff --git a/App/models/user.py b/App/models/user.py
+index f16481d..3e6026a 100644
+--- a/App/models/user.py
++++ b/App/models/user.py
+@@ -6,27 +6,27 @@ from App.database import db
+ # -------------------- User (base) --------------------
+ class User(db.Model):
+     __tablename__ = 'users'
+-    id = db.Column(db.Integer, primary_key=True)
+-    firstname = db.Column(db.String(20), nullable=False)
+-    lastname = db.Column(db.String(50), nullable=False)
+-    username = db.Column(db.String(20), nullable=False, unique=True)
+-    email = db.Column(db.String(120), nullable=False, unique=True)
+-    password = db.Column(db.String(256), nullable=False)
+-    role = db.Column(db.String(20), nullable=False)
+-    is_active = db.Column(db.Boolean, default=True)
++    id                   = db.Column(db.Integer, primary_key=True)
++    firstname            = db.Column(db.String(20),  nullable=False)
++    lastname             = db.Column(db.String(50),  nullable=False)
++    username             = db.Column(db.String(20),  nullable=False, unique=True)
++    email                = db.Column(db.String(120), nullable=False, unique=True)
++    password             = db.Column(db.String(256), nullable=False)
++    role                 = db.Column(db.String(20),  nullable=False)
++    is_active            = db.Column(db.Boolean, default=True)
+     must_change_password = db.Column(db.Boolean, default=False)
+-
+-    institution_id = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
+-    institution    = db.relationship('Institution', backref=db.backref('users', lazy=True))
++    institution_id       = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
++    institution          = db.relationship('Institution', backref=db.backref('users', lazy=True))
+     __mapper_args__ = {'polymorphic_identity': 'user', 'polymorphic_on': role}
+ 
+     def __init__(self, firstname, lastname, username, email, password, institution_id=None):
+-        self.firstname = firstname
+-        self.lastname = lastname
+-        self.username = username
+-        self.email = email
++        self.firstname      = firstname
++        self.lastname       = lastname
++        self.username       = username
++        self.email          = email
+         self.set_password(password)
+-        self.is_active = True
++        self.is_active            = True
++        self.must_change_password = False
+         self.institution_id = institution_id
+ 
+     def get_json(self):
+@@ -81,16 +81,15 @@ class PulseLeader(User):
+ 
+ 
+ # -------------------- Institution --------------------
+-# Added: contact_person, contact_email, phone, status  (wireframe Image 2)
+ class Institution(db.Model):
+     __tablename__ = 'institution'
+     id             = db.Column(db.Integer, primary_key=True)
+     name           = db.Column(db.String(100), nullable=False)
+     code           = db.Column(db.String(20),  nullable=False, unique=True)
+-    contact_person = db.Column(db.String(100), nullable=True)   # "Contact Person" field
+-    contact_email  = db.Column(db.String(120), nullable=True)   # "Contact Email" field
+-    phone          = db.Column(db.String(30),  nullable=True)   # "Phone" field
+-    status         = db.Column(db.String(20),  default='active') # active | inactive
++    contact_person = db.Column(db.String(100), nullable=True)
++    contact_email  = db.Column(db.String(120), nullable=True)
++    phone          = db.Column(db.String(30),  nullable=True)
++    status         = db.Column(db.String(20),  default='active')
+ 
+     def __init__(self, name, code, contact_person=None, contact_email=None,
+                  phone=None, status='active'):
+@@ -124,9 +123,11 @@ class Participant(db.Model):
+     institution    = db.relationship('Institution', backref=db.backref('participants', lazy=True))
+ 
+     def __init__(self, first_name, last_name, institution_id, **kwargs):
+-        self.first_name = first_name; self.last_name = last_name
++        self.first_name     = first_name
++        self.last_name      = last_name
+         self.institution_id = institution_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+     def get_json(self):
+         return {'id': self.id, 'first_name': self.first_name, 'last_name': self.last_name,
+@@ -136,23 +137,26 @@ class Participant(db.Model):
+ 
+ 
+ # -------------------- Season --------------------
+-# Added: status, reg_open, reg_close, start_date, end_date  (wireframe Image 3)
+ class Season(db.Model):
+     __tablename__ = 'season'
+     id          = db.Column(db.Integer, primary_key=True)
+     year        = db.Column(db.Integer, nullable=False, unique=True)
+     description = db.Column(db.String(200))
+-    status      = db.Column(db.String(20), default='planning')  # planning|active|closed|archived
+-    reg_open    = db.Column(db.Date, nullable=True)   # Registration Opens
+-    reg_close   = db.Column(db.Date, nullable=True)   # Registration Closes
+-    start_date  = db.Column(db.Date, nullable=True)   # Season Start
+-    end_date    = db.Column(db.Date, nullable=True)   # Season End
++    status      = db.Column(db.String(20), default='planning')
++    reg_open    = db.Column(db.Date, nullable=True)
++    reg_close   = db.Column(db.Date, nullable=True)
++    start_date  = db.Column(db.Date, nullable=True)
++    end_date    = db.Column(db.Date, nullable=True)
+ 
+     def __init__(self, year, description='', status='planning',
+                  reg_open=None, reg_close=None, start_date=None, end_date=None):
+-        self.year = year; self.description = description; self.status = status
+-        self.reg_open = reg_open; self.reg_close = reg_close
+-        self.start_date = start_date; self.end_date = end_date
++        self.year        = year
++        self.description = description
++        self.status      = status
++        self.reg_open    = reg_open
++        self.reg_close   = reg_close
++        self.start_date  = start_date
++        self.end_date    = end_date
+ 
+ 
+ # -------------------- Event --------------------
+@@ -161,41 +165,42 @@ class Event(db.Model):
+     id          = db.Column(db.Integer, primary_key=True)
+     name        = db.Column(db.String(100), nullable=False)
+     description = db.Column(db.String(200))
+-    event_type  = db.Column(db.String(20))  # run|walk|mixed|other
++    event_type  = db.Column(db.String(20))
+ 
+     def __init__(self, name, **kwargs):
+         self.name = name
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- Season-Event Bridge --------------------
+-# Added: status  (wireframe Image 1 — Active / Inactive per event in season)
+ class SeasonEvent(db.Model):
+     __tablename__ = 'season_event'
+     id         = db.Column(db.Integer, primary_key=True)
+     season_id  = db.Column(db.Integer, db.ForeignKey('season.id'),  nullable=False)
+     event_id   = db.Column(db.Integer, db.ForeignKey('event.id'),   nullable=False)
+-    status     = db.Column(db.String(20), default='active')   # active | inactive
+-    start_date = db.Column(db.Date, nullable=True)            # event start within season
+-    end_date   = db.Column(db.Date, nullable=True)            # event end within season
++    status     = db.Column(db.String(20), default='active')
++    start_date = db.Column(db.Date, nullable=True)
++    end_date   = db.Column(db.Date, nullable=True)
+ 
+     season = db.relationship('Season', backref=db.backref('season_events', lazy=True))
+     event  = db.relationship('Event',  backref=db.backref('season_events', lazy=True))
+     __table_args__ = (db.UniqueConstraint('season_id', 'event_id', name='_season_event_uc'),)
+ 
+     def __init__(self, season_id, event_id, **kwargs):
+-        self.season_id = season_id; self.event_id = event_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        self.season_id = season_id
++        self.event_id  = event_id
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- Stage --------------------
+-# Added: distance  (wireframe Image 1 — Stage table has Distance column)
+ class Stage(db.Model):
+     __tablename__ = 'stage'
+     id              = db.Column(db.Integer, primary_key=True)
+     season_event_id = db.Column(db.Integer, db.ForeignKey('season_event.id'), nullable=False)
+     stage_number    = db.Column(db.Integer, nullable=True)
+-    distance        = db.Column(db.String(20), nullable=True)   # e.g. "5K", "10K", "3K"
++    distance        = db.Column(db.String(20),  nullable=True)
+     location        = db.Column(db.String(100), nullable=True)
+     stage_date      = db.Column(db.Date, nullable=True)
+ 
+@@ -203,8 +208,10 @@ class Stage(db.Model):
+     __table_args__ = (db.UniqueConstraint('season_event_id', 'stage_number', name='_stage_uc'),)
+ 
+     def __init__(self, season_event_id, stage_number, **kwargs):
+-        self.season_event_id = season_event_id; self.stage_number = stage_number
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        self.season_event_id = season_event_id
++        self.stage_number    = stage_number
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- Registration --------------------
+@@ -221,8 +228,10 @@ class Registration(db.Model):
+     __table_args__ = (db.UniqueConstraint('participant_id', 'season_event_id', name='_part_seasonevent_uc'),)
+ 
+     def __init__(self, participant_id, season_event_id, **kwargs):
+-        self.participant_id = participant_id; self.season_event_id = season_event_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        self.participant_id  = participant_id
++        self.season_event_id = season_event_id
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- BibNo --------------------
+@@ -237,7 +246,8 @@ class BibNo(db.Model):
+     __table_args__ = (db.UniqueConstraint('season_id', 'bib_value', name='_bibNo_season_uc'),)
+ 
+     def __init__(self, bib_value, season_id, institution_id=None):
+-        self.bib_value = bib_value; self.season_id = season_id
++        self.bib_value      = bib_value
++        self.season_id      = season_id
+         self.institution_id = institution_id
+ 
+ 
+@@ -253,7 +263,8 @@ class BibTag(db.Model):
+     __table_args__ = (db.UniqueConstraint('season_id', 'bib_value', name='_bibTag_season_uc'),)
+ 
+     def __init__(self, bib_value, season_id, institution_id=None):
+-        self.bib_value = bib_value; self.season_id = season_id
++        self.bib_value      = bib_value
++        self.season_id      = season_id
+         self.institution_id = institution_id
+ 
+ 
+@@ -263,13 +274,15 @@ class BibNoAssignment(db.Model):
+     registration_id = db.Column(db.Integer, db.ForeignKey('registration.id'), primary_key=True)
+     bib_no_id       = db.Column(db.Integer, db.ForeignKey('bibNo.id'),        primary_key=True)
+     assign_date     = db.Column(db.DateTime, default=datetime.utcnow)
+-    status          = db.Column(db.String(20), default='active')  # active|lost|replaced
++    status          = db.Column(db.String(20), default='active')
+     registration    = db.relationship('Registration', backref=db.backref('bib_no_assignments', lazy=True))
+     bib_no          = db.relationship('BibNo')
+ 
+     def __init__(self, registration_id, bib_no_id, **kwargs):
+-        self.registration_id = registration_id; self.bib_no_id = bib_no_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        self.registration_id = registration_id
++        self.bib_no_id       = bib_no_id
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- BibTag Assignment --------------------
+@@ -278,13 +291,15 @@ class BibTagAssignment(db.Model):
+     registration_id = db.Column(db.Integer, db.ForeignKey('registration.id'), primary_key=True)
+     bib_tag_id      = db.Column(db.Integer, db.ForeignKey('bibTag.id'),       primary_key=True)
+     assign_date     = db.Column(db.DateTime, default=datetime.utcnow)
+-    status          = db.Column(db.String(20), default='active')  # active|lost|replaced
++    status          = db.Column(db.String(20), default='active')
+     registration    = db.relationship('Registration', backref=db.backref('bib_tag_assignments', lazy=True))
+     bib_tag         = db.relationship('BibTag')
+ 
+     def __init__(self, registration_id, bib_tag_id, **kwargs):
+-        self.registration_id = registration_id; self.bib_tag_id = bib_tag_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++        self.registration_id = registration_id
++        self.bib_tag_id      = bib_tag_id
++        for k, v in kwargs.items():
++            setattr(self, k, v)
+ 
+ 
+ # -------------------- Result --------------------
+@@ -292,29 +307,18 @@ class Result(db.Model):
+     __tablename__   = 'result'
+     id              = db.Column(db.Integer, primary_key=True)
+     registration_id = db.Column(db.Integer, db.ForeignKey('registration.id'), nullable=False)
+-    stage_id = db.Column(db.Integer, db.ForeignKey('stage.id'), nullable=False)
+-    finish_time = db.Column(db.String(20), nullable=True)
+-    placement = db.Column(db.Integer, nullable=True)
+-    points = db.Column(db.Integer, nullable=True)
+-
+-    registration = db.relationship('Registration', backref=db.backref('results', lazy=True))
+-    stage = db.relationship('Stage', backref=db.backref('results', lazy=True))
+-    is_error=db.Column(db.Boolean, default=False)
+-
+-    __table_args__ = (db.UniqueConstraint('registration_id', 'stage_id', name='_result_reg_stage_uc'),)
+     stage_id        = db.Column(db.Integer, db.ForeignKey('stage.id'),        nullable=False)
+     finish_time     = db.Column(db.String(20), nullable=True)
+     placement       = db.Column(db.Integer,    nullable=True)
+     points          = db.Column(db.Integer,    nullable=True)
+-    registration    = db.relationship('Registration', backref=db.backref('results', lazy=True))
+-    stage           = db.relationship('Stage',        backref=db.backref('results', lazy=True))
+-    __table_args__  = (db.UniqueConstraint('registration_id', 'stage_id', name='_result_reg_stage_uc'),)
++    is_error        = db.Column(db.Boolean,    default=False)
++
++    registration = db.relationship('Registration', backref=db.backref('results', lazy=True))
++    stage        = db.relationship('Stage',        backref=db.backref('results', lazy=True))
++    __table_args__ = (db.UniqueConstraint('registration_id', 'stage_id', name='_result_reg_stage_uc'),)
+ 
+     def __init__(self, registration_id, stage_id, **kwargs):
+         self.registration_id = registration_id
+-        self.stage_id = stage_id
++        self.stage_id        = stage_id
+         for k, v in kwargs.items():
+-            setattr(self, k, v)
+-
+-        self.registration_id = registration_id; self.stage_id = stage_id
+-        for k, v in kwargs.items(): setattr(self, k, v)
++            setattr(self, k, v)
+\ No newline at end of file
+diff --git a/App/static/style.css b/App/static/style.css
+index d6741e9..5439c34 100644
+--- a/App/static/style.css
++++ b/App/static/style.css
+@@ -10,54 +10,59 @@
+ 
+ :root {
+   /* Background & surfaces */
+-  --bg:           #f0f4f9;
+-  --surface:      #ffffff;
+-  --border:       #b8c8dc;
+-  --border-dark:  #4a6fa5;
+-  --border-mid:   #7a9cc0;
++  --bg: #f0f4f9;
++  --surface: #ffffff;
++  --border: #b8c8dc;
++  --border-dark: #4a6fa5;
++  --border-mid: #7a9cc0;
+ 
+   /* Text */
+-  --text:         #0d1b2a;
+-  --text-muted:   #4a6080;
+-  --text-light:   #7a96b2;
++  --text: #0d1b2a;
++  --text-muted: #4a6080;
++  --text-light: #7a96b2;
+ 
+   /* Blues — primary brand */
+-  --navy:         #0d2b54;
+-  --blue:         #1a4f8a;
+-  --blue-mid:     #2a6abf;
+-  --blue-light:   #d0e4f7;
+-  --blue-xlight:  #eaf3fc;
++  --navy: #0d2b54;
++  --blue: #1a4f8a;
++  --blue-mid: #2a6abf;
++  --blue-light: #d0e4f7;
++  --blue-xlight: #eaf3fc;
+ 
+   /* Reds — secondary / status */
+-  --red:          #b01c1c;
+-  --red-mid:      #cc2e2e;
+-  --red-light:    #fde8e8;
++  --red: #b01c1c;
++  --red-mid: #cc2e2e;
++  --red-light: #fde8e8;
+ 
+   /* Gold — sparingly */
+-  --gold:         #c49a1a;
+-  --gold-light:   #fdf3d0;
++  --gold: #c49a1a;
++  --gold-light: #fdf3d0;
+ 
+-  /* Legacy aliases */
+-  --accent:       var(--navy);
++  /* Semantic aliases */
++  --accent: var(--navy);
+   --accent-light: var(--blue-light);
+-  --active:       #1a6e34;
+-  --closed:       var(--red);
+-  --planning:     var(--blue);
+-  --archived:     #5c6e82;
+-  --highlight:    var(--gold);
+-  --navy-alias:   #0d2b54;
+-
+-  --btn-bg:       var(--blue);
+-  --btn-text:     #ffffff;
+-  --btn-hover:    var(--blue-mid);
++  --primary: var(--blue);
++  --primary-light: var(--blue-mid);
++  --primary-dark: var(--navy);
++  --danger: var(--red);
++  --danger-hover: var(--red-mid);
++  --burgundy: var(--red);
++  --active: #1a6e34;
++  --closed: var(--red);
++  --planning: var(--blue);
++  --archived: #5c6e82;
++  --highlight: var(--gold);
++
++  --btn-bg: var(--blue);
++  --btn-text: #ffffff;
++  --btn-hover: var(--blue-mid);
+ 
+   /* Pie colours */
+   --pie-participated: #1a6e34;
+-  --pie-noshow:       #b01c1c;
+-  --pie-dnf:          #5c6e82;
++  --pie-noshow: #b01c1c;
++  --pie-dnf: #5c6e82;
+ }
+ 
+-/* ── BASE ── */
++/* ==================== BASE ==================== */
+ body {
+   font-family: 'Inter', sans-serif;
+   background: var(--bg);
+@@ -74,11 +79,10 @@ body {
+   line-height: 1.6;
+ }
+ 
+-/* Sidebar */
+ .sidebar {
+   width: 280px;
+   background: var(--primary-dark);
+-  color: white;
++  color: #ffffff;
+   transition: width 0.3s ease;
+   display: flex;
+   flex-direction: column;
+@@ -104,55 +108,9 @@ body {
+ }
+ 
+ .sidebar-header {
+-/* ── TOP BAR ── */
+-.topbar {
+-  background: var(--navy);
+-  color: #ffffff;
+-  display: flex;
+-  justify-content: space-between;
+-  align-items: center;
+-  padding: 24px 20px;
+-  border-bottom: 1px solid rgba(255,255,255,0.1);
+-}
+-
+-.logo {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-}
+-
+-.logo-icon {
+-  font-size: 28px;
+-}
+-
+-.logo-text {
+-  font-size: 20px;
+-  font-weight: 700;
+-  letter-spacing: 1px;
+-}
+-
+-.sidebar-toggle {
+-  background: none;
+-  border: none;
+-  color: white;
+-  cursor: pointer;
+-  padding: 8px;
+-  border-radius: 8px;
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  transition: background 0.2s;
+-}
+-
+-.sidebar-toggle:hover {
+-  background: rgba(255,255,255,0.1);
++  display: block;
+ }
+ 
+-.sidebar-toggle .material-icons {
+-  font-size: 24px;
+-}
+-
+-/* Navigation */
+ .sidebar-nav {
+   flex: 1;
+   padding: 24px 0;
+@@ -163,16 +121,13 @@ body {
+ }
+ 
+ .nav-section-title {
+-  padding: 8px 20px;
+-  font-size: 11px;
+-  text-transform: uppercase;
+-  letter-spacing: 1px;
+-  color: rgba(255,255,255,0.5);
+-  font-weight: 600;
+-  padding: 14px 28px;
++  padding: 14px 28px 8px;
+   font-family: 'IBM Plex Mono', monospace;
+   font-size: 18px;
++  font-weight: 600;
+   letter-spacing: 0.03em;
++  text-transform: uppercase;
++  color: rgba(255, 255, 255, 0.7);
+   border-bottom: 3px solid var(--gold);
+ }
+ 
+@@ -181,7 +136,7 @@ body {
+   align-items: center;
+   gap: 14px;
+   padding: 12px 20px;
+-  color: rgba(255,255,255,0.8);
++  color: rgba(255, 255, 255, 0.8);
+   text-decoration: none;
+   transition: all 0.2s;
+   font-size: 14px;
+@@ -190,8 +145,8 @@ body {
+ }
+ 
+ .nav-item:hover {
+-  background: rgba(255,255,255,0.08);
+-  color: white;
++  background: rgba(255, 255, 255, 0.08);
++  color: #ffffff;
+   border-left-color: var(--gold);
+ }
+ 
+@@ -205,7 +160,6 @@ body {
+   font-size: 22px;
+ }
+ 
+-/* Main Content */
+ .main-content {
+   flex: 1;
+   margin-left: 280px;
+@@ -217,16 +171,80 @@ body {
+ .sidebar.collapsed ~ .main-content {
+   margin-left: 80px;
+ }
+-.topbar-right { display: flex; gap: 24px; align-items: center; }
+-.topbar-right a { color: #b8ccdf; text-decoration: none; cursor: pointer; transition: color 0.15s; font-size: 18px; }
+-.topbar-right a:hover { color: var(--gold); }
+-.divider { color: #4a6fa5; opacity: 0.7; }
+ 
+-/* Top Bar */
++/* ==================== TOP BARS ==================== */
++.topbar {
++  background: var(--navy);
++  color: #ffffff;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 24px 20px;
++  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
++}
++
++.logo {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++}
++
++.logo-icon {
++  font-size: 28px;
++}
++
++.logo-text {
++  font-size: 20px;
++  font-weight: 700;
++  letter-spacing: 1px;
++}
++
++.sidebar-toggle {
++  background: none;
++  border: none;
++  color: #ffffff;
++  cursor: pointer;
++  padding: 8px;
++  border-radius: 8px;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  transition: background 0.2s;
++}
++
++.sidebar-toggle:hover {
++  background: rgba(255, 255, 255, 0.1);
++}
++
++.sidebar-toggle .material-icons {
++  font-size: 24px;
++}
++
++.topbar-right {
++  display: flex;
++  gap: 24px;
++  align-items: center;
++}
++
++.topbar-right a {
++  color: #b8ccdf;
++  text-decoration: none;
++  cursor: pointer;
++  transition: color 0.15s;
++  font-size: 18px;
++}
++
++.topbar-right a:hover {
++  color: var(--gold);
++}
++
++.divider {
++  color: #4a6fa5;
++  opacity: 0.7;
++}
++
+ .top-bar {
+   background: var(--surface);
+-  padding: 16px 32px;
+-  border-bottom: 3px solid var(--blue);
+   padding: 20px 32px;
+   display: flex;
+   justify-content: space-between;
+@@ -235,26 +253,33 @@ body {
+   position: sticky;
+   top: 0;
+   z-index: 50;
+-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
++  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+   gap: 14px;
+ }
++
+ .logo-box {
+-  width: 50px; height: 50px;
++  width: 50px;
++  height: 50px;
+   border: 2px solid var(--gold);
+-  display: grid; place-items: center;
++  display: grid;
++  place-items: center;
+   font-size: 24px;
+   flex-shrink: 0;
+   background: var(--gold-light);
+ }
+ 
+ .breadcrumb {
+-  font-size: 20px;
+   font-family: 'IBM Plex Mono', monospace;
+   font-size: 22px;
+   font-weight: 600;
+   color: var(--text);
+ }
+ 
++.breadcrumb span {
++  color: var(--text-muted);
++  font-weight: 400;
++}
++
+ .top-bar-right {
+   display: flex;
+   align-items: center;
+@@ -262,22 +287,6 @@ body {
+   letter-spacing: 0.02em;
+   color: var(--navy);
+ }
+-.breadcrumb span { color: var(--text-muted); font-weight: 400; }
+-
+-/* ── MAIN CONTENT AREA ── */
+-.main { padding: 32px 28px; max-width: 1200px; margin: 0 auto; }
+-
+-/* ── SECTION TITLE & ACTIONS ── */
+-.section-title {
+-  text-align: center;
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-weight: 600;
+-  font-size: 14px;
+-  letter-spacing: 0.1em;
+-  text-transform: uppercase;
+-  margin-bottom: 10px;
+-  color: var(--navy);
+-}
+ 
+ .user-info {
+   display: flex;
+@@ -293,52 +302,8 @@ body {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+-.section-actions { text-align: center; margin-bottom: 28px; display: flex; gap: 12px; justify-content: center; }
+-
+-/* ── BUTTONS ── */
+-.btn {
+-  display: inline-block;
+-  padding: 8px 18px;
+-  background: var(--btn-bg);
+-  color: var(--btn-text);
+-  border: none;
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 15px;
+-  font-weight: 500;
+-  letter-spacing: 0.04em;
+-  cursor: pointer;
+-  transition: background 0.15s, transform 0.1s;
+-  text-decoration: none;
+-  margin: 2px;
+-  border-radius: 3px;
+-}
+-.btn:hover { background: var(--btn-hover); transform: translateY(-1px); }
+-.btn:active { transform: translateY(0); }
+-.btn-ghost { background: transparent; color: var(--blue); border: 2px solid var(--blue); }
+-.btn-ghost:hover { background: var(--blue-light); }
+-.btn-sm { padding: 5px 12px; font-size: 12px; }
+-.btn-danger { background: var(--red); }
+-.btn-danger:hover { background: var(--red-mid); }
+-.btn-gold { background: var(--gold); color: var(--navy); border: none; }
+-.btn-gold:hover { background: #d4aa2a; }
+-
+-/* ── CARD & TABLE ── */
+-.card {
+-  background: var(--surface);
+-  border: 2px solid var(--border);
+-  border-top: 3px solid var(--blue);
+-  margin-bottom: 32px;
+-  border-radius: 4px;
+-  overflow: hidden;
+-}
+-.card-header {
+-  padding: 12px 18px;
+-  border-bottom: 2px solid var(--border);
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 15px;
++  color: #ffffff;
+   font-weight: 600;
+-  font-size: 16px;
+-  color: white;
+ }
+ 
+ .user-name {
+@@ -347,20 +312,6 @@ body {
+   color: var(--navy);
+   background: var(--blue-xlight);
+ }
+-table { width: 100%; border-collapse: collapse; }
+-th {
+-  background: var(--blue-xlight);
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 14px;
+-  font-weight: 600;
+-  font-size: 15px;
+-  letter-spacing: 0.06em;
+-  text-transform: uppercase;
+-  padding: 13px 16px;
+-  text-align: left;
+-  border-bottom: 2px solid var(--blue-light);
+-  color: var(--navy);
+-}
+ 
+ .user-role {
+   font-size: 12px;
+@@ -371,87 +322,114 @@ th {
+   font-weight: 500;
+ }
+ 
+-/* Page Content */
+ .page-content {
+   padding: 32px;
+ }
+-td {
+-  padding: 14px 16px;
+-  border-bottom: 1px solid var(--border);
+-  vertical-align: middle;
+-  font-size: 16px;
+-}
+-tr:last-child td { border-bottom: none; }
+-tr:hover td { background: var(--blue-xlight); }
+ 
+-/* ==================== CARDS & METRICS ==================== */
+-.metrics-grid {
+-  display: grid;
+-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+-  gap: 24px;
+-  margin-bottom: 32px;
+-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+-  gap: 18px;
+-  margin-bottom: 28px;
+-}
+-.metric-card {
+-  background: var(--surface);
+-  border-radius: 16px;
+-  padding: 24px;
+-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+-  border: 1px solid var(--border);
+-  transition: transform 0.2s, box-shadow 0.2s;
++/* ==================== MAIN CONTENT ==================== */
++.main {
++  padding: 32px 28px;
++  max-width: 1200px;
++  margin: 0 auto;
+ }
+ 
+-.metric-card:hover {
+-  transform: translateY(-2px);
+-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+-  border: 2px solid var(--border);
+-  border-top: 4px solid var(--blue);
+-  padding: 20px 16px;
++.section-title {
+   text-align: center;
+-  border-radius: 4px;
+-  box-shadow: 0 2px 6px rgba(13,43,84,0.07);
+-}
+-.metric-value {
+-  font-size: 42px;
+-  font-weight: 700;
+-  color: var(--primary-dark);
+-  line-height: 1.2;
+-  margin-bottom: 8px;
+-  font-size: 42px;
+-  font-weight: 600;
+   font-family: 'IBM Plex Mono', monospace;
++  font-weight: 600;
++  font-size: 14px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  margin-bottom: 10px;
+   color: var(--navy);
+-  line-height: 1.1;
+ }
+-.metric-label {
++
++.section-actions {
++  text-align: center;
++  margin-bottom: 28px;
++  display: flex;
++  gap: 12px;
++  justify-content: center;
++}
++
++/* ==================== BUTTONS ==================== */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  padding: 8px 20px;
++  background: var(--btn-bg);
++  color: var(--btn-text);
++  border: none;
++  border-radius: 8px;
++  font-family: 'Inter', sans-serif;
+   font-size: 14px;
+   font-weight: 500;
+-  color: var(--text-muted);
+-  text-transform: uppercase;
+-  letter-spacing: 0.5px;
++  cursor: pointer;
++  transition: all 0.2s;
++  text-decoration: none;
+ }
+ 
+-/* ==================== CARDS ==================== */
+-.card {
+-  background: var(--surface);
+-  border-radius: 16px;
+-  border: 1px solid var(--border);
+-  margin-bottom: 32px;
+-  overflow: hidden;
++.btn:hover {
++  background: var(--btn-hover);
++  transform: translateY(-1px);
+ }
+ 
+-.card-header {
+-  padding: 18px 24px;
+-  background: var(--accent-light);
+-  border-bottom: 2px solid var(--primary-light);
+-  font-weight: 600;
+-  font-size: 16px;
+-  color: var(--primary-dark);
++.btn:active {
++  transform: translateY(0);
+ }
+ 
+-/* ==================== TABLES ==================== */
++.btn-sm {
++  padding: 6px 14px;
++  font-size: 13px;
++}
++
++.btn-ghost {
++  background: transparent;
++  color: var(--primary-dark);
++  border: 1px solid var(--primary-dark);
++}
++
++.btn-ghost:hover {
++  background: var(--accent-light);
++}
++
++.btn-danger {
++  background: var(--danger);
++}
++
++.btn-danger:hover {
++  background: var(--danger-hover);
++}
++
++.btn-gold {
++  background: var(--gold);
++  color: var(--navy);
++}
++
++.btn-gold:hover {
++  background: #d4aa2a;
++}
++
++/* ==================== CARDS ==================== */
++.card {
++  background: var(--surface);
++  border-radius: 16px;
++  border: 1px solid var(--border);
++  margin-bottom: 32px;
++  overflow: hidden;
++}
++
++.card-header {
++  padding: 18px 24px;
++  background: var(--accent-light);
++  border-bottom: 2px solid var(--primary-light);
++  font-weight: 600;
++  font-size: 16px;
++  color: var(--primary-dark);
++}
++
++/* ==================== TABLES ==================== */
+ table {
+   width: 100%;
+   border-collapse: collapse;
+@@ -460,9 +438,8 @@ table {
+ th {
+   text-align: left;
+   padding: 14px 16px;
+-  background: #F8F9FA;
++  background: #f8f9fa;
+   font-weight: 600;
+-  font-size: 13px;
+   font-size: 15px;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+@@ -482,64 +459,52 @@ tr:last-child td {
+ }
+ 
+ tr:hover td {
+-  background: #F8F9FA;
+-}
+-
+-/* ==================== BUTTONS ==================== */
+-.btn {
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 8px;
+-  padding: 8px 20px;
+-  background: var(--btn-bg);
+-  color: var(--btn-text);
+-  border: none;
+-  border-radius: 8px;
+-  font-family: 'Inter', sans-serif;
+-  font-size: 14px;
+-  font-weight: 500;
+-  cursor: pointer;
+-  transition: all 0.2s;
+-  text-decoration: none;
+-}
+-
+-.btn:hover {
+-  background: var(--btn-hover);
+-  transform: translateY(-1px);
++  background: #f8f9fa;
+ }
+ 
+-.btn-sm {
+-  padding: 6px 14px;
+-  font-size: 13px;
++/* ==================== METRICS ==================== */
++.metrics-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
++  gap: 18px;
++  margin-bottom: 28px;
+ }
+ 
+-.btn-ghost {
+-  background: transparent;
+-  color: var(--primary-dark);
+-  border: 1px solid var(--primary-dark);
++.metric-card {
++  background: var(--surface);
++  border: 2px solid var(--border);
++  border-top: 4px solid var(--blue);
++  padding: 20px 16px;
++  text-align: center;
++  border-radius: 4px;
++  box-shadow: 0 2px 6px rgba(13, 43, 84, 0.07);
++  transition: transform 0.2s, box-shadow 0.2s;
+ }
+ 
+-.btn-ghost:hover {
+-  background: var(--accent-light);
+-  transform: translateY(-1px);
++.metric-card:hover {
++  transform: translateY(-2px);
++  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+ }
+ 
+-.btn-danger {
+-  background: var(--danger);
++.metric-value {
++  font-size: 42px;
++  font-weight: 600;
++  font-family: 'IBM Plex Mono', monospace;
++  color: var(--navy);
++  line-height: 1.1;
+ }
+ 
+-.btn-danger:hover {
+-  background: var(--danger-hover);
+-  margin-top: 6px;
++.metric-label {
++  font-size: 14px;
++  font-weight: 500;
++  color: var(--text-muted);
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
+ }
+ 
+ /* ==================== BADGES ==================== */
+ .badge {
+   display: inline-block;
+-  padding: 4px 12px;
+-  font-size: 12px;
+-  font-weight: 500;
+-  border-radius: 20px;
+   padding: 3px 10px;
+   font-family: 'IBM Plex Mono', monospace;
+   font-size: 12px;
+@@ -549,18 +514,33 @@ tr:hover td {
+ }
+ 
+ .badge-active {
+-  background: #E8F5E9;
+-  color: var(--active);
++  background: #d4f0d4;
++  color: #1a6e34;
++  border: 1px solid #8dd0a0;
+ }
+ 
+ .badge-closed {
+-  background: #FFEBEE;
+-  color: var(--burgundy);
++  background: var(--red-light);
++  color: var(--red);
++  border: 1px solid #f0b0b0;
++}
++
++.badge-planning {
++  background: var(--blue-light);
++  color: var(--blue);
++  border: 1px solid var(--border-mid);
++}
++
++.badge-archived {
++  background: #e8edf3;
++  color: var(--archived);
++  border: 1px solid var(--border);
+ }
+ 
+ .badge-warning {
+-  background: #FFF8E7;
+-  color: #B97F10;
++  background: #fff8e7;
++  color: #b97f10;
++  border: 1px solid var(--gold);
+ }
+ 
+ .status-dot {
+@@ -568,31 +548,20 @@ tr:hover td {
+   width: 8px;
+   height: 8px;
+   border-radius: 50%;
+-  margin-right: 8px;
++  margin-right: 6px;
+ }
+ 
+ .dot-active {
+-  background: var(--active);
++  background: #1a6e34;
+ }
+ 
+ .dot-closed {
+-  background: var(--burgundy);
++  background: var(--red);
+ }
+-.badge-active   { background: #d4f0d4; color: #1a6e34;        border: 1px solid #8dd0a0; }
+-.badge-closed   { background: var(--red-light); color: var(--red); border: 1px solid #f0b0b0; }
+-.badge-planning { background: var(--blue-light); color: var(--blue); border: 1px solid var(--border-mid); }
+-.badge-archived { background: #e8edf3; color: var(--archived); border: 1px solid var(--border); }
+-.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+-.dot-active { background: #1a6e34; }
+-.dot-closed { background: var(--red); }
+ 
+ /* ==================== FILTERS ==================== */
+ .filters-bar {
+   background: var(--surface);
+-  border: 1px solid var(--border);
+-  border-radius: 12px;
+-  padding: 16px 20px;
+-  margin-bottom: 24px;
+   border: 2px solid var(--border);
+   border-left: 4px solid var(--blue);
+   padding: 14px 20px;
+@@ -604,11 +573,14 @@ tr:hover td {
+   border-radius: 4px;
+   overflow-x: auto;
+ }
+-.filter-group { display: flex; align-items: center; gap: 10px; }
++
++.filter-group {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++}
++
+ .filter-group label {
+-  font-size: 13px;
+-  font-weight: 500;
+-  color: var(--text-muted);
+   font-family: 'IBM Plex Mono', monospace;
+   font-size: 15px;
+   text-transform: uppercase;
+@@ -617,16 +589,9 @@ tr:hover td {
+   letter-spacing: 0.06em;
+   white-space: nowrap;
+ }
++
+ .filter-group select,
+ .filter-group input {
+-  padding: 8px 12px;
+-  border: 1px solid var(--border);
+-  border-radius: 8px;
+-  background: var(--surface);
+-  font-family: 'Inter', sans-serif;
+-  font-size: 13px;
+-  min-width: 140px;
+-}
+   padding: 7px 11px;
+   border: 2px solid var(--border);
+   background: var(--bg);
+@@ -638,39 +603,30 @@ tr:hover td {
+   color: var(--text);
+   transition: border-color 0.15s;
+ }
+-.filter-group select:focus,
+-.filter-group input:focus { border-color: var(--blue); outline: none; }
+ 
+ .filter-group select:focus,
+ .filter-group input:focus {
+   outline: none;
+-  border-color: var(--primary-light);
++  border-color: var(--blue);
+ }
+ 
+ /* ==================== FORMS ==================== */
+ .form-panel {
+-  border: 1px solid var(--border);
+-  border-radius: 16px;
+   border: 2px solid var(--blue);
+   background: var(--surface);
+-  margin-bottom: 32px;
+-  overflow: hidden;
+   margin-bottom: 28px;
+   border-radius: 4px;
+   overflow: hidden;
+ }
++
+ .form-panel-header {
+-  background: var(--accent-light);
+-  padding: 16px 24px;
+   background: var(--navy);
+   color: #ffffff;
+   padding: 12px 20px;
+   font-family: 'IBM Plex Mono', monospace;
+-  font-size: 13px;
+-  font-weight: 600;
+   font-size: 16px;
+-  color: var(--primary-dark);
+-  border-bottom: 1px solid var(--border);
++  font-weight: 600;
++  border-bottom: 3px solid var(--gold);
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+@@ -683,26 +639,19 @@ tr:hover td {
+ .form-row {
+   display: flex;
+   align-items: center;
+-  gap: 16px;
+-  margin-bottom: 20px;
++  gap: 14px;
++  margin-bottom: 18px;
+   flex-wrap: wrap;
+ }
+ 
+-  border-bottom: 3px solid var(--gold);
+-}
+-.form-body { padding: 24px; }
+-.form-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+ .form-label {
+   font-family: 'IBM Plex Mono', monospace;
+-  font-size: 15px;
+-  font-weight: 500;
+   font-size: 14px;
+-  color: var(--text);
+-  min-width: 120px;
+   color: var(--navy);
+   min-width: 130px;
+   flex-shrink: 0;
+ }
++
+ input[type="text"],
+ input[type="email"],
+ input[type="password"],
+@@ -711,136 +660,90 @@ input[type="date"],
+ select,
+ textarea {
+   padding: 10px 14px;
+-  border: 1px solid var(--border);
+-  border-radius: 8px;
+-  font-family: 'Inter', sans-serif;
++  border: 2px solid var(--border);
++  border-radius: 3px;
++  font-family: 'IBM Plex Mono', monospace;
+   font-size: 14px;
+-  background: var(--surface);
+-  transition: border-color 0.2s;
++  background: var(--bg);
++  color: var(--text);
++  transition: border-color 0.15s;
+ }
+ 
+ input:focus,
+ select:focus,
+ textarea:focus {
+-  border: 2px solid var(--border);
+-  background: var(--bg);
+-  padding: 7px 12px;
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 14px;
+-  color: var(--text);
++  border-color: var(--blue);
+   outline: none;
+-  border-color: var(--primary-light);
+ }
+ 
+ input.wide {
+   width: 320px;
+ }
+ 
+-  transition: border-color 0.15s;
+-  border-radius: 3px;
+-}
+-input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+-input.wide { width: 320px; }
+ .form-actions {
+-  border-top: 1px solid var(--border);
+-  padding: 20px 24px;
+   border-top: 2px solid var(--border);
+   padding: 14px 24px;
+   display: flex;
+-  gap: 12px;
+-  background: #F8F9FA;
+-}
+   gap: 10px;
+   flex-wrap: wrap;
+   align-items: center;
+   background: var(--blue-xlight);
+ }
+-.radio-group { display: flex; gap: 18px; flex-wrap: wrap; }
+-.radio-option { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+-.radio-option input[type="radio"] { accent-color: var(--blue); width: 16px; height: 16px; }
+-.close-btn { background: none; border: none; color: #ffffff; font-size: 18px; cursor: pointer; opacity: 0.7; transition: opacity 0.15s; }
+-.close-btn:hover { opacity: 1; }
+ 
+-/* ── TOAST ── */
+-.toast {
+-  position: fixed;
+-  bottom: 28px; right: 28px;
+-  background: var(--navy);
+-  color: #ffffff;
+-  padding: 14px 22px;
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 13px;
+-  border-left: 5px solid var(--gold);
+-  opacity: 0;
+-  transform: translateY(10px);
+-  transition: opacity 0.2s, transform 0.2s;
+-  pointer-events: none;
+-  z-index: 999;
+-  max-width: 320px;
+-  border-radius: 3px;
+-  box-shadow: 0 4px 14px rgba(13,43,84,0.25);
++.radio-group {
++  display: flex;
++  gap: 18px;
++  flex-wrap: wrap;
+ }
+-.toast.show { opacity: 1; transform: translateY(0); }
+-.toast.err  { border-left-color: var(--red); background: var(--red); }
+-.toast.warn { border-left-color: var(--gold); }
+ 
+-/* ── MODAL / OVERLAY ── */
+-.overlay { display: none; position: fixed; inset: 0; background: rgba(13,27,42,0.60); z-index: 100; place-items: center; }
+-.overlay.active { display: grid; }
+-.modal {
+-  background: var(--surface);
+-  border: 2px solid var(--blue);
+-  border-top: 4px solid var(--gold);
+-  padding: 32px;
+-  max-width: 380px;
+-  width: 92%;
+-  border-radius: 4px;
+-  box-shadow: 0 8px 32px rgba(13,43,84,0.22);
++.radio-option {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  font-size: 14px;
++  cursor: pointer;
+ }
+-.modal h3 {
+-  font-family: 'IBM Plex Mono', monospace;
+-  font-size: 15px;
+-  font-weight: 600;
+-  letter-spacing: 0.06em;
+-  text-transform: uppercase;
+-  margin-bottom: 14px;
+-  padding-bottom: 12px;
+-  border-bottom: 2px solid var(--blue-light);
+-  color: var(--navy);
++
++.radio-option input[type="radio"] {
++  accent-color: var(--blue);
++  width: 16px;
++  height: 16px;
++}
++
++.close-btn {
++  background: none;
++  border: none;
++  color: #ffffff;
++  font-size: 18px;
++  cursor: pointer;
++  opacity: 0.7;
++  transition: opacity 0.15s;
++}
++
++.close-btn:hover {
++  opacity: 1;
+ }
+-.modal p { font-size: 15px; color: var(--text-muted); margin-bottom: 22px; line-height: 1.6; }
+-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+ 
+ /* ==================== CHARTS ==================== */
+ .charts-row {
+   display: grid;
+-  grid-template-columns: repeat(2, 1fr);
++  grid-template-columns: 1fr 1fr;
+   gap: 24px;
+-  margin-bottom: 32px;
++  margin-bottom: 28px;
+ }
+ 
+-/* ── CHARTS ── */
+-.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+ .chart-container {
+   background: var(--surface);
+-  border: 1px solid var(--border);
+-  border-radius: 16px;
+-  padding: 20px;
+   border: 2px solid var(--border);
+   border-top: 3px solid var(--blue);
+   padding: 20px;
+   border-radius: 4px;
+ }
++
+ .chart-header {
+   font-family: 'IBM Plex Mono', monospace;
+-  font-size: 12px;
+-  font-weight: 600;
+   font-size: 16px;
+-  color: var(--primary-dark);
+-  margin-bottom: 16px;
+-  padding-bottom: 12px;
+-  border-bottom: 2px solid var(--gold);
+-}
++  font-weight: 600;
+   letter-spacing: 0.1em;
+   text-transform: uppercase;
+   color: var(--navy);
+@@ -848,179 +751,165 @@ input.wide { width: 320px; }
+   padding-bottom: 10px;
+   border-bottom: 2px solid var(--blue-light);
+ }
+-.chart-placeholder { height: 200px; display: flex; align-items: flex-end; justify-content: center; gap: 28px; padding: 20px 0; }
+-.bar { width: 48px; background: var(--blue); transition: height 0.3s; position: relative; border-radius: 3px 3px 0 0; }
+-.bar:hover { background: var(--blue-mid); }
+-.bar-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text-muted); white-space: nowrap; }
+-.bar-value { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; color: var(--navy); }
+-
+-/* ── PIE CHART ── */
+-.pie-container { width: 160px; height: 160px; border-radius: 50%; margin: 0 auto; box-shadow: 0 2px 8px rgba(13,43,84,0.15); }
+-.pie-legend { display: flex; justify-content: center; gap: 24px; margin-top: 20px; font-size: 17px; font-family: 'IBM Plex Mono', monospace; flex-wrap: wrap; }
+-.legend-item { display: flex; align-items: center; gap: 7px; }
+-.legend-color { width: 14px; height: 14px; background: var(--pie-participated); border-radius: 2px; }
+-.legend-color.no-show  { background: var(--pie-noshow); }
+-.legend-color.dnf      { background: var(--pie-dnf); }
+-.legend-color.closed   { background: var(--pie-noshow); }
+-.legend-color.archived { background: var(--pie-dnf); }
+ 
+-/* ==================== STAGE PROGRESS ==================== */
+-.stage-progress {
+-  padding: 20px;
++.chart-placeholder {
++  height: 200px;
++  display: flex;
++  align-items: flex-end;
++  justify-content: center;
++  gap: 28px;
++  padding: 20px 0;
+ }
+ 
+-.stage-row {
+-  display: flex;
+-  align-items: center;
+-  gap: 12px;
+-  margin-bottom: 16px;
++.bar {
++  width: 48px;
++  background: var(--blue);
++  transition: height 0.3s;
++  position: relative;
++  border-radius: 3px 3px 0 0;
+ }
+ 
+-.stage-label {
+-  width: 70px;
+-  font-weight: 500;
+-  font-size: 14px;
++.bar:hover {
++  background: var(--blue-mid);
+ }
+ 
+-.progress-bar {
+-  flex: 1;
+-  height: 8px;
+-  background: var(--border);
+-  border-radius: 4px;
+-  overflow: hidden;
++.bar-label {
++  position: absolute;
++  bottom: -22px;
++  left: 50%;
++  transform: translateX(-50%);
++  font-size: 11px;
++  font-family: 'IBM Plex Mono', monospace;
++  color: var(--text-muted);
++  white-space: nowrap;
+ }
+ 
+-.progress-fill {
+-  height: 100%;
+-  background: var(--primary-light);
+-  border-radius: 4px;
++.bar-value {
++  position: absolute;
++  top: -22px;
++  left: 50%;
++  transform: translateX(-50%);
++  font-size: 12px;
++  font-weight: 600;
++  font-family: 'IBM Plex Mono', monospace;
++  color: var(--navy);
+ }
+ 
+-.stage-percent {
+-  width: 50px;
+-  text-align: right;
+-  font-weight: 600;
+-  font-size: 14px;
+-  color: var(--primary-dark);
++.pie-container {
++  width: 160px;
++  height: 160px;
++  border-radius: 50%;
++  margin: 0 auto;
++  box-shadow: 0 2px 8px rgba(13, 43, 84, 0.15);
+ }
+-/* ── STAGE PROGRESS ── */
+-.stage-progress { padding: 18px; }
+-.stage-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+-.stage-label { width: 60px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; color: var(--navy); font-weight: 500; }
+-.progress-bar { flex: 1; height: 16px; background: var(--blue-light); border-radius: 4px; overflow: hidden; }
+-.progress-fill { height: 100%; background: var(--blue); border-radius: 4px; transition: width 0.4s ease; }
+-.stage-percent { width: 50px; font-size: 13px; font-family: monospace; text-align: right; color: var(--navy); font-weight: 600; }
+ 
+-/* ==================== LOGIN PAGE ==================== */
+-.login-container {
++.pie-legend {
+   display: flex;
+   justify-content: center;
+-  align-items: center;
+-  min-height: 100vh;
+-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
++  gap: 24px;
++  margin-top: 20px;
++  font-size: 17px;
++  font-family: 'IBM Plex Mono', monospace;
++  flex-wrap: wrap;
+ }
+ 
+-/* ── API BANNERS ── */
+-.api-banner { display: none; margin-bottom: 18px; padding: 12px 16px; border-radius: 4px; font-size: 14px; border-left: 5px solid; }
+-.api-banner.err  { background: var(--red-light); color: var(--red);  border-color: var(--red);  display: block; }
+-.api-banner.warn { background: var(--gold-light); color: #8a6600;    border-color: var(--gold); display: block; }
+-.api-banner.ok   { background: #d4f0d4;           color: #1a6e34;    border-color: #1a6e34;     display: block; }
++.legend-item {
++  display: flex;
++  align-items: center;
++  gap: 7px;
++}
+ 
+-/* ── SKELETON ── */
+-@keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.45} }
+-.skel { background: var(--blue-light); border-radius: 4px; animation: shimmer 1.4s infinite; display: inline-block; }
++.legend-color {
++  width: 14px;
++  height: 14px;
++  border-radius: 2px;
++  background: var(--pie-participated);
++}
+ 
+-/* ── LOGIN ── */
+-.login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--bg); }
+-.login-box {
+-  background: var(--surface);
+-  border-radius: 24px;
+-  padding: 48px;
+-  border: 2px solid var(--border);
+-  border-top: 5px solid var(--blue);
+-  padding: 44px;
+-  width: 100%;
+-  max-width: 440px;
+-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+-  max-width: 420px;
+-  border-radius: 4px;
+-  box-shadow: 0 4px 20px rgba(13,43,84,0.12);
++.legend-color.no-show,
++.legend-color.closed {
++  background: var(--pie-noshow);
+ }
+ 
+-.login-box h1 {
+-  font-size: 28px;
+-  font-weight: 700;
+-  margin-bottom: 8px;
+-  text-align: center;
+-  color: var(--primary-dark);
++.legend-color.dnf,
++.legend-color.archived {
++  background: var(--pie-dnf);
+ }
+ 
+-.login-box p {
+-  text-align: center;
+-  color: var(--text-muted);
+-  margin-bottom: 32px;
++/* ==================== STAGE PROGRESS ==================== */
++.stage-progress {
++  padding: 18px;
+ }
+ 
+-.login-form .form-row {
+-  margin-bottom: 20px;
++.stage-row {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  margin-bottom: 12px;
+ }
+ 
+-.login-form input {
+-  width: 100%;
++.stage-label {
++  width: 60px;
++  font-size: 13px;
++  font-family: 'IBM Plex Mono', monospace;
++  color: var(--navy);
++  font-weight: 500;
+ }
+ 
+-.login-form button {
+-  width: 100%;
+-  margin-top: 8px;
++.progress-bar {
++  flex: 1;
++  height: 16px;
++  background: var(--blue-light);
++  border-radius: 4px;
++  overflow: hidden;
+ }
+ 
+-.login-links {
+-  margin-top: 24px;
+-  text-align: center;
+-  display: flex;
+-  justify-content: space-between;
++.progress-fill {
++  height: 100%;
++  background: var(--blue);
++  border-radius: 4px;
++  transition: width 0.4s ease;
+ }
+ 
+-.login-links a {
+-  color: var(--primary);
+-  text-decoration: none;
++.stage-percent {
++  width: 50px;
+   font-size: 13px;
++  font-family: monospace;
++  text-align: right;
++  color: var(--navy);
++  font-weight: 600;
+ }
+ 
+-.login-links a:hover {
+-  text-decoration: underline;
++/* ==================== API BANNERS ==================== */
++.api-banner {
++  display: none;
++  margin-bottom: 18px;
++  padding: 12px 16px;
++  border-radius: 4px;
++  font-size: 14px;
++  border-left: 5px solid;
+ }
+-.login-box h1 { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; margin-bottom: 8px; text-align: center; color: var(--navy); }
+-.login-box p { text-align: center; color: var(--text-muted); margin-bottom: 28px; font-size: 15px; }
+-.login-form .form-row { margin-bottom: 22px; }
+-.login-form input { width: 100%; }
+-.login-form button { width: 100%; margin-top: 18px; padding: 11px; font-size: 15px; }
+-.login-links { margin-top: 22px; text-align: center; display: flex; justify-content: space-between; }
+-.login-links a { color: var(--blue); text-decoration: none; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+-.login-links a:hover { text-decoration: underline; color: var(--blue-mid); }
+-
+-/* ── SYSTEM DROPDOWN ── */
+-.sys-dropdown { position: relative; }
+-.sys-dropdown-toggle { color: #b8ccdf; cursor: pointer; font-size: 18px; transition: color 0.15s; user-select: none; padding: 4px 0; }
+-.sys-dropdown-toggle:hover { color: var(--gold); }
+-.sys-dropdown-menu {
+-  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+-  background: var(--surface);
+-  border: 2px solid var(--blue);
+-  border-top: 3px solid var(--gold);
+-  min-width: 240px; z-index: 200; flex-direction: column;
+-  box-shadow: 0 6px 18px rgba(13,43,84,0.20);
+-  border-radius: 3px;
++
++.api-banner.err {
++  background: var(--red-light);
++  color: var(--red);
++  border-color: var(--red);
++  display: block;
+ }
+-.sys-dropdown-menu.open { display: flex; }
+-.sys-dropdown-menu a { display: block; padding: 16px 22px; color: var(--text); text-decoration: none; font-size: 18px; border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; transition: background 0.1s, color 0.1s; }
+-.sys-dropdown-menu a:last-child { border-bottom: none; }
+-.sys-dropdown-menu a:hover { background: var(--blue-light); color: var(--navy); }
+ 
+-/* ── MISC ── */
+-@keyframes spin { to { transform: rotate(360deg); } }
+-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 6px; }
+-.input-err { border-color: var(--red) !important; background: #fff8f8 !important; }
++.api-banner.warn {
++  background: var(--gold-light);
++  color: #8a6600;
++  border-color: var(--gold);
++  display: block;
++}
++
++.api-banner.ok {
++  background: #d4f0d4;
++  color: #1a6e34;
++  border-color: #1a6e34;
++  display: block;
++}
+ 
+ /* ==================== ALERTS ==================== */
+ .alert {
+@@ -1031,38 +920,42 @@ input.wide { width: 320px; }
+ }
+ 
+ .alert-success {
+-  background: #E8F5E9;
++  background: #e8f5e9;
+   color: var(--active);
+   border-left: 4px solid var(--active);
+ }
+ 
+ .alert-danger {
+-  background: #FFEBEE;
++  background: #ffebee;
+   color: var(--burgundy);
+   border-left: 4px solid var(--burgundy);
+ }
+ 
+ .alert-warning {
+-  background: #FFF8E7;
+-  color: #B97F10;
++  background: #fff8e7;
++  color: #b97f10;
+   border-left: 4px solid var(--gold);
+ }
+ 
+ /* ==================== TOAST ==================== */
+ .toast {
+   position: fixed;
+-  bottom: 24px;
+-  right: 24px;
+-  background: var(--primary-dark);
+-  color: white;
+-  padding: 12px 20px;
+-  border-radius: 8px;
+-  font-size: 14px;
++  bottom: 28px;
++  right: 28px;
++  background: var(--navy);
++  color: #ffffff;
++  padding: 14px 22px;
++  font-family: 'IBM Plex Mono', monospace;
++  font-size: 13px;
++  border-left: 5px solid var(--gold);
+   opacity: 0;
+   transform: translateY(10px);
+   transition: opacity 0.2s, transform 0.2s;
+   pointer-events: none;
+-  z-index: 1000;
++  z-index: 999;
++  max-width: 320px;
++  border-radius: 3px;
++  box-shadow: 0 4px 14px rgba(13, 43, 84, 0.25);
+ }
+ 
+ .toast.show {
+@@ -1070,12 +963,21 @@ input.wide { width: 320px; }
+   transform: translateY(0);
+ }
+ 
++.toast.err {
++  border-left-color: var(--red);
++  background: var(--red);
++}
++
++.toast.warn {
++  border-left-color: var(--gold);
++}
++
+ /* ==================== MODAL ==================== */
+ .overlay {
+   display: none;
+   position: fixed;
+   inset: 0;
+-  background: rgba(0,0,0,0.5);
++  background: rgba(13, 27, 42, 0.6);
+   z-index: 200;
+   place-items: center;
+ }
+@@ -1086,118 +988,283 @@ input.wide { width: 320px; }
+ 
+ .modal {
+   background: var(--surface);
+-  border-radius: 16px;
+-  padding: 28px;
+-  max-width: 400px;
+-  width: 90%;
++  border: 2px solid var(--blue);
++  border-top: 4px solid var(--gold);
++  padding: 32px;
++  max-width: 380px;
++  width: 92%;
++  border-radius: 4px;
++  box-shadow: 0 8px 32px rgba(13, 43, 84, 0.22);
+ }
+ 
+ .modal h3 {
+-  font-size: 18px;
++  font-family: 'IBM Plex Mono', monospace;
++  font-size: 15px;
+   font-weight: 600;
+-  margin-bottom: 12px;
+-  color: var(--primary-dark);
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  margin-bottom: 14px;
++  padding-bottom: 12px;
++  border-bottom: 2px solid var(--blue-light);
++  color: var(--navy);
+ }
+ 
+ .modal p {
++  font-size: 15px;
+   color: var(--text-muted);
+-  margin-bottom: 20px;
++  margin-bottom: 22px;
++  line-height: 1.6;
+ }
+ 
+ .modal-actions {
+   display: flex;
+-  gap: 12px;
++  gap: 10px;
+   justify-content: flex-end;
+ }
+ 
++/* ==================== LOGIN ==================== */
++.login-container {
++  display: flex;
++  justify-content: center;
++  align-items: center;
++  min-height: 100vh;
++  background: var(--bg);
++}
++
++.login-box {
++  background: var(--surface);
++  border: 2px solid var(--border);
++  border-top: 5px solid var(--blue);
++  padding: 44px;
++  width: 100%;
++  max-width: 420px;
++  border-radius: 4px;
++  box-shadow: 0 4px 20px rgba(13, 43, 84, 0.12);
++}
++
++.login-box h1 {
++  font-family: 'IBM Plex Mono', monospace;
++  font-size: 26px;
++  font-weight: 600;
++  margin-bottom: 8px;
++  text-align: center;
++  color: var(--navy);
++}
++
++.login-box p {
++  text-align: center;
++  color: var(--text-muted);
++  margin-bottom: 28px;
++  font-size: 15px;
++}
++
++.login-form .form-row {
++  margin-bottom: 22px;
++}
++
++.login-form input {
++  width: 100%;
++}
++
++.login-form button {
++  width: 100%;
++  margin-top: 18px;
++  padding: 11px;
++  font-size: 15px;
++}
++
++.login-links {
++  margin-top: 22px;
++  text-align: center;
++  display: flex;
++  justify-content: space-between;
++}
++
++.login-links a {
++  color: var(--blue);
++  text-decoration: none;
++  font-size: 13px;
++  font-family: 'IBM Plex Mono', monospace;
++}
++
++.login-links a:hover {
++  text-decoration: underline;
++  color: var(--blue-mid);
++}
++
++/* ==================== SYSTEM DROPDOWN ==================== */
++.sys-dropdown {
++  position: relative;
++}
++
++.sys-dropdown-toggle {
++  color: #b8ccdf;
++  cursor: pointer;
++  font-size: 18px;
++  transition: color 0.15s;
++  user-select: none;
++  padding: 4px 0;
++}
++
++.sys-dropdown-toggle:hover {
++  color: var(--gold);
++}
++
++.sys-dropdown-menu {
++  display: none;
++  position: absolute;
++  top: calc(100% + 8px);
++  right: 0;
++  background: var(--surface);
++  border: 2px solid var(--blue);
++  border-top: 3px solid var(--gold);
++  min-width: 240px;
++  z-index: 200;
++  flex-direction: column;
++  box-shadow: 0 6px 18px rgba(13, 43, 84, 0.2);
++  border-radius: 3px;
++}
++
++.sys-dropdown-menu.open {
++  display: flex;
++}
++
++.sys-dropdown-menu a {
++  display: block;
++  padding: 16px 22px;
++  color: var(--text);
++  text-decoration: none;
++  font-size: 18px;
++  border-bottom: 1px solid var(--border);
++  font-family: 'IBM Plex Mono', monospace;
++  transition: background 0.1s, color 0.1s;
++}
++
++.sys-dropdown-menu a:last-child {
++  border-bottom: none;
++}
++
++.sys-dropdown-menu a:hover {
++  background: var(--blue-light);
++  color: var(--navy);
++}
++
++/* ==================== MISC ==================== */
++@keyframes spin {
++  to {
++    transform: rotate(360deg);
++  }
++}
++
++.spinner {
++  display: inline-block;
++  width: 14px;
++  height: 14px;
++  border: 2px solid rgba(255, 255, 255, 0.4);
++  border-top-color: #ffffff;
++  border-radius: 50%;
++  animation: spin 0.6s linear infinite;
++  margin-right: 6px;
++}
++
++.input-err {
++  border-color: var(--red) !important;
++  background: #fff8f8 !important;
++}
++
++@keyframes shimmer {
++  0%, 100% { opacity: 1; }
++  50% { opacity: 0.45; }
++}
++
++.skel {
++  background: var(--blue-light);
++  border-radius: 4px;
++  animation: shimmer 1.4s infinite;
++  display: inline-block;
++}
++
+ /* ==================== RESPONSIVE ==================== */
+ @media (max-width: 1024px) {
+   .charts-row {
+     grid-template-columns: 1fr;
+   }
+-  
++
+   .metrics-grid {
+     grid-template-columns: repeat(2, 1fr);
+   }
+ }
+ 
+-/* ── RESPONSIVE ── */
+-
+-/* Tablet */
+ @media (max-width: 900px) {
+-  .charts-row { grid-template-columns: 1fr; }
+-  .topbar { flex-wrap: wrap; gap: 6px; padding: 8px 16px; }
++  .charts-row {
++    grid-template-columns: 1fr;
++  }
++
++  .topbar {
++    flex-wrap: wrap;
++    gap: 6px;
++    padding: 8px 16px;
++  }
+ }
+ 
+-/* Mobile */
+ @media (max-width: 768px) {
+   .sidebar {
+     width: 80px;
+   }
+-  
++
+   .sidebar .logo-text,
+   .sidebar .nav-text,
+   .sidebar .nav-section-title {
+     display: none;
+   }
+-  
++
+   .sidebar .nav-item {
+     justify-content: center;
+     padding: 14px;
+   }
+-  
++
+   .main-content {
+     margin-left: 80px;
+   }
+-  
++
+   .top-bar {
+     padding: 12px 16px;
+   }
+-  
++
+   .breadcrumb {
+     font-size: 16px;
+   }
+-  
++
+   .page-content {
+     padding: 20px;
+   }
+-  
++
+   .metrics-grid {
+     grid-template-columns: 1fr;
+   }
+-  
++
+   .user-name,
+   .user-role {
+     display: none;
+   }
+-  
+-  .filters-bar {
+-    flex-direction: column;
+-    align-items: stretch;
+-  }
+-  
+-  .filter-group {
++
++  .filters-bar,
++  .filter-group,
++  .form-row {
+     flex-direction: column;
+     align-items: stretch;
+   }
+-  
+-  .filter-group select {
++
++  .filter-group select,
++  .filter-group input,
++  input.wide {
+     width: 100%;
+   }
+-  
+-  .form-row {
+-    flex-direction: column;
+-    align-items: stretch;
+-  }
+-  
++
+   .form-label {
+     min-width: auto;
+   }
+-  
+-  input.wide {
+-    width: 100%;
+-  }
+-  
++
+   .login-box {
+     padding: 32px 24px;
+     margin: 16px;
+@@ -1205,72 +1272,119 @@ input.wide { width: 320px; }
+ }
+ 
+ @media (max-width: 480px) {
+-  .metrics-grid {
+-    grid-template-columns: 1fr;
++  body {
++    font-size: 14px;
+   }
+-  
++
++  .main {
++    padding: 16px 12px;
++  }
++
++  .topbar {
++    flex-direction: column;
++    align-items: flex-start;
++    gap: 6px;
++    padding: 10px 14px;
++    font-size: 12px;
++  }
++
++  .topbar-right {
++    flex-wrap: wrap;
++    gap: 10px;
++  }
++
+   .top-bar-right {
+     gap: 8px;
+   }
+-  
+-  .user-avatar {
+-    width: 36px;
+-    height: 36px;
++
++  .breadcrumb {
+     font-size: 14px;
+   }
+-  body { font-size: 14px; }
+ 
+-  /* Layout */
+-  .main { padding: 20px 14px; }
+-  .page-header { padding: 12px 16px; }
++  .metrics-grid,
++  .charts-row {
++    grid-template-columns: 1fr;
++  }
+ 
+-  /* Topbar — stack brand + nav */
+-  .topbar { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 14px; }
+-  .topbar-right { flex-wrap: wrap; gap: 10px; }
++  .metric-value {
++    font-size: 26px;
++  }
+ 
+-  /* Metric cards — 2 col */
+-  .metrics-grid { grid-template-columns: 1fr 1fr; }
+-  .metric-value { font-size: 30px; }
++  .filters-bar {
++    flex-direction: column;
++    align-items: stretch;
++    gap: 10px;
++    padding: 14px;
++  }
+ 
+-  /* Charts — full width */
+-  .charts-row { grid-template-columns: 1fr; }
++  .filter-group {
++    flex-direction: column;
++    align-items: flex-start;
++    gap: 4px;
++  }
+ 
+-  /* Filters — stack vertically */
+-  .filters-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; }
+-  .filter-group { flex-direction: column; align-items: flex-start; gap: 4px; }
+   .filter-group select,
+-  .filter-group input { width: 100%; min-width: unset; }
++  .filter-group input {
++    width: 100%;
++    min-width: unset;
++  }
+ 
+-  /* Forms */
+-  .form-row { flex-direction: column; align-items: stretch; }
+-  .form-label { min-width: auto; }
+-  input.wide { width: 100%; }
+-  .form-body { padding: 16px; }
+-  .form-actions { padding: 12px 16px; }
++  .form-row {
++    flex-direction: column;
++    align-items: stretch;
++  }
+ 
+-  /* Tables — horizontal scroll */
+-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+-  table { min-width: 500px; }
++  .form-label {
++    min-width: auto;
++  }
+ 
+-  /* System dropdown — full width on mobile */
+-  .sys-dropdown-menu { min-width: 160px; }
+-  .sys-dropdown-menu a { font-size: 15px; padding: 14px 16px; }
++  .form-body {
++    padding: 16px;
++  }
+ 
+-  /* Cards */
+-  .card { margin-bottom: 20px; }
++  .form-actions {
++    padding: 12px 16px;
++  }
+ 
+-  /* Pie */
+-  .pie-container { width: 140px; height: 140px; }
+-  .pie-legend { font-size: 12px; gap: 14px; }
+-}
++  .table-scroll {
++    overflow-x: auto;
++    -webkit-overflow-scrolling: touch;
++  }
+ 
+-/* Small mobile */
+-@media (max-width: 480px) {
+-  .metrics-grid { grid-template-columns: 1fr; }
+-  .main { padding: 16px 12px; }
+-  .metric-value { font-size: 26px; }
+-  .topbar { font-size: 12px; }
+-  .breadcrumb { font-size: 14px; }
+-  .btn { font-size: 13px; padding: 8px 14px; }
+-  .btn-sm { font-size: 12px; padding: 6px 10px; }
+-}
+\ No newline at end of file
++  table {
++    min-width: 500px;
++  }
++
++  .sys-dropdown-menu {
++    min-width: 160px;
++  }
++
++  .sys-dropdown-menu a {
++    font-size: 15px;
++    padding: 14px 16px;
++  }
++
++  .card {
++    margin-bottom: 20px;
++  }
++
++  .pie-container {
++    width: 140px;
++    height: 140px;
++  }
++
++  .pie-legend {
++    font-size: 12px;
++    gap: 14px;
++  }
++
++  .btn {
++    font-size: 13px;
++    padding: 8px 14px;
++  }
++
++  .btn-sm {
++    font-size: 12px;
++    padding: 6px 10px;
++  }
++}
+diff --git a/App/templates/base.html b/App/templates/base.html
+index 4fdb725..3bc7954 100644
+--- a/App/templates/base.html
++++ b/App/templates/base.html
+@@ -5,7 +5,6 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>{% block title %}CariFin Data Dashboard{% endblock %}</title>
+     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+     <style>
+         .sys-dropdown { position: relative; }
+         .sys-dropdown-toggle {
+@@ -45,108 +44,6 @@
+     {% block extra_css %}{% endblock %}
+ </head>
+ <body>
+-    <div class="app-container">
+-        <!-- SIDEBAR -->
+-        <aside class="sidebar {% if session.get('sidebar_collapsed') %}collapsed{% endif %}" id="sidebar">
+-            <div class="sidebar-header">
+-                <div class="logo">
+-                    <span class="logo-icon">🏔</span>
+-                    <span class="logo-text">CariFin</span>
+-                </div>
+-                <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+-                    <span class="material-icons">menu</span>
+-                </button>
+-            </div>
+-            
+-            <nav class="sidebar-nav">
+-                <div class="nav-section">
+-                    <div class="nav-section-title">Main</div>
+-                    {% if current_user and current_user.role == 'admin' %}
+-                    <a href="{{ url_for('admin_views.dashboard') }}" class="nav-item {% if request.endpoint == 'admin_views.dashboard' %}active{% endif %}">
+-                        <span class="material-icons">dashboard</span>
+-                        <span class="nav-text">Dashboard</span>
+-                    </a>
+-                    {% elif current_user and current_user.role == 'hr' %}
+-                    <a href="{{ url_for('hr_views.dashboard') }}" class="nav-item {% if request.endpoint == 'hr_views.dashboard' %}active{% endif %}">
+-                        <span class="material-icons">dashboard</span>
+-                        <span class="nav-text">Dashboard</span>
+-                    </a>
+-                    {% endif %}
+-                </div>
+-
+-                {% if current_user and current_user.role == 'admin' %}
+-                <div class="nav-section">
+-                    <div class="nav-section-title">Management</div>
+-                    <a href="{{ url_for('admin_views.list_users') }}" class="nav-item {% if request.endpoint == 'admin_views.list_users' %}active{% endif %}">
+-                        <span class="material-icons">people</span>
+-                        <span class="nav-text">User Management</span>
+-                    </a>
+-                    <a href="{{ url_for('admin_views.institutions') }}" class="nav-item {% if request.endpoint == 'admin_views.institutions' %}active{% endif %}">
+-                        <span class="material-icons">business</span>
+-                        <span class="nav-text">Institution Management</span>
+-                    </a>
+-                    <a href="{{ url_for('admin_views.events') }}" class="nav-item {% if request.endpoint == 'admin_views.events' %}active{% endif %}">
+-                        <span class="material-icons">event</span>
+-                        <span class="nav-text">Event Management</span>
+-                    </a>
+-                    <a href="{{ url_for('admin_views.seasons') }}" class="nav-item {% if request.endpoint == 'admin_views.seasons' %}active{% endif %}">
+-                        <span class="material-icons">calendar_month</span>
+-                        <span class="nav-text">Season Management</span>
+-                    </a>
+-                    <a href="{{ url_for('admin_views.bibs') }}" class="nav-item {% if request.endpoint == 'admin_views.bibs' %}active{% endif %}">
+-                        <span class="material-icons">confirmation_number</span>
+-                        <span class="nav-text">Bib Management</span>
+-                    </a>
+-                    <a href="{{ url_for('admin_views.notifications') }}" class="nav-item">Notifications</a>
+-                    
+-                </div>
+-                {% endif %}
+-
+-                {% if current_user and current_user.role == 'hr' %}
+-                <div class="nav-section">
+-                    <div class="nav-section-title">Participants</div>
+-                    <a href="{{ url_for('hr_views.participant_roster') }}" class="nav-item {% if request.endpoint == 'hr_views.participant_roster' %}active{% endif %}">
+-                        <span class="material-icons">groups</span>
+-                        <span class="nav-text">Participant Roster</span>
+-                    </a>
+-                    <a href="{{ url_for('hr_views.add_participant') }}" class="nav-item">
+-                        <span class="material-icons">person_add</span>
+-                        <span class="nav-text">Add Participant</span>
+-                    </a>
+-                    <a href="{{ url_for('hr_views.register') }}" class="nav-item">
+-                        <span class="material-icons">how_to_reg</span>
+-                        <span class="nav-text">Register for Event</span>
+-                    </a>
+-                </div>
+-                {% endif %}
+-
+-                <div class="nav-section">
+-                    <div class="nav-section-title">Account</div>
+-                    <a href="{{ url_for('auth_views.logout') }}" class="nav-item">
+-                        <span class="material-icons">logout</span>
+-                        <span class="nav-text">Logout</span>
+-                    </a>
+-                </div>
+-            </nav>
+-        </aside>
+-
+-        <!-- MAIN CONTENT -->
+-        <main class="main-content">
+-            <!-- TOP BAR (Simplified) -->
+-            <div class="top-bar">
+-                <div class="top-bar-left">
+-                    <span class="breadcrumb">{% block breadcrumb %}Dashboard{% endblock %}</span>
+-                </div>
+-                <div class="top-bar-right">
+-                    {% if current_user %}
+-                    <span class="user-info">
+-                        <span class="user-avatar">{{ current_user.firstname[0] }}{{ current_user.lastname[0] }}</span>
+-                        <span class="user-name">{{ current_user.firstname }} {{ current_user.lastname }}</span>
+-                        <span class="user-role">{{ current_user.role|upper }}</span>
+-                    </span>
+-                    {% endif %}
+-                </div>
+-            </div>
+     <!-- TOP BAR -->
+     <div class="topbar">
+         <span>CariFin Data Dashboard</span>
+@@ -177,38 +74,29 @@
+         </div>
+     </div>
+ 
+-            <!-- FLASH MESSAGES -->
+-            {% with messages = get_flashed_messages(with_categories=true) %}
+-                {% if messages %}
+-                    {% for category, message in messages %}
+-                        <div class="alert alert-{{ category }}">{{ message }}</div>
+-                    {% endfor %}
+-                {% endif %}
+-            {% endwith %}
++    <!-- MAIN CONTENT -->
++    <div class="main">
++        {% with messages = get_flashed_messages(with_categories=true) %}
++            {% if messages %}
++                {% for category, message in messages %}
++                    <div class="toast show" style="position: static; margin-bottom: 16px; opacity: 1; transform: none; pointer-events: auto;">{{ message }}</div>
++                {% endfor %}
++            {% endif %}
++        {% endwith %}
+ 
+-            <!-- PAGE CONTENT -->
+-            <div class="page-content">
+-                {% block content %}{% endblock %}
+-            </div>
+-        </main>
++        {% block content %}{% endblock %}
+     </div>
+ 
++    <!-- TOAST NOTIFICATION -->
++    <div class="toast" id="toast"></div>
++
+     <script>
+-        function toggleSidebar() {
+-            const sidebar = document.getElementById('sidebar');
+-            sidebar.classList.toggle('collapsed');
+-            
+-            // Save state to session (optional)
+-            fetch('/toggle-sidebar', { method: 'POST' });
+-        }
+-        
+         function showToast(msg) {
+             const t = document.getElementById('toast');
+-            if (t) {
+-                t.textContent = msg;
+-                t.classList.add('show');
+-                setTimeout(() => t.classList.remove('show'), 3000);
+-            }
++            t.textContent = msg;
++            t.classList.add('show');
++            clearTimeout(t._timer);
++            t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+         }
+ 
+         function toggleSysMenu(e) {
+@@ -216,7 +104,6 @@
+             document.getElementById('sysMenu').classList.toggle('open');
+         }
+ 
+-        // close when clicking anywhere else
+         document.addEventListener('click', function() {
+             const m = document.getElementById('sysMenu');
+             if (m) m.classList.remove('open');
+diff --git a/App/views/hr_views.py b/App/views/hr_views.py
+index 3e8d935..745e7f4 100644
+--- a/App/views/hr_views.py
++++ b/App/views/hr_views.py
+@@ -1,13 +1,10 @@
+-from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify
++from flask import Blueprint, request, flash, redirect, url_for, render_template, jsonify, Response
+ from flask_jwt_extended import jwt_required, current_user
+ from App.controllers.hr_controller import get_hr_stats, get_available_events, register_participants
+ from App.controllers.participant_controller import create_participant
+ from App.models import Participant
+ from App.database import db
+ from datetime import datetime
+-import csv
+-import io
+-
+ import csv, io
+ 
+ hr_views = Blueprint('hr_views', __name__, template_folder='../templates')
+@@ -18,8 +15,9 @@ hr_views = Blueprint('hr_views', __name__, template_folder='../templates')
+ def dashboard():
+     if current_user.role != 'hr':
+         return "Access Denied", 403
+-    stats = get_hr_stats(current_user.institution_id)
+-    return render_template('hr/hr.html', **stats)
++    stats  = get_hr_stats(current_user.institution_id)
++    events = get_available_events(current_user.institution_id)
++    return render_template('hr/hr.html', **stats, events=events)
+ 
+ 
+ @hr_views.route('/hr/participants')
+@@ -31,12 +29,6 @@ def participant_roster():
+     return render_template('hr/participants.html', participants=participants)
+ 
+ 
+-from App.controllers.participant_controller import create_participant
+-    stats  = get_hr_stats(current_user.institution_id)
+-    events = get_available_events(current_user.institution_id)
+-    return render_template('hr/hr.html', **stats, events=events)
+-
+-
+ @hr_views.route('/hr/participants/add', methods=['GET', 'POST'])
+ @jwt_required()
+ def add_participant():
+@@ -78,13 +70,12 @@ def upload_csv():
+         flash('Please upload a valid .csv file.', 'danger')
+         return redirect(url_for('hr_views.dashboard'))
+ 
+-    stream   = io.StringIO(file.stream.read().decode('utf-8-sig'))
+-    reader   = csv.DictReader(stream)
+-    created  = 0
+-    skipped  = 0
+-    errors   = []
++    stream  = io.StringIO(file.stream.read().decode('utf-8-sig'))
++    reader  = csv.DictReader(stream)
++    created = 0
++    skipped = 0
++    errors  = []
+ 
+-    # Normalise header names to lowercase stripped
+     for row in reader:
+         row = {k.strip().lower(): (v.strip() if v else '') for k, v in row.items()}
+ 
+@@ -107,7 +98,6 @@ def upload_csv():
+                 except ValueError:
+                     continue
+ 
+-        # Skip duplicate (same name + institution)
+         existing = Participant.query.filter_by(
+             first_name=first, last_name=last,
+             institution_id=current_user.institution_id
+@@ -118,12 +108,8 @@ def upload_csv():
+ 
+         try:
+             create_participant(
+-                first_name=first,
+-                last_name=last,
+-                email=email,
+-                birth_date=birth_date,
+-                sex=sex,
+-                division=division,
++                first_name=first, last_name=last, email=email,
++                birth_date=birth_date, sex=sex, division=division,
+                 institution_id=current_user.institution_id
+             )
+             created += 1
+@@ -159,10 +145,7 @@ def register():
+ 
+     participants = Participant.query.filter_by(institution_id=current_user.institution_id).all()
+     events = get_available_events(current_user.institution_id)
+-    
+-    return render_template('hr/register.html', 
+-                         participants=participants, 
+-                         events=events)
++    return render_template('hr/register.html', participants=participants, events=events)
+ 
+ 
+ @hr_views.route('/hr/import-participants', methods=['GET', 'POST'])
+@@ -170,20 +153,17 @@ def register():
+ def import_participants():
+     if current_user.role != 'hr':
+         return "Access Denied", 403
+-    
++
+     if request.method == 'POST':
+         file = request.files.get('csv_file')
+         season_event_id = request.form.get('season_event_id')
+         if not file or not file.filename.endswith('.csv'):
+             flash('Please upload a valid CSV file.', 'danger')
+             return redirect(request.url)
+-        # process CSV
+-        import csv, io
+         stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+         csv_input = csv.DictReader(stream)
+         new_participant_ids = []
+         for row in csv_input:
+-            # expecting headers: first_name, last_name, email
+             participant = Participant.query.filter_by(email=row['email']).first()
+             if not participant:
+                 participant = Participant(
+@@ -199,13 +179,12 @@ def import_participants():
+         db.session.commit()
+         flash(f'Imported participants and created {reg_count} new registrations!', 'success')
+         return redirect(url_for('hr_views.dashboard'))
+-    
+-    # GET request: show form
++
+     events = get_available_events(current_user.institution_id)
+     return render_template('hr/import_participants.html', events=events)
+-    return render_template('hr/register.html', participants=participants, events=events)
+ 
+-# ── EXPORTS ──────────────────────────────────────────────────────────────────
++
++# ── EXPORTS ───────────────────────────────────────────────────────────────────
+ 
+ @hr_views.route('/hr/export/roster')
+ @jwt_required()
+@@ -213,9 +192,6 @@ def export_roster():
+     """Export institution participant roster as CSV."""
+     if current_user.role != 'hr':
+         return "Access Denied", 403
+-    import csv, io
+-    from flask import Response
+-    from App.models import Participant
+     from App.controllers.hr_controller import get_hr_stats
+ 
+     stats = get_hr_stats(current_user.institution_id)
+@@ -226,8 +202,8 @@ def export_roster():
+     writer.writerow(['First Name', 'Last Name', 'Email', 'Sex', 'Division',
+                      'Birth Date', 'Status'])
+     for p in stats['participants']:
+-        if p.has_result:     status = 'Participated'
+-        elif p.is_no_show:   status = 'No-Show'
++        if p.has_result:      status = 'Participated'
++        elif p.is_no_show:    status = 'No-Show'
+         elif p.is_registered: status = 'Registered'
+         else:                 status = 'Unregistered'
+         writer.writerow([p.first_name, p.last_name, p.email or '',
+@@ -247,12 +223,11 @@ def export_results():
+     """Export stage results for this institution as CSV."""
+     if current_user.role != 'hr':
+         return "Access Denied", 403
+-    import csv, io
+-    from flask import Response
+-    from App.models import Participant, Registration, Result, Stage, SeasonEvent, Season, Event
++    from App.models import Registration, Result, Stage, SeasonEvent, Season, Event
+ 
+     inst_id = current_user.institution_id
+-    inst    = db.session.query(__import__('App.models', fromlist=['Institution']).Institution).get(inst_id)
++    from App.models import Institution
++    inst = Institution.query.get(inst_id)
+ 
+     current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first() \
+                   or Season.query.order_by(Season.year.desc()).first()
+diff --git a/wsgi.py b/wsgi.py
+index 6417c39..7e9ead1 100644
+--- a/wsgi.py
++++ b/wsgi.py
+@@ -4,31 +4,68 @@ from flask.cli import with_appcontext, AppGroup
+ from App import create_app
+ from App.database import db, get_migrate
+ from App.models import User
+-from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
+-
++from App.controllers import ( create_user, get_all_users_json, get_all_users )
+ 
+ sys.path.insert(0, os.path.dirname(__file__))
+ 
+ app = create_app()
+ migrate = get_migrate(app)
+ 
+-# This command creates and initializes the database
++
+ @app.cli.command("init", help="Creates and initializes the database")
+ def init():
+     """Initialize the database."""
+     db.create_all()
+-    initialize()
++    _migrate_columns()
+     print('database initialized')
+ 
++
++@app.cli.command("seed", help="Seed admin user and base data")
++def seed_cmd():
++    """Seed the database with admin user and base data."""
++    db.create_all()
++    _migrate_columns()
++    _seed_admin()
++    print('Seeding complete')
++
++
++def _migrate_columns():
++    """Add any missing columns to existing databases (idempotent)."""
++    from sqlalchemy import text, inspect
++    with db.engine.connect() as conn:
++        inspector = inspect(db.engine)
++        user_cols = [c['name'] for c in inspector.get_columns('users')]
++        if 'must_change_password' not in user_cols:
++            conn.execute(text('ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT 0'))
++            conn.commit()
++            print('  + Added users.must_change_password')
++        if 'is_active' not in user_cols:
++            conn.execute(text('ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1'))
++            conn.commit()
++            print('  + Added users.is_active')
++
++
++def _seed_admin():
++    from App.models import Admin
++    if not Admin.query.filter_by(email='admin@carifin.com').first():
++        admin = Admin(
++            firstname='Admin', lastname='User',
++            username='admin', email='admin@carifin.com',
++            password='Admin123!'
++        )
++        db.session.add(admin)
++        db.session.commit()
++        print('  + Admin: admin@carifin.com / Admin123!')
++    else:
++        print('  - Admin already exists')
++
++
+ '''
+ User Commands
+ '''
+ 
++user_cli = AppGroup('user', help='User object commands')
+ 
+-# eg : flask user <command>
+-user_cli = AppGroup('user', help='User object commands') 
+-
+-# Then define the command and any parameters and annotate it with the group (@)
+ @user_cli.command("create", help="Creates a user")
+ @click.argument("firstname", default="rob")
+ @click.argument("lastname", default="bob")
+@@ -47,13 +84,13 @@ def list_user_command(format):
+     else:
+         print(get_all_users_json())
+ 
+-app.cli.add_command(user_cli) # add the group to the cli
++app.cli.add_command(user_cli)
+ 
+ '''
+ Test Commands
+ '''
+ 
+-test = AppGroup('test', help='Testing commands') 
++test = AppGroup('test', help='Testing commands')
+ 
+ @test.command("user", help="Run User tests")
+ @click.argument("type", default="all")
+@@ -64,23 +101,8 @@ def user_tests_command(type):
+         sys.exit(pytest.main(["-k", "UserIntegrationTests"]))
+     else:
+         sys.exit(pytest.main(["-k", "App"]))
+-    
+-app.cli.add_command(test)
+ 
+-with app.app_context():
+-    db.create_all()
+-    from App.models import Admin
+-    if not Admin.query.filter_by(email='admin@carifin.com').first():
+-        admin = Admin(
+-            firstname='Admin',
+-            lastname='User',
+-            username='admin',
+-            email='admin@carifin.com',
+-            password='Admin123!'
+-        )
+-        db.session.add(admin)
+-        db.session.commit()
+-        print('Admin user created')
++app.cli.add_command(test)
+ 
+ if __name__ == "__main__":
+     app.run()
+\ No newline at end of file

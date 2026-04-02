@@ -46,6 +46,17 @@ def login():
         # Create JWT token
         token = create_access_token(identity=str(user.id))
 
+        # CHECK PASSWORD RESET FIRST - before creating response
+        if user.must_change_password:
+            session['reset_user_id'] = user.id
+            flash('You must reset your password before continuing', 'warning')
+            # Create a response for the reset page
+            response = redirect(url_for('auth_views.reset_password'))
+            # Set JWT cookie so reset page can use it if needed
+            set_access_cookies(response, token)
+            return response
+
+        # If no reset needed, proceed to dashboard
         # Redirect based on role
         if user.role == 'admin':
             response = redirect(url_for('admin_views.dashboard'))
@@ -64,6 +75,69 @@ def login():
         return response
 
     return render_template('login.html')
+
+
+@auth_views.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if 'reset_user_id' not in session:
+        flash('No password reset required', 'danger')
+        return redirect(url_for('auth_views.login'))
+    
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if new_password != confirm_password:
+            flash('New passwords do not match', 'danger')
+            return redirect(url_for('auth_views.reset_password'))
+        
+        user = User.query.get(session['reset_user_id'])
+        
+        if not user or not user.check_password(current_password):
+            flash('Invalid current password', 'danger')
+            return redirect(url_for('auth_views.reset_password'))
+        
+        # Set new password
+        user.set_password(new_password)
+        user.must_change_password = False
+        db.session.commit()
+
+        # Create JWT token
+        token = create_access_token(identity=str(user.id))
+
+        # Clear reset flag
+        session.pop('reset_user_id')
+
+        # Set session variables
+        session['user_id'] = user.id
+        session['user_role'] = user.role
+        session['institution_id'] = user.institution_id
+
+        # Create response with redirect
+        if user.role == 'admin':
+            response = redirect(url_for('admin_views.dashboard'))
+        elif user.role == 'hr':
+            response = redirect(url_for('hr_views.dashboard'))
+        else:  # scorer
+            response = redirect(url_for('scorer_views.dashboard'))
+
+        # Set JWT cookie
+        set_access_cookies(response, token)
+
+        flash('Password reset successful!', 'success')
+        return response
+    
+    return render_template('reset_password.html')
+
+
+@auth_views.route('/toggle-sidebar', methods=['POST'])
+def toggle_sidebar():
+    if 'sidebar_collapsed' in session:
+        session.pop('sidebar_collapsed')
+    else:
+        session['sidebar_collapsed'] = True
+    return '', 200
 
 @auth_views.route('/logout', methods=['GET'])
 def logout():

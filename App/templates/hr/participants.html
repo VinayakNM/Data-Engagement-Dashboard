@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Participant Roster{% endblock %}
+{% block breadcrumb %}HR &rsaquo; Participant Roster{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <span>Participant Roster</span>
+    <a href="{{ url_for('hr_views.add_participant') }}" class="btn btn-sm">+ Add Participant</a>
+  </div>
+  <div style="padding: 20px;">
+    <div class="filters-bar" style="margin-bottom: 16px;">
+      <div class="filter-group">
+        <label>Search:</label>
+        <input type="text" id="searchInput" placeholder="Name or email...">
+      </div>
+      <div class="filter-group">
+        <label>Division:</label>
+        <select id="divisionFilter">
+          <option value="">All Divisions</option>
+          <option value="M2029">M2029</option>
+          <option value="F2029">F2029</option>
+          <option value="M3039">M3039</option>
+          <option value="F3039">F3039</option>
+          <option value="M4049">M4049</option>
+          <option value="F4049">F4049</option>
+          <option value="M5059">M5059</option>
+          <option value="F5059">F5059</option>
+          <option value="M60+">M60+</option>
+          <option value="F60+">F60+</option>
+        </select>
+      </div>
+      <button class="btn btn-sm" onclick="filterTable()">Filter</button>
+      <button class="btn btn-sm btn-ghost" onclick="clearFilters()">Clear</button>
+    </div>
+
+    <table id="participantTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Division</th>
+          <th>Status</th>
+        </thead>
+      <tbody>
+        {% for p in participants %}
+        <tr class="participant-row" data-name="{{ p.first_name }} {{ p.last_name }}" data-email="{{ p.email or '' }}" data-division="{{ p.division or '' }}">
+          <td>{{ p.first_name }} {{ p.last_name }}</td>
+          <td>{{ p.email or '-' }}</td>
+          <td>{{ p.division or '-' }}</td>
+          <td>
+            {% if p.has_result %}
+            <span class="badge badge-active">Participated</span>
+            {% else %}
+            <span class="badge badge-closed">No-Show</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align: center;">No participants found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  function filterTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const division = document.getElementById('divisionFilter').value;
+    const rows = document.querySelectorAll('.participant-row');
+    rows.forEach(row => {
+      const name = row.getAttribute('data-name').toLowerCase();
+      const email = row.getAttribute('data-email').toLowerCase();
+      const rowDivision = row.getAttribute('data-division');
+      let visible = true;
+      if (search && !name.includes(search) && !email.includes(search)) visible = false;
+      if (division && rowDivision !== division) visible = false;
+      row.style.display = visible ? '' : 'none';
+    });
+  }
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('divisionFilter').value = '';
+    filterTable();
+  }
+</script>
+
+{% endblock %}

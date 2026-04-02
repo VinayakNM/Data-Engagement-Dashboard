@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Institution Management{% endblock %}
+{% block breadcrumb %}Institution Management{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <span>Registered Institutions</span>
+    <button class="btn btn-sm" id="addInstitutionBtn">+ Add Institution</button>
+  </div>
+  <div style="overflow-x: auto;">
+     <table>
+      <thead>
+         <tr>
+          <th>ID</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Users</th>
+          <th>Participants</th>
+          <th>Registrations</th>
+          <th>Participation %</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for stat in institution_stats %}
+        <tr>
+          <td>{{ stat.id }}</td>
+          <td><strong>{{ stat.code }}</strong></td>
+          <td>{{ stat.name }}</td>
+          <td>{{ stat.user_count }}</td>
+          <td>{{ stat.participants }}</td>
+          <td>{{ stat.registrations }}</td>
+          <td>{{ stat.participation_rate }}%</td>
+          <td><span class="status-dot dot-active"></span> Active</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Institution Modal -->
+<div class="overlay" id="addInstitutionModal">
+  <div class="modal">
+    <h3>Add New Institution</h3>
+    <form method="POST" action="{{ url_for('admin_views.add_institution') }}">
+      <div class="modal-field">
+        <label>Institution Code</label>
+        <input type="text" name="code" required>
+      </div>
+      <div class="modal-field">
+        <label>Full Name</label>
+        <input type="text" name="name" required>
+      </div>
+      <div class="modal-field">
+        <label>Contact Person (optional)</label>
+        <input type="text" name="contact">
+      </div>
+      <div class="modal-field">
+        <label>Contact Email (optional)</label>
+        <input type="email" name="email">
+      </div>
+      <div class="modal-field">
+        <label>Phone (optional)</label>
+        <input type="text" name="phone">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="closeModalBtn">Cancel</button>
+        <button type="submit" class="btn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('addInstitutionBtn').addEventListener('click', function() {
+    document.getElementById('addInstitutionModal').classList.add('active');
+  });
+  document.getElementById('closeModalBtn').addEventListener('click', function() {
+    document.getElementById('addInstitutionModal').classList.remove('active');
+  });
+</script>
+
+<style>
+.modal-field {
+  margin-bottom: 16px;
+}
+.modal-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.modal-field input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+</style>
+{% endblock %}

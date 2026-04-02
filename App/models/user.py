@@ -14,6 +14,7 @@ class User(db.Model):
     password = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
+    must_change_password = db.Column(db.Boolean, default=False)
 
     institution_id = db.Column(db.Integer, db.ForeignKey('institution.id'), nullable=True)
     institution    = db.relationship('Institution', backref=db.backref('users', lazy=True))
@@ -295,6 +296,7 @@ class Result(db.Model):
     finish_time     = db.Column(db.String(20), nullable=True)
     placement       = db.Column(db.Integer,    nullable=True)
     points          = db.Column(db.Integer,    nullable=True)
+    is_error = db.Column(db.Boolean, default=False)
     registration    = db.relationship('Registration', backref=db.backref('results', lazy=True))
     stage           = db.relationship('Stage',        backref=db.backref('results', lazy=True))
     __table_args__  = (db.UniqueConstraint('registration_id', 'stage_id', name='_result_reg_stage_uc'),)
