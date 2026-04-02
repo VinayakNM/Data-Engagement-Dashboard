@@ -1,203 +1,239 @@
 {% extends "base.html" %}
-{% block title %}CariFin — Season Management{% endblock %}
-{% block breadcrumb %}System › Season Management{% endblock %}
-
-{% block extra_css %}
-<style>
-.page-actions{display:flex;gap:8px;margin-bottom:20px;}
-.yr{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;}
-.ev-list{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
-.tbl-action:hover{color:var(--accent);}
-.badge-planning{background:#d4ddf0;color:var(--planning);border:1px solid #98aad4;}
-/* panel */
-.form-panel{border:2px dashed var(--border-dark);background:var(--surface);margin-bottom:24px;display:none;}
-.form-panel.open{display:block;}
-.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
-.panel-close{background:none;border:none;color:var(--btn-text);opacity:.6;font-size:18px;cursor:pointer;line-height:1;}.panel-close:hover{opacity:1;}
-.form-body{padding:20px;}
-.form-actions{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-.field{margin-bottom:14px;}
-.field-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
-.req{color:#8a1a1a;}
-.inp{border:1.5px solid var(--border);background:var(--bg);padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
-.inp:focus{border-color:var(--accent);}
-.radios{display:flex;gap:16px;flex-wrap:wrap;}
-.radio-opt{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
-.radio-opt input{accent-color:var(--accent);width:13px;height:13px;}
-.date-pair{display:flex;align-items:center;gap:8px;}
-.date-sep{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);white-space:nowrap;}
-.section-sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
-.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
-/* events sub-table */
-.ev-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--border);}
-.ev-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
-.ev-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px;}
-.ev-tbl tr:last-child td{border-bottom:none;}
-.ev-tbl input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
-.ev-tbl input[type=date]{border:1.5px solid var(--border);background:var(--bg);padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none;width:130px;transition:border-color .15s;}
-.ev-tbl input[type=date]:focus{border-color:var(--accent);}
-.ev-tbl input[type=date]:disabled{background:var(--accent-light);color:var(--text-muted);}
-.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:14px;display:none;border:1px solid;}
-.banner.err{display:block;background:#f0d4d4;border-color:#d4a0a0;color:#8a1a1a;}
-
-  /* ── Shared form font overrides ── */
-  .field-label { font-size: 13px !important; }
-  .inp { font-size: 15px !important; padding: 8px 12px !important; }
-  .radio-opt { font-size: 15px !important; }
-  .banner { font-size: 14px !important; }
-  .form-panel-header { font-size: 14px !important; letter-spacing: .06em !important; }
-  .tbl-action { font-size: 13px !important; }
-  .section-lbl { font-size: 13px !important; }
-  .sinp { font-size: 14px !important; padding: 6px 8px !important; }
-  .snum { font-size: 14px !important; }
-  .stage-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .stage-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .season-row { font-size: 14px !important; }
-  .yr { font-size: 17px !important; }
-  .ev-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .ev-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .sub-tbl th { font-size: 12px !important; }
-  .sub-tbl td { font-size: 14px !important; }
-  .history-list { font-size: 14px !important; }
-  .assign-row select { font-size: 14px !important; }
-  .import-label { font-size: 13px !important; }
-  .import-btn { font-size: 14px !important; padding: 5px 14px !important; }
-  .import-file, .import-dl { font-size: 14px !important; }
-  select, input[type=text], input[type=email], input[type=number], input[type=date], textarea {
-    font-size: 15px !important;
-  }
-
-</style>
-{% endblock %}
+{% block title %}Manage Seasons{% endblock %}
+{% block breadcrumb %}Season Management{% endblock %}
 
 {% block content %}
-<div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);margin-bottom:16px;">Manage Seasons</div>
-<div class="banner" id="banner"></div>
-<div class="page-actions">
-  <button class="btn" onclick="openNew()">+ Add New Season</button>
-  <button class="btn btn-ghost" onclick="archiveOld()">Archive Old Seasons</button>
-</div>
+<div id="app-root">Loading...</div>
 
-<div class="card">
-  <div class="card-header">Seasons List</div>
-  <table>
-    <thead><tr>
-      <th>Year</th><th>Status</th><th>Reg. Open</th><th>Reg. Close</th><th>Season Period</th><th>Events</th><th></th>
-    </tr></thead>
-    <tbody id="seaTbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:14px;">Loading…</td></tr></tbody>
-  </table>
-</div>
-
-<div class="form-panel" id="panel">
-  <div class="form-panel-header">
-    <span id="panelTitle">Season Form</span>
-    <button class="panel-close" onclick="closePanel()">✕</button>
-  </div>
-  <div class="form-body" id="panelBody"></div>
-  <div class="form-actions" id="panelFooter"></div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-var seasons=[], allEvents=[], selId=null;
+const API = '/api/forms';
+let token = null;
+let allSeasons = [];
+let allEvents  = [];
 
-function api(url,opts){return fetch(url,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts||{})).then(function(r){if(!r.ok)return r.json().catch(function(){return{};}).then(function(e){throw new Error(e.error||'HTTP '+r.status);});return r.json();});}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function fmt(iso){if(!iso)return '—';var p=iso.split('-');return p[2]+'-'+p[1]+'-'+p[0];}
-function toast(m){showToast(m);}
-function banner(m){var el=document.getElementById('banner');el.textContent=m;el.className='banner err';}
-function hideBanner(){document.getElementById('banner').className='banner';}
-
-function load(){
-  Promise.all([api('/api/forms/seasons'),api('/api/forms/events-list').catch(function(){return[];})])
-    .then(function(r){seasons=r[0];allEvents=r[1];renderList();hideBanner();})
-    .catch(function(e){banner('Load failed: '+e.message);document.getElementById('seaTbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">Failed to load.</td></tr>';});
+async function apiGet(path) {
+    const r = await fetch(API + path, { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? r.json() : [];
+}
+async function apiPost(path, body) {
+    return fetch(API + path, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiPut(path, body) {
+    return fetch(API + path, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiDelete(path) {
+    return fetch(API + path, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+    });
 }
 
-function renderList(){
-  var tb=document.getElementById('seaTbody');
-  if(!seasons.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No seasons yet.</td></tr>';return;}
-  tb.innerHTML=seasons.map(function(s){
-    var evNames=(s.events||[]).map(function(e){return e.name;}).join(', ')||'—';
-    var period=(s.start_date||s.end_date)?(fmt(s.start_date)+' – '+fmt(s.end_date)):'—';
-    return '<tr class="'+(s.id==selId?'sel':'')+'" onclick="selectSeason('+s.id+')" style="cursor:pointer">'
-      +'<td><span class="yr">'+s.year+'</span></td>'
-      +'<td><span class="badge badge-'+s.status+'">'+s.status+'</span></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+fmt(s.reg_open)+'</td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+fmt(s.reg_close)+'</td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+period+'</td>'
-      +'<td><span class="ev-list" title="'+esc(evNames)+'">'+esc(evNames)+'</span></td>'
-      +'<td>'+(s.status==='active'?'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+s.id+',\'closed\')">[close]</a>':'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[reopen]</a>')
-        +'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[view]</a></td>'
-    +'</tr>';
-  }).join('');
+function getTokenFromCookie() {
+    const match = document.cookie.match(/access_token_cookie=([^;]+)/);
+    return match ? match[1] : null;
 }
 
-function selectSeason(id){selId=id;renderList();var s=seasons.find(function(x){return x.id==id;});if(s)renderForm(s);scrollToPanel();}
-function openNew(){selId=null;renderList();renderForm(null);scrollToPanel();}
-function scrollToPanel(){setTimeout(function(){document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});},50);}
-
-function renderForm(s){
-  var isNew=!s;
-  document.getElementById('panelTitle').textContent=isNew?'ADD NEW SEASON':'SEASON '+( s?s.year:'')+' — '+(s?s.status.toUpperCase():'');
-  document.getElementById('panel').classList.add('open');
-  var yr=s?s.year:'', st=s?s.status||'planning':'planning';
-  var evRows=allEvents.map(function(e){
-    var linked=s?(s.events||[]).find(function(x){return x.id==e.id;}):null;
-    var chk=linked?'checked':'';
-    return '<tr id="evrow_'+e.id+'">'
-      +'<td>'+esc(e.name)+'</td>'
-      +'<td><input type="checkbox" class="ev-cb" data-id="'+e.id+'" '+chk+' onchange="toggleEvDates('+e.id+',this.checked)"></td>'
-      +'<td><input type="date" class="ev-start" data-id="'+e.id+'" value="'+(linked&&linked.start_date?linked.start_date:'')+'"'+(linked?'':' disabled')+'>'
-        +' <span class="date-sep">–</span> '
-        +'<input type="date" class="ev-end" data-id="'+e.id+'" value="'+(linked&&linked.end_date?linked.end_date:'')+'"'+(linked?'':' disabled')+'></td>'
-    +'</tr>';
-  }).join('');
-  document.getElementById('panelBody').innerHTML=
-    '<div class="field"><label class="field-label">Season Year <span class="req">*</span></label><input class="inp" id="iYear" type="number" min="2000" max="2099" value="'+yr+'" placeholder="e.g. 2025" style="max-width:120px;"></div>'
-    +'<div class="field"><label class="field-label">Status</label><div class="radios">'+['planning','active','closed','archived'].map(function(v){return '<label class="radio-opt"><input type="radio" name="iSt" value="'+v+'"'+(st===v?' checked':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</label>';}).join('')+'</div></div>'
-    +'<div class="field"><label class="field-label">Registration Period</label><div class="date-pair"><input class="inp" type="date" id="iRegOpen" value="'+(s&&s.reg_open||'')+'" style="max-width:160px;"><span class="date-sep">to</span><input class="inp" type="date" id="iRegClose" value="'+(s&&s.reg_close||'')+'" style="max-width:160px;"></div></div>'
-    +'<div class="field"><label class="field-label">Season Period</label><div class="date-pair"><input class="inp" type="date" id="iStart" value="'+(s&&s.start_date||'')+'" style="max-width:160px;"><span class="date-sep">to</span><input class="inp" type="date" id="iEnd" value="'+(s&&s.end_date||'')+'" style="max-width:160px;"></div></div>'
-    +'<hr class="section-sep"><div class="section-lbl">Events in this Season</div>'
-    +(allEvents.length
-      ?'<table class="ev-tbl"><thead><tr><th>Event</th><th>Include?</th><th>Start – End Dates</th></tr></thead><tbody>'+evRows+'</tbody></table>'
-      :'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">No events exist yet — create events first.</p>');
-  document.getElementById('panelFooter').innerHTML=
-    '<button class="btn" id="saveBtn" onclick="saveSeason('+(s?s.id:'')+')">Save Season</button>'
-    +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
-    +(s&&s.status!=='active'?'<button class="btn btn-ghost" onclick="quickStatus('+s.id+',\'active\')">Activate</button>':'')
-    +(s&&s.status==='active'?'<button class="btn btn-ghost" onclick="quickStatus('+s.id+',\'closed\')">Close Season</button>':'')
-    +(s?'<button class="btn btn-danger" style="margin-left:auto" onclick="deleteSeason('+s.id+')">Delete</button>':'');
+async function loadData() {
+    token      = getTokenFromCookie();
+    allSeasons = await apiGet('/seasons');
+    allEvents  = await apiGet('/events-list');
+    render();
 }
 
-function toggleEvDates(eid,on){var row=document.getElementById('evrow_'+eid);row.querySelector('.ev-start').disabled=!on;row.querySelector('.ev-end').disabled=!on;if(!on){row.querySelector('.ev-start').value='';row.querySelector('.ev-end').value='';}}
+const STATUS_OPTS = ['planning', 'active', 'closed', 'archived'];
 
-function saveSeason(id){
-  var yr=parseInt(document.getElementById('iYear').value);
-  if(!yr||yr<2000||yr>2099){toast('⚠ Valid year required.');return;}
-  var stEl=document.querySelector('input[name="iSt"]:checked');
-  var evts=[];
-  document.querySelectorAll('.ev-cb').forEach(function(cb){var eid=parseInt(cb.dataset.id);var row=document.getElementById('evrow_'+eid);evts.push({event_id:eid,included:cb.checked,start_date:row.querySelector('.ev-start').value||null,end_date:row.querySelector('.ev-end').value||null});});
-  var body={year:yr,status:stEl?stEl.value:'planning',reg_open:document.getElementById('iRegOpen').value||null,reg_close:document.getElementById('iRegClose').value||null,start_date:document.getElementById('iStart').value||null,end_date:document.getElementById('iEnd').value||null,events:evts};
-  var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
-  var p=!id?api('/api/forms/seasons',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify(body)});
-  p.then(function(r){toast('✓ Season saved.');selId=r.id;return load();})
-   .then(function(){
-     var fresh=seasons.find(function(x){return x.id==selId;});
-     if(fresh) renderForm(fresh);
-   })
-   .catch(function(e){banner('Save failed: '+e.message);})
-   .finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Season';}});
+function render() {
+    const root = document.getElementById('app-root');
+    root.innerHTML = `
+      <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+        <button class="btn" onclick="openCreateModal()">+ New Season</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Seasons</div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th>Year</th><th>Status</th><th>Reg Open</th><th>Start</th><th>End</th><th>Events</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            ${allSeasons.map(s => `
+              <tr>
+                <td><strong>${s.year}</strong></td>
+                <td>
+                  ${ s.status === 'active'   ? '<span class="badge badge-active">Active</span>'
+                   : s.status === 'closed'   ? '<span class="badge badge-closed">Closed</span>'
+                   : s.status === 'archived' ? '<span class="badge badge-archived">Archived</span>'
+                   :                           '<span class="badge badge-planning">Planning</span>' }
+                </td>
+                <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.reg_open||'—'}</td>
+                <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.start_date||'—'}</td>
+                <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.end_date||'—'}</td>
+                <td>${s.events.map(e => e.name).join(', ') || '—'}</td>
+                <td style="display:flex; gap:6px;">
+                  <button class="btn btn-sm btn-ghost" onclick="openEditModal(${s.id})">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteSeason(${s.id}, ${s.year})">Delete</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>
+
+      <!-- Create Modal -->
+      <div class="overlay" id="createModal">
+        <div class="modal" style="max-width:560px; width:95%;">
+          <h3>New Season</h3>
+          <div class="form-row"><span class="form-label">Year:</span>
+            <input type="number" id="newYear" style="width:120px;" placeholder="2026">
+          </div>
+          <div class="form-row"><span class="form-label">Status:</span>
+            <select id="newStatus" style="width:160px;">
+              ${STATUS_OPTS.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-row"><span class="form-label">Reg Opens:</span>
+            <input type="date" id="newRegOpen" style="width:160px;">
+          </div>
+          <div class="form-row"><span class="form-label">Reg Closes:</span>
+            <input type="date" id="newRegClose" style="width:160px;">
+          </div>
+          <div class="form-row"><span class="form-label">Start:</span>
+            <input type="date" id="newStart" style="width:160px;">
+          </div>
+          <div class="form-row"><span class="form-label">End:</span>
+            <input type="date" id="newEnd" style="width:160px;">
+          </div>
+          <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Include Events</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+            ${allEvents.map(e => `
+              <label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer;">
+                <input type="checkbox" class="new-ev-check" value="${e.id}" style="accent-color:var(--blue);">
+                ${e.name}
+              </label>`).join('')}
+          </div>
+          <div class="form-actions" style="border-top:none; padding:0;">
+            <button class="btn" onclick="createSeason()">Create</button>
+            <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Modal -->
+      <div class="overlay" id="editModal">
+        <div class="modal" style="max-width:560px; width:95%;">
+          <h3>Edit Season</h3>
+          <div id="editFormContent"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="saveEdit()">Save</button>
+            <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
 }
-function quickStatus(id,status){api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify({status:status})})
-  .then(function(){toast('✓ Status updated.');return load();})
-  .then(function(){var fresh=seasons.find(function(x){return x.id==id;});if(fresh)renderForm(fresh);})
-  .catch(function(e){banner(e.message);});}
-function archiveOld(){var closed=seasons.filter(function(s){return s.status==='closed';});if(!closed.length){toast('No closed seasons to archive.');return;}if(!confirm('Archive '+closed.length+' closed season(s)?'))return;Promise.all(closed.map(function(s){return api('/api/forms/seasons/'+s.id,{method:'PUT',body:JSON.stringify({status:'archived'})});})).then(function(){toast('✓ Archived.');return load();}).catch(function(e){banner(e.message);});}
-function deleteSeason(id){var s=seasons.find(function(x){return x.id==id;});if(!confirm('Delete season '+(s?s.year:id)+'?'))return;api('/api/forms/seasons/'+id,{method:'DELETE'}).then(function(){toast('✓ Deleted.');selId=null;closePanel();return load();}).catch(function(e){banner('Delete failed: '+e.message);});}
-function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderList();}
-load();
+
+let editingId = null;
+
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+}
+
+function openEditModal(id) {
+    editingId = id;
+    const s = allSeasons.find(x => x.id === id);
+    if (!s) return;
+    const includedIds = new Set(s.events.map(e => e.id));
+    document.getElementById('editFormContent').innerHTML = `
+      <div class="form-row"><span class="form-label">Year:</span>
+        <input type="number" id="editYear" style="width:120px;" value="${s.year}">
+      </div>
+      <div class="form-row"><span class="form-label">Status:</span>
+        <select id="editStatus" style="width:160px;">
+          ${STATUS_OPTS.map(o => `<option value="${o}" ${s.status===o?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row"><span class="form-label">Reg Opens:</span>
+        <input type="date" id="editRegOpen" style="width:160px;" value="${s.reg_open||''}">
+      </div>
+      <div class="form-row"><span class="form-label">Reg Closes:</span>
+        <input type="date" id="editRegClose" style="width:160px;" value="${s.reg_close||''}">
+      </div>
+      <div class="form-row"><span class="form-label">Start:</span>
+        <input type="date" id="editStart" style="width:160px;" value="${s.start_date||''}">
+      </div>
+      <div class="form-row"><span class="form-label">End:</span>
+        <input type="date" id="editEnd" style="width:160px;" value="${s.end_date||''}">
+      </div>
+      <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Events</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+        ${allEvents.map(e => `
+          <label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer;">
+            <input type="checkbox" class="edit-ev-check" value="${e.id}" ${includedIds.has(e.id)?'checked':''} style="accent-color:var(--blue);">
+            ${e.name}
+          </label>`).join('')}
+      </div>
+    `;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+async function createSeason() {
+    const year = document.getElementById('newYear').value;
+    if (!year) { alert('Year is required'); return; }
+    const checks = document.querySelectorAll('.new-ev-check:checked');
+    const events = Array.from(checks).map(c => ({ event_id: parseInt(c.value), included: true }));
+    const body = {
+        year:       parseInt(year),
+        status:     document.getElementById('newStatus').value,
+        reg_open:   document.getElementById('newRegOpen').value  || null,
+        reg_close:  document.getElementById('newRegClose').value || null,
+        start_date: document.getElementById('newStart').value    || null,
+        end_date:   document.getElementById('newEnd').value      || null,
+        events,
+    };
+    const r = await apiPost('/seasons', body);
+    if (r.ok) { closeModal('createModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+async function saveEdit() {
+    const checks = document.querySelectorAll('.edit-ev-check');
+    const events = Array.from(checks).map(c => ({
+        event_id: parseInt(c.value), included: c.checked
+    }));
+    const body = {
+        year:       parseInt(document.getElementById('editYear').value),
+        status:     document.getElementById('editStatus').value,
+        reg_open:   document.getElementById('editRegOpen').value  || null,
+        reg_close:  document.getElementById('editRegClose').value || null,
+        start_date: document.getElementById('editStart').value    || null,
+        end_date:   document.getElementById('editEnd').value      || null,
+        events,
+    };
+    const r = await apiPut(`/seasons/${editingId}`, body);
+    if (r.ok) { closeModal('editModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+async function deleteSeason(sid, year) {
+    if (!confirm(`Delete season ${year}? This will remove all linked data.`)) return;
+    const r = await apiDelete(`/seasons/${sid}`);
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('overlay')) e.target.classList.remove('active');
+});
+
+loadData();
 </script>
 {% endblock %}

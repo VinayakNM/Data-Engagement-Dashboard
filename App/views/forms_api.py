@@ -36,7 +36,6 @@ def form_get_events():
     """
     season_id = request.args.get('season_id', type=int)
 
-    # Build lookup: event_id -> SeasonEvent for selected season
     se_map = {}
     if season_id:
         for se in SeasonEvent.query.filter_by(season_id=season_id).all():
@@ -82,6 +81,7 @@ def form_get_events():
         })
     return jsonify(result)
 
+
 @forms_api.route('/events', methods=['POST'])
 @jwt_required()
 def form_create_event():
@@ -115,8 +115,13 @@ def form_create_event():
         _replace_stages(se.id, data.get('stages', []))
 
     db.session.commit()
-    return jsonify({'id': e.id, 'name': e.name,
-                    'season_event_id': se.id if se else None}), 201
+    return jsonify({
+        'id':              e.id,
+        'name':            e.name,
+        'event_type':      e.event_type or 'run',
+        'description':     e.description or '',
+        'season_event_id': se.id if se else None,
+    }), 201
 
 
 @forms_api.route('/events/<int:eid>', methods=['PUT'])
@@ -144,7 +149,7 @@ def form_update_event(eid):
         _replace_stages(se.id, data.get('stages', []))
 
     db.session.commit()
-    return jsonify({'id': e.id, 'name': e.name, 'event_type': e.event_type})
+    return jsonify({'id': e.id, 'name': e.name, 'event_type': e.event_type or 'run'})
 
 
 @forms_api.route('/events/<int:eid>/status', methods=['PATCH'])
@@ -184,8 +189,7 @@ def form_delete_event(eid):
 
 
 def _replace_stages(season_event_id, stages_data):
-    """Delete all stages for a SeasonEvent then re-insert. Flush between to
-    avoid the unique constraint on (season_event_id, stage_number) firing."""
+    """Delete all stages for a SeasonEvent then re-insert."""
     Stage.query.filter_by(season_event_id=season_event_id)\
                .delete(synchronize_session='fetch')
     db.session.flush()
@@ -207,7 +211,7 @@ def _replace_stages(season_event_id, stages_data):
 @forms_api.route('/seasons', methods=['GET'])
 @jwt_required()
 def form_get_seasons():
-    """Return all seasons with their linked events (for the seasons list + view panel)."""
+    """Return all seasons with their linked events."""
     seasons = Season.query.order_by(Season.year.desc()).all()
     result  = []
     for s in seasons:
@@ -309,7 +313,6 @@ def form_delete_season(sid):
 
 
 def _sync_season_events(season_id, events_data):
-
     for ev in events_data:
         eid      = ev.get('event_id') or ev.get('id')
         included = ev.get('included', True)
@@ -338,7 +341,6 @@ def form_get_institutions():
     insts = Institution.query.order_by(Institution.name).all()
     result = []
     for i in insts:
-        # Participation history: registered count per season
         from App.models import Participant as P, Registration as R, SeasonEvent as SE, Season as S
         from sqlalchemy import func
         history = db.session.query(
@@ -352,11 +354,8 @@ def form_get_institutions():
          .order_by(S.year.desc())\
          .limit(5).all()
 
-        # HR users assigned to this institution
         hr_users = [u for u in i.users if u.role == 'hr']
 
-        # Participant count for the active season only
-        # Prefer 'active', then 'closed' — never use a planning season (no data)
         current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first()
         if not current_season:
             current_season = Season.query.filter_by(status='closed').order_by(Season.year.desc()).first()
@@ -364,10 +363,14 @@ def form_get_institutions():
             current_season = Season.query.filter(Season.status.notin_(['planning'])).order_by(Season.year.desc()).first()
         season_participant_count = 0
         if current_season:
+            from sqlalchemy import func as f2
             season_participant_count = db.session.query(
-                func.count(func.distinct(P.id))
-            ).join(R, P.id == R.participant_id)             .join(SE, R.season_event_id == SE.id)             .filter(SE.season_id == current_season.id,
-                     P.institution_id == i.id)             .scalar() or 0
+                f2.count(f2.distinct(P.id))
+            ).join(R, P.id == R.participant_id)\
+             .join(SE, R.season_event_id == SE.id)\
+             .filter(SE.season_id == current_season.id,
+                     P.institution_id == i.id)\
+             .scalar() or 0
 
         result.append({
             **i.get_json(),
@@ -488,12 +491,12 @@ def form_remove_hr(iid, uid):
     return jsonify(ok=True)
 
 
-# ── Shared helpers ─────────────────────────────────────────────
+# ── Shared helpers ──────────────────────────────────────────────
 
 @forms_api.route('/events-list', methods=['GET'])
 @jwt_required()
 def form_events_list():
-    """Lightweight list of all events — used by season form event picker."""
+    """Lightweight list of all events."""
     events = Event.query.order_by(Event.name).all()
     return jsonify([{'id': e.id, 'name': e.name, 'event_type': e.event_type}
                     for e in events])
@@ -502,7 +505,7 @@ def form_events_list():
 @forms_api.route('/seasons-list', methods=['GET'])
 @jwt_required()
 def form_seasons_list():
-    """Lightweight list of all seasons — used by event form season picker."""
+    """Lightweight list of all seasons."""
     seasons = Season.query.order_by(Season.year.desc()).all()
     return jsonify([{'id': s.id, 'year': s.year, 'status': s.status or 'planning'}
                     for s in seasons])
@@ -511,7 +514,7 @@ def form_seasons_list():
 @forms_api.route('/hr-users', methods=['GET'])
 @jwt_required()
 def form_hr_users():
-    """List all HR users — used by institution form HR assignment panel."""
+    """List all HR users."""
     err = _admin()
     if err: return err
     users = User.query.filter_by(role='hr').order_by(User.lastname).all()

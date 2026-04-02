@@ -1,282 +1,261 @@
 {% extends "base.html" %}
-{% block title %}CariFin — Event Management{% endblock %}
-{% block breadcrumb %}System › Event Management{% endblock %}
-
-{% block extra_css %}
-<style>
-.import-bar{background:var(--surface);border:1.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px;}
-.import-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);}
-.import-btn{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border:1.5px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:14px;cursor:pointer;background:var(--bg);color:var(--text);transition:border-color .15s;}
-.import-btn:hover{border-color:var(--accent);}
-.import-file{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);}
-.import-dl{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);cursor:pointer;text-decoration:underline;}
-.import-dl:hover{color:var(--accent);}
-.page-actions{display:flex;gap:8px;margin-bottom:20px;}
-.ev-name{font-weight:600;}
-.ev-id{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);}
-.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
-.tbl-action:hover{color:var(--accent);}
-/* panel */
-.form-panel{border:2px dashed var(--border-dark);background:var(--surface);margin-bottom:24px;display:none;}
-.form-panel.open{display:block;}
-.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
-.panel-close{background:none;border:none;color:var(--btn-text);opacity:.6;font-size:18px;cursor:pointer;line-height:1;}.panel-close:hover{opacity:1;}
-.form-body{padding:20px;}
-.form-actions{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-.field{margin-bottom:14px;}
-.field-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
-.req{color:#8a1a1a;}
-.inp{border:1.5px solid var(--border);background:var(--bg);padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
-.inp:focus{border-color:var(--accent);}
-textarea.inp{resize:vertical;min-height:60px;}
-.radios{display:flex;gap:16px;flex-wrap:wrap;}
-.radio-opt{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
-.radio-opt input{accent-color:var(--accent);width:13px;height:13px;}
-.season-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:8px 12px;background:var(--accent-light);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:14px;}
-.season-row label{font-weight:600;color:var(--text-muted);}
-/* stage table */
-.stage-section{margin-top:16px;}
-.stage-sec-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px;}
-.stage-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--border);}
-.stage-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
-.stage-tbl td{padding:5px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.stage-tbl tr:last-child td{border-bottom:none;}
-.snum{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text-muted);text-align:center;font-size:12px;}
-.sinp{width:100%;border:1.5px solid var(--border);background:var(--bg);padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none;transition:border-color .15s;color:var(--text);}
-.sinp:focus{border-color:var(--accent);}
-.del-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 5px;}.del-btn:hover{color:#8a1a1a;}
-.stage-btns{display:flex;gap:8px;margin-top:8px;}
-.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:14px;display:none;border:1px solid;}
-.banner.err{display:block;background:#f0d4d4;border-color:#d4a0a0;color:#8a1a1a;}
-
-  /* ── Shared form font overrides ── */
-  .field-label { font-size: 13px !important; }
-  .inp { font-size: 15px !important; padding: 8px 12px !important; }
-  .radio-opt { font-size: 15px !important; }
-  .banner { font-size: 14px !important; }
-  .form-panel-header { font-size: 14px !important; letter-spacing: .06em !important; }
-  .tbl-action { font-size: 13px !important; }
-  .section-lbl { font-size: 13px !important; }
-  .sinp { font-size: 14px !important; padding: 6px 8px !important; }
-  .snum { font-size: 14px !important; }
-  .stage-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .stage-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .season-row { font-size: 14px !important; }
-  .yr { font-size: 17px !important; }
-  .ev-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .ev-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .sub-tbl th { font-size: 12px !important; }
-  .sub-tbl td { font-size: 14px !important; }
-  .history-list { font-size: 14px !important; }
-  .assign-row select { font-size: 14px !important; }
-  .import-label { font-size: 13px !important; }
-  .import-btn { font-size: 14px !important; padding: 5px 14px !important; }
-  .import-file, .import-dl { font-size: 14px !important; }
-  select, input[type=text], input[type=email], input[type=number], input[type=date], textarea {
-    font-size: 15px !important;
-  }
-
-</style>
-{% endblock %}
+{% block title %}Manage Events{% endblock %}
+{% block breadcrumb %}Event Management{% endblock %}
 
 {% block content %}
-<div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);margin-bottom:16px;">Manage Events</div>
-<div class="banner" id="banner"></div>
+<div id="app-root">Loading...</div>
 
-<div class="import-bar">
-  <span class="import-label">Import</span>
-  <label class="import-btn">📋 CSV<input type="file" accept=".csv" style="display:none" onchange="handleImport(this)"></label>
-  <label class="import-btn">📊 Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="handleImport(this)"></label>
-  <span class="import-file" id="importFile">No file loaded</span>
-  <a class="import-dl" onclick="downloadTemplate()">Download template ↓</a>
-</div>
-
-<div class="page-actions">
-  <button class="btn" onclick="openNew()">+ Add New Event</button>
-  <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
-</div>
-
-<div class="card">
-  <div class="card-header" id="tableLabel">Active Events</div>
-  <table>
-    <thead><tr>
-      <th>ID#</th><th>Event Name</th><th>Type</th><th>Stages</th><th>Assigned Seasons</th><th>Actions</th>
-    </tr></thead>
-    <tbody id="evTbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:14px;">Loading…</td></tr></tbody>
-  </table>
-</div>
-
-<div class="form-panel" id="panel">
-  <div class="form-panel-header">
-    <span id="panelTitle">Add New Event</span>
-    <button class="panel-close" onclick="closePanel()">✕</button>
-  </div>
-  <div class="form-body" id="panelBody"></div>
-  <div class="form-actions" id="panelFooter"></div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-var events=[], seasons=[], selId=null, selSeasonId=null;
+const API = '/api/forms';
+let token = null;
+let allEvents = [];
+let allSeasons = [];
+let selectedSeason = null;
 
-function api(url,opts){
-  return fetch(url,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts||{}))
-    .then(function(r){if(!r.ok)return r.json().catch(function(){return{};}).then(function(e){throw new Error(e.error||'HTTP '+r.status);});return r.json();});
+async function apiGet(path) {
+    const r = await fetch(API + path, { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? r.json() : [];
 }
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function toast(m){showToast(m);}
-function banner(m){var el=document.getElementById('banner');el.textContent=m;el.className='banner err';}
-function hideBanner(){document.getElementById('banner').className='banner';}
-
-function load(){
-  Promise.all([
-    api('/api/forms/seasons-list').catch(function(){return[];}),
-    api('/api/forms/events'+(selSeasonId?'?season_id='+selSeasonId:''))
-  ]).then(function(r){seasons=r[0];events=r[1];renderTable();hideBanner();})
-  .catch(function(e){banner('Load failed: '+e.message);document.getElementById('evTbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">Failed to load.</td></tr>';});
+async function apiPost(path, body) {
+    return fetch(API + path, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
 }
-
-function _seasonBadges(seasons){
-  if(!seasons||!seasons.length) return '<span style="font-size:13px;color:var(--text-muted);">Unassigned</span>';
-  if(seasons.length<=3){
-    return seasons.map(function(s){return '<span style="font-family:IBM Plex Mono,monospace;font-size:13px;background:var(--blue-light);color:var(--blue);padding:3px 8px;border-radius:3px;margin-right:3px;">'+s.year+'</span>';}).join('');
-  }
-  // Collapse to first 2 + count badge
-  var shown=seasons.slice(0,2).map(function(s){return '<span style="font-family:IBM Plex Mono,monospace;font-size:13px;background:var(--blue-light);color:var(--blue);padding:3px 8px;border-radius:3px;margin-right:3px;">'+s.year+'</span>';}).join('');
-  var rest=seasons.length-2;
-  return shown+'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;background:var(--blue-xlight);color:var(--text-muted);padding:3px 8px;border-radius:3px;" title="'+seasons.map(function(s){return s.year;}).join(', ')+'">+'+rest+' more</span>';
+async function apiPut(path, body) {
+    return fetch(API + path, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
 }
-
-function renderTable(){
-  var tb=document.getElementById('evTbody');
-  var selYear=selSeasonId?(seasons.find(function(s){return s.id==selSeasonId;})||{}).year||'':'';
-  var label=selSeasonId?'Events — Season '+selYear:'All Events';
-  document.getElementById('tableLabel').textContent=label;
-  if(!events.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No events found. Add one or import.</td></tr>';return;}
-  tb.innerHTML=events.map(function(e){
-    var typ=(e.event_type||'run').toLowerCase();
-    var stages=e.stage_count!==undefined?e.stage_count:(e.stages||[]).length;
-    var desc=e.description?esc(e.description).substring(0,50)+(e.description.length>50?'…':''):'—';
-    // Assigned seasons badges
-    var seasonBadges=(e.assigned_seasons&&e.assigned_seasons.length)
-      ?e.assigned_seasons.map(function(s){return '<span style="font-family:IBM Plex Mono,monospace;font-size:13px;background:var(--blue-light);color:var(--blue);padding:2px 6px;border-radius:3px;margin-right:3px;">'+s.year+'</span>';}).join('')
-      :'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;color:var(--text-muted);">Unassigned</span>';
-    // In-season highlight
-    var rowStyle=e.in_selected_season&&selSeasonId?'background:var(--blue-xlight);':'';
-    return '<tr class="'+(e.id==selId?'sel':'')+'" onclick="selectEvent('+e.id+')" style="cursor:pointer;'+rowStyle+'">'
-      +'<td><span class="ev-id">'+e.id+'</span></td>'
-      +'<td><span class="ev-name">'+esc(e.name)+'</span></td>'
-      +'<td><span class="badge badge-'+typ+'">'+typ+'</span></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+stages+'</td>'
-      +'<td>'+seasonBadges+'</td>'
-      +'<td><a class="tbl-action" onclick="event.stopPropagation();selectEvent('+e.id+')">[edit]</a>'
-        +'<a class="tbl-action" onclick="event.stopPropagation();deleteEvent('+e.id+')">[delete]</a>'
-      +'</td>'
-    +'</tr>';
-  }).join('');
+async function apiPatch(path, body) {
+    return fetch(API + path, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiDelete(path) {
+    return fetch(API + path, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+    });
 }
 
-function selectEvent(id){selId=id;renderTable();var ev=events.find(function(e){return e.id==id;});if(ev)renderForm(ev);scrollToPanel();}
-function openNew(){selId=null;renderTable();renderForm(null);scrollToPanel();}
-function scrollToPanel(){setTimeout(function(){document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});},50);}
-
-function renderForm(ev, stagesOverride){
-  var isNew=!ev;
-  document.getElementById('panelTitle').textContent=isNew?'ADD NEW EVENT':'EDIT EVENT — '+esc(ev?ev.name:'');
-  document.getElementById('panel').classList.add('open');
-  var name=ev?ev.name:'',typ=ev?ev.event_type||'run':'run',desc=ev?ev.description||'':'';
-
-  // stages: use override if passed, then what the API returned, otherwise empty
-  var stages=stagesOverride||(ev&&ev.stages&&ev.stages.length?ev.stages:[]);
-
-  // If editing with no stages loaded, fetch from first assigned season
-  if(ev && !isNew && !stages.length && ev.assigned_seasons && ev.assigned_seasons.length){
-    var fetchSid=selSeasonId||ev.assigned_seasons[0].id;
-    api('/api/forms/events?season_id='+fetchSid).then(function(all){
-      var found=all.find(function(x){return x.id==ev.id;});
-      if(found&&found.stages&&found.stages.length){
-        var idx=events.findIndex(function(x){return x.id==ev.id;});
-        if(idx>=0) events[idx]=Object.assign(events[idx],found);
-        renderForm(found,found.stages);
-      }
-    }).catch(function(){});
-  }
-
-  // Auto-select season context from assigned seasons if none selected
-  var contextSid=selSeasonId||(ev&&ev.assigned_seasons&&ev.assigned_seasons.length?ev.assigned_seasons[0].id:null);
-  if(contextSid&&!selSeasonId) selSeasonId=contextSid;
-
-  var seasonOpts='<option value="">— No season —</option>'+seasons.map(function(s){
-    return '<option value="'+s.id+'"'+(s.id==contextSid?' selected':'')+'>'+s.year+'</option>';
-  }).join('');
-
-  document.getElementById('panelBody').innerHTML=
-    '<div class="season-row"><label>Season context:</label>'
-      +'<select style="border:1.5px solid var(--border);background:var(--bg);padding:4px 8px;font-family:IBM Plex Mono,monospace;font-size:14px;" id="panelSeason" onchange="selSeasonId=parseInt(this.value)||null">'+seasonOpts+'</select>'
-      +'<span style="color:var(--text-muted);font-size:13px;font-family:IBM Plex Mono,monospace;">Selects which season stages are saved to.</span></div>'
-    +'<div class="field"><label class="field-label">Event Name <span class="req">*</span></label><input class="inp" id="iName" value="'+esc(name)+'" placeholder="e.g. Urban Challenge"></div>'
-    +'<div class="field"><label class="field-label">Event Type</label>'
-      +'<div class="radios">'+['run','walk','mixed','other'].map(function(v){return '<label class="radio-opt"><input type="radio" name="iType" value="'+v+'"'+(typ===v?' checked':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</label>';}).join('')+'</div></div>'
-    +'<div class="field"><label class="field-label">Description</label><textarea class="inp" id="iDesc" placeholder="Brief description…">'+esc(desc)+'</textarea></div>'
-    +'<div class="stage-section">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        +'<div class="stage-sec-label" style="margin-bottom:0;">Stage Configuration</div>'
-        +'<span id="stageCountBadge" style="font-family:IBM Plex Mono,monospace;font-size:13px;color:var(--text-muted);background:var(--blue-xlight);padding:3px 10px;border-radius:3px;"></span>'
-      +'</div>'
-      +'<table class="stage-tbl"><thead><tr><th>#</th><th>Distance</th><th>Location</th><th>Date</th><th></th></tr></thead>'
-        +'<tbody id="stageTbody">'+(stages.length?stages.map(function(st,i){return stageRow(i+1,st.distance||'',st.location||'',st.stage_date||'');}).join(''):stageRow(1,'','',''))+'</tbody>'
-      +'</table>'
-      +'<div class="stage-btns"><button class="btn btn-ghost btn-sm" onclick="addStage()">+ Add Stage</button><button class="btn btn-ghost btn-sm" onclick="removeLastStage()">− Remove Last</button></div>'
-    +'</div>';
-
-  document.getElementById('panelFooter').innerHTML=
-    '<button class="btn" id="saveBtn" onclick="saveEvent('+(ev?ev.id:'')+')">Save Event</button>'
-    +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
-    +(ev?'<button class="btn btn-danger" style="margin-left:auto" onclick="deleteEvent('+ev.id+')">Delete Event</button>':'');
-
-  updateStageCount();
-}
-function stageRow(num,dist,loc,date){
-  return '<tr><td class="snum">'+num+'</td>'
-    +'<td><input class="sinp" style="max-width:80px" placeholder="5K" value="'+esc(dist)+'"></td>'
-    +'<td><input class="sinp" placeholder="Location" value="'+esc(loc)+'"></td>'
-    +'<td><input class="sinp" type="date" value="'+esc(date)+'"></td>'
-    +'<td><button class="del-btn" onclick="this.closest(\'tr\').remove();renumber()">✕</button></td></tr>';
-}
-function addStage(){var tb=document.getElementById('stageTbody');tb.insertAdjacentHTML('beforeend',stageRow(tb.querySelectorAll('tr').length+1,'','',''));renumber();updateStageCount();}
-function removeLastStage(){var tb=document.getElementById('stageTbody'),rows=tb.querySelectorAll('tr');if(rows.length)tb.removeChild(rows[rows.length-1]);}
-function renumber(){document.getElementById('stageTbody').querySelectorAll('tr').forEach(function(r,i){var c=r.querySelector('.snum');if(c)c.textContent=i+1;});}
-function updateStageCount(){
-  var tb=document.getElementById('stageTbody');
-  var badge=document.getElementById('stageCountBadge');
-  if(!tb||!badge)return;
-  var n=tb.querySelectorAll('tr').length;
-  badge.textContent=n+' stage'+(n===1?'':'s');
+function getTokenFromCookie() {
+    const match = document.cookie.match(/access_token_cookie=([^;]+)/);
+    return match ? match[1] : null;
 }
 
-function collectStages(){var rows=document.getElementById('stageTbody').querySelectorAll('tr'),out=[];rows.forEach(function(r){var ins=r.querySelectorAll('input');out.push({distance:ins[0].value.trim(),location:ins[1].value.trim(),stage_date:ins[2].value||null});});return out;}
-
-function saveEvent(id){
-  var name=(document.getElementById('iName').value||'').trim();
-  if(!name){toast('⚠ Event name required.');return;}
-  var typeEl=document.querySelector('input[name="iType"]:checked');
-  var sid=parseInt(document.getElementById('panelSeason').value)||null;
-  var body={name:name,event_type:typeEl?typeEl.value:'run',description:document.getElementById('iDesc').value.trim(),stages:collectStages(),season_id:sid};
-  var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
-  var p=!id?api('/api/forms/events',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/events/'+id,{method:'PUT',body:JSON.stringify(body)});
-  p.then(function(r){toast('✓ Event saved.');selId=r.id;return reload();})
-   .catch(function(e){banner('Save failed: '+e.message);})
-   .finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Event';}});
+async function loadData() {
+    token = getTokenFromCookie();
+    allEvents  = await apiGet('/events' + (selectedSeason ? '?season_id=' + selectedSeason : ''));
+    allSeasons = await apiGet('/seasons-list');
+    render();
 }
-function deleteEvent(id){var ev=events.find(function(e){return e.id==id;});if(!confirm('Delete "'+(ev?ev.name:id)+'"?'))return;api('/api/forms/events/'+id,{method:'DELETE'}).then(function(){toast('✓ Deleted.');selId=null;closePanel();return reload();}).catch(function(e){banner('Delete failed: '+e.message);});}
-function archiveEv(id){if(!selSeasonId){toast('⚠ Select a season first.');return;}api('/api/forms/events/'+id+'/status',{method:'PATCH',body:JSON.stringify({season_id:selSeasonId,status:'inactive'})}).then(function(){toast('✓ Archived.');return reload();}).catch(function(e){banner(e.message);});}
-function activateEv(id){if(!selSeasonId){toast('⚠ Select a season first.');return;}api('/api/forms/events/'+id+'/status',{method:'PATCH',body:JSON.stringify({season_id:selSeasonId,status:'active'})}).then(function(){toast('✓ Activated.');return reload();}).catch(function(e){banner(e.message);});}
-function reload(){return api('/api/forms/events'+(selSeasonId?'?season_id='+selSeasonId:'')).then(function(r){events=r;renderTable();if(selId){var ev=events.find(function(e){return e.id==selId;});if(ev)renderForm(ev);}}).catch(function(e){banner('Reload failed: '+e.message);});}
-function handleImport(input){document.getElementById('importFile').textContent=input.files[0]?input.files[0].name:'No file loaded';}
-function downloadTemplate(){var csv='name,event_type,description\nUrban Challenge,run,Multi-stage run\n';var a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='events_template.csv';a.click();}
-function exportCSV(){var rows=[['ID','Name','Type','Stages','Description']].concat(events.map(function(e){return[e.id,e.name,e.event_type,e.stage_count||(e.stages||[]).length,e.description||''];}));var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='events.csv';a.click();}
-function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderTable();}
-load();
+
+function render() {
+    const root = document.getElementById('app-root');
+    root.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <label style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-muted); margin-right:8px;">Filter by Season:</label>
+          <select onchange="selectedSeason=this.value||null;loadData()" style="font-family:'IBM Plex Mono',monospace; padding:6px 10px; border:2px solid var(--border); border-radius:3px;">
+            <option value="">All Seasons</option>
+            ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year} (${s.status})</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn" onclick="openCreateModal()">+ New Event</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Events</div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th>Name</th><th>Type</th><th>Season Status</th><th>Stages</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            ${allEvents.map(e => `
+              <tr>
+                <td><strong>${e.name}</strong></td>
+                <td><span style="font-family:'IBM Plex Mono',monospace;">${e.event_type||'—'}</span></td>
+                <td>
+                  ${e.status === 'unassigned'
+                    ? '<span class="badge badge-archived">Unassigned</span>'
+                    : e.status === 'active'
+                      ? '<span class="badge badge-active">Active</span>'
+                      : '<span class="badge badge-closed">Inactive</span>'
+                  }
+                </td>
+                <td>${e.stage_count}</td>
+                <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn btn-sm btn-ghost" onclick="openEditModal(${e.id})">Edit</button>
+                  ${selectedSeason && e.status !== 'unassigned' ? `
+                    <button class="btn btn-sm btn-ghost" onclick="toggleStatus(${e.id}, '${e.status}')">
+                      ${e.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>` : ''}
+                  <button class="btn btn-sm btn-danger" onclick="deleteEvent(${e.id}, '${e.name}')">Delete</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>
+
+      <!-- Create Modal -->
+      <div class="overlay" id="createModal">
+        <div class="modal" style="max-width:520px; width:95%;">
+          <h3>New Event</h3>
+          <div class="form-row">
+            <span class="form-label">Name:</span>
+            <input type="text" id="newName" class="wide" placeholder="e.g. Urban Challenge">
+          </div>
+          <div class="form-row">
+            <span class="form-label">Type:</span>
+            <select id="newType" style="width:200px;">
+              <option value="run">Run</option>
+              <option value="walk">Walk</option>
+              <option value="mixed">Mixed</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Season:</span>
+            <select id="newSeason" style="width:200px;">
+              <option value="">— None —</option>
+              ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year}</option>`).join('')}
+            </select>
+          </div>
+          <div id="newStagesWrap"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="createEvent()">Create</button>
+            <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Modal -->
+      <div class="overlay" id="editModal">
+        <div class="modal" style="max-width:520px; width:95%;">
+          <h3>Edit Event</h3>
+          <div id="editFormContent"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="saveEdit()">Save</button>
+            <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
+}
+
+let editingId = null;
+
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+}
+
+function openEditModal(id) {
+    editingId = id;
+    const e = allEvents.find(x => x.id === id);
+    if (!e) return;
+    document.getElementById('editFormContent').innerHTML = `
+      <div class="form-row">
+        <span class="form-label">Name:</span>
+        <input type="text" id="editName" class="wide" value="${e.name}">
+      </div>
+      <div class="form-row">
+        <span class="form-label">Type:</span>
+        <select id="editType" style="width:200px;">
+          ${['run','walk','mixed','other'].map(t =>
+            `<option value="${t}" ${e.event_type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      ${selectedSeason ? `
+      <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Stages</div>
+      <div id="editStages">
+        ${(e.stages||[]).map((st,i) => `
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <input type="text" placeholder="Distance" value="${st.distance}" id="es_dist_${i}" style="width:90px;">
+            <input type="text" placeholder="Location" value="${st.location}" id="es_loc_${i}" style="flex:1; min-width:120px;">
+            <input type="date" value="${st.stage_date}" id="es_date_${i}" style="width:140px;">
+          </div>`).join('')}
+        <button class="btn btn-sm btn-ghost" onclick="addEditStage()">+ Add Stage</button>
+      </div>` : ''}
+    `;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function addEditStage() {
+    const wrap = document.getElementById('editStages');
+    const i = wrap.querySelectorAll('[id^=es_dist]').length;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;';
+    div.innerHTML = `
+      <input type="text" placeholder="Distance" id="es_dist_${i}" style="width:90px;">
+      <input type="text" placeholder="Location" id="es_loc_${i}" style="flex:1;min-width:120px;">
+      <input type="date" id="es_date_${i}" style="width:140px;">
+    `;
+    wrap.insertBefore(div, wrap.lastElementChild);
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+async function createEvent() {
+    const name = document.getElementById('newName').value.trim();
+    const type = document.getElementById('newType').value;
+    const sid  = document.getElementById('newSeason').value;
+    if (!name) { alert('Name is required'); return; }
+    const body = { name, event_type: type };
+    if (sid) body.season_id = parseInt(sid);
+    const r = await apiPost('/events', body);
+    if (r.ok) { closeModal('createModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error creating event'); }
+}
+
+async function saveEdit() {
+    const name = document.getElementById('editName').value.trim();
+    const type = document.getElementById('editType').value;
+    const body = { name, event_type: type };
+    if (selectedSeason) {
+        body.season_id = parseInt(selectedSeason);
+        const stageWrap = document.getElementById('editStages');
+        if (stageWrap) {
+            const n = stageWrap.querySelectorAll('[id^=es_dist]').length;
+            body.stages = [];
+            for (let i = 0; i < n; i++) {
+                body.stages.push({
+                    distance:   document.getElementById(`es_dist_${i}`)?.value || '',
+                    location:   document.getElementById(`es_loc_${i}`)?.value  || '',
+                    stage_date: document.getElementById(`es_date_${i}`)?.value || '',
+                });
+            }
+        }
+    }
+    const r = await apiPut(`/events/${editingId}`, body);
+    if (r.ok) { closeModal('editModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error saving'); }
+}
+
+async function toggleStatus(eid, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const r = await apiPatch(`/events/${eid}/status`, { season_id: parseInt(selectedSeason), status: newStatus });
+    if (r.ok) loadData();
+}
+
+async function deleteEvent(eid, name) {
+    if (!confirm(`Delete event "${name}"? This cannot be undone.`)) return;
+    const r = await apiDelete(`/events/${eid}`);
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error deleting'); }
+}
+
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('overlay')) e.target.classList.remove('active');
+});
+
+loadData();
 </script>
 {% endblock %}

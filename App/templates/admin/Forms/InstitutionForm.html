@@ -1,191 +1,259 @@
 {% extends "base.html" %}
-{% block title %}CariFin — Institution Management{% endblock %}
-{% block breadcrumb %}System › Institution Management{% endblock %}
-
-{% block extra_css %}
-<style>
-.page-actions{display:flex;gap:8px;margin-bottom:20px;}
-.inst-code{font-family:'IBM Plex Mono',monospace;font-size:14px;background:var(--accent-light);color:var(--text-muted);padding:2px 7px;border:1px solid var(--border);font-weight:600;}
-.inst-name{font-weight:600;}
-.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
-.tbl-action:hover{color:var(--accent);}
-/* panel */
-.form-panel{border:2px dashed var(--border-dark);background:var(--surface);margin-bottom:24px;display:none;}
-.form-panel.open{display:block;}
-.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
-.panel-close{background:none;border:none;color:var(--btn-text);opacity:.6;font-size:18px;cursor:pointer;line-height:1;}.panel-close:hover{opacity:1;}
-.form-body{padding:20px;}
-.form-actions{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;}
-@media(max-width:700px){.form-grid{grid-template-columns:1fr;}}
-.field{margin-bottom:14px;}
-.field-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
-.req{color:#8a1a1a;}
-.inp{border:1.5px solid var(--border);background:var(--bg);padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
-.inp:focus{border-color:var(--accent);}
-.section-sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
-.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
-/* sub table */
-.sub-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--border);}
-.sub-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
-.sub-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px;}
-.sub-tbl tr:last-child td{border-bottom:none;}
-.assign-row{display:flex;gap:8px;margin-top:8px;align-items:center;}
-.assign-row select{border:1.5px solid var(--border);background:var(--bg);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:14px;flex:1;outline:none;transition:border-color .15s;}
-.assign-row select:focus{border-color:var(--accent);}
-.history-list{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);list-style:disc;padding-left:18px;}
-.history-list li{margin-bottom:4px;}
-.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:14px;display:none;border:1px solid;}
-.banner.err{display:block;background:#f0d4d4;border-color:#d4a0a0;color:#8a1a1a;}
-
-  /* ── Shared form font overrides ── */
-  .field-label { font-size: 13px !important; }
-  .inp { font-size: 15px !important; padding: 8px 12px !important; }
-  .radio-opt { font-size: 15px !important; }
-  .banner { font-size: 14px !important; }
-  .form-panel-header { font-size: 14px !important; letter-spacing: .06em !important; }
-  .tbl-action { font-size: 13px !important; }
-  .section-lbl { font-size: 13px !important; }
-  .sinp { font-size: 14px !important; padding: 6px 8px !important; }
-  .snum { font-size: 14px !important; }
-  .stage-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .stage-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .season-row { font-size: 14px !important; }
-  .yr { font-size: 17px !important; }
-  .ev-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
-  .ev-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
-  .sub-tbl th { font-size: 12px !important; }
-  .sub-tbl td { font-size: 14px !important; }
-  .history-list { font-size: 14px !important; }
-  .assign-row select { font-size: 14px !important; }
-  .import-label { font-size: 13px !important; }
-  .import-btn { font-size: 14px !important; padding: 5px 14px !important; }
-  .import-file, .import-dl { font-size: 14px !important; }
-  select, input[type=text], input[type=email], input[type=number], input[type=date], textarea {
-    font-size: 15px !important;
-  }
-
-</style>
-{% endblock %}
+{% block title %}Manage Institutions{% endblock %}
+{% block breadcrumb %}Institution Management{% endblock %}
 
 {% block content %}
-<div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);margin-bottom:16px;">Manage Institutions</div>
-<div class="banner" id="banner"></div>
-<div class="page-actions">
-  <button class="btn" onclick="openNew()">+ Add New Institution</button>
-</div>
+<div id="app-root">Loading...</div>
 
-<div class="card">
-  <div class="card-header">Registered Institutions <span id="instCount" style="font-weight:400;"></span></div>
-  <table>
-    <thead><tr>
-      <th>ID#</th><th>Code</th><th>Name</th><th>Users</th><th>Participants (Season)</th><th>Status</th>
-    </tr></thead>
-    <tbody id="instTbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:14px;">Loading…</td></tr></tbody>
-  </table>
-</div>
-
-<div class="form-panel" id="panel">
-  <div class="form-panel-header">
-    <span id="panelTitle">Add / Edit Institution</span>
-    <button class="panel-close" onclick="closePanel()">✕</button>
-  </div>
-  <div class="form-body" id="panelBody"></div>
-  <div class="form-actions" id="panelFooter"></div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-var institutions=[], hrUsers=[], selId=null;
+const API = '/api/forms';
+let token = null;
+let allInsts = [];
+let allHR    = [];
 
-function api(url,opts){return fetch(url,Object.assign({credentials:'include',headers:{'Content-Type':'application/json'}},opts||{})).then(function(r){if(!r.ok)return r.json().catch(function(){return{};}).then(function(e){throw new Error(e.error||'HTTP '+r.status);});return r.json();});}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function toast(m){showToast(m);}
-function banner(m){var el=document.getElementById('banner');el.textContent=m;el.className='banner err';}
-function hideBanner(){document.getElementById('banner').className='banner';}
-
-function load(){
-  Promise.all([api('/api/forms/institutions'),api('/api/forms/hr-users').catch(function(){return[];})])
-    .then(function(r){institutions=r[0];hrUsers=r[1];renderList();hideBanner();})
-    .catch(function(e){banner('Could not load institutions: '+e.message);document.getElementById('instTbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">Failed to load.</td></tr>';});
+async function apiGet(path) {
+    const r = await fetch(API + path, { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? r.json() : [];
+}
+async function apiPost(path, body) {
+    return fetch(API + path, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiPut(path, body) {
+    return fetch(API + path, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiPatch(path, body) {
+    return fetch(API + path, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiDelete(path) {
+    return fetch(API + path, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+    });
 }
 
-function renderList(){
-  var tb=document.getElementById('instTbody');
-  document.getElementById('instCount').textContent='('+institutions.length+')';
-  if(!institutions.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No institutions yet.</td></tr>';return;}
-  tb.innerHTML=institutions.map(function(i){
-    var st=i.status||'active';
-    return '<tr class="'+(i.id==selId?'sel':'')+'" onclick="selectInst('+i.id+')" style="cursor:pointer">'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">'+i.id+'</td>'
-      +'<td><span class="inst-code">'+esc(i.code)+'</span></td>'
-      +'<td><span class="inst-name">'+esc(i.name)+'</span></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+i.user_count
-        +'<a class="tbl-action" onclick="event.stopPropagation();selectInst('+i.id+')">[manage]</a></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+i.participant_count+'</td>'
-      +'<td><span class="badge badge-'+(st==='active'?'active':'archived')+'">'+st+'</span>'
-        +(st==='active'?'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+i.id+',\'inactive\')">[deactivate]</a>':'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+i.id+',\'active\')">[activate]</a>')
-        +'<a class="tbl-action" onclick="event.stopPropagation();selectInst('+i.id+')">[edit]</a>'
-      +'</td>'
-    +'</tr>';
-  }).join('');
+function getTokenFromCookie() {
+    const match = document.cookie.match(/access_token_cookie=([^;]+)/);
+    return match ? match[1] : null;
 }
 
-function selectInst(id){selId=id;renderList();var i=institutions.find(function(x){return x.id==id;});if(i)renderForm(i);scrollToPanel();}
-function openNew(){selId=null;renderList();renderForm(null);scrollToPanel();}
-function scrollToPanel(){setTimeout(function(){document.getElementById('panel').scrollIntoView({behavior:'smooth',block:'start'});},50);}
-
-function renderForm(inst){
-  var isNew=!inst;
-  document.getElementById('panelTitle').textContent=isNew?'ADD NEW INSTITUTION':'EDIT — '+esc(inst?inst.code:'');
-  document.getElementById('panel').classList.add('open');
-  var code=inst?inst.code:'', name=inst?inst.name:'';
-  var cp=inst?inst.contact_person||'':'', ce=inst?inst.contact_email||'':'', ph=inst?inst.phone||'':'';
-  var assignedHR=inst?inst.hr_users||[]:[];
-  var hrRows=assignedHR.length
-    ?assignedHR.map(function(u){return '<tr><td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+esc(u.username)+'</td><td style="color:var(--text-muted);font-size:14px;">'+esc(u.email)+'</td><td><button class="btn btn-ghost btn-sm" onclick="removeHR('+inst.id+','+u.id+')">Remove</button></td></tr>';}).join('')
-    :'<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No HR users assigned.</td></tr>';
-  var availHR=hrUsers.filter(function(u){return !u.institution_id;});
-  var hist=inst&&inst.participation_history?inst.participation_history:[];
-  document.getElementById('panelBody').innerHTML=
-    '<div class="form-grid">'
-      +'<div class="field"><label class="field-label">Code <span class="req">*</span></label><input class="inp" id="iCode" value="'+esc(code)+'" placeholder="e.g. CBTT" style="text-transform:uppercase;"></div>'
-      +'<div class="field"><label class="field-label">Name <span class="req">*</span></label><input class="inp" id="iName" value="'+esc(name)+'" placeholder="e.g. Central Bank of TT"></div>'
-      +'<div class="field"><label class="field-label">Contact Person</label><input class="inp" id="iCP" value="'+esc(cp)+'" placeholder="e.g. John Doe"></div>'
-      +'<div class="field"><label class="field-label">Contact Email</label><input class="inp" id="iCE" type="email" value="'+esc(ce)+'" placeholder="e.g. hr@institution.org"></div>'
-      +'<div class="field"><label class="field-label">Phone</label><input class="inp" id="iPN" value="'+esc(ph)+'" placeholder="e.g. 1-868-XXX-XXXX"></div>'
-    +'</div>'
-    +(inst
-      ?'<hr class="section-sep"><div class="section-lbl">HR User Assignment</div>'
-       +'<table class="sub-tbl"><thead><tr><th>Username</th><th>Email</th><th></th></tr></thead><tbody>'+hrRows+'</tbody></table>'
-       +(availHR.length?'<div class="assign-row"><select id="hrAssignSel"><option value="">— Select HR user —</option>'+availHR.map(function(u){return '<option value="'+u.id+'">'+esc(u.username)+' ('+esc(u.email)+')</option>';}).join('')+'</select><button class="btn btn-ghost btn-sm" onclick="assignHR('+inst.id+')">Assign</button></div>':'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);margin-top:8px;">All HR users are already assigned.</p>')
-       +'<hr class="section-sep"><div class="section-lbl">Participation History</div>'
-       +(hist.length?'<ul class="history-list">'+hist.map(function(h){return '<li>'+h.year+': '+h.registered+' registered</li>';}).join('')+'</ul>':'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">No participation data yet.</p>')
-      :'');
-  document.getElementById('panelFooter').innerHTML=
-    '<button class="btn" id="saveBtn" onclick="saveInst('+(inst?inst.id:'')+')">Save Institution</button>'
-    +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
-    +(inst&&(inst.status||'active')==='active'?'<button class="btn btn-ghost" onclick="quickStatus('+inst.id+',\'inactive\')">Deactivate</button>':'')
-    +(inst&&inst.status==='inactive'?'<button class="btn btn-ghost" onclick="quickStatus('+inst.id+',\'active\')">Activate</button>':'')
-    +(inst?'<button class="btn btn-danger" style="margin-left:auto" onclick="deleteInst('+inst.id+')">Delete</button>':'');
+async function loadData() {
+    token    = getTokenFromCookie();
+    allInsts = await apiGet('/institutions');
+    allHR    = await apiGet('/hr-users');
+    render();
 }
 
-function saveInst(id){
-  var code=(document.getElementById('iCode').value||'').trim().toUpperCase();
-  var name=(document.getElementById('iName').value||'').trim();
-  if(!code||!name){toast('⚠ Code and Name are required.');return;}
-  var body={code:code,name:name,contact_person:document.getElementById('iCP').value.trim()||null,contact_email:document.getElementById('iCE').value.trim()||null,phone:document.getElementById('iPN').value.trim()||null};
-  var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
-  var p=!id?api('/api/forms/institutions',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/institutions/'+id,{method:'PUT',body:JSON.stringify(body)});
-  p.then(function(r){toast('✓ Institution saved.');selId=r.id;return load();}).then(function(){var i=institutions.find(function(x){return x.id==selId;});if(i)renderForm(i);})
-   .catch(function(e){banner('Save failed: '+e.message);}).finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Institution';}});
+function render() {
+    const root = document.getElementById('app-root');
+    root.innerHTML = `
+      <div style="display:flex; justify-content:flex-end; margin-bottom:20px;">
+        <button class="btn" onclick="openCreateModal()">+ New Institution</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Institutions</div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th>Code</th><th>Name</th><th>Contact</th><th>Participants</th><th>HR Users</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            ${allInsts.map(i => `
+              <tr>
+                <td><strong style="font-family:'IBM Plex Mono',monospace;">${i.code}</strong></td>
+                <td>${i.name}</td>
+                <td style="font-size:13px; color:var(--text-muted);">
+                  ${i.contact_person||'—'}<br>
+                  <a href="mailto:${i.contact_email||''}" style="color:var(--blue);">${i.contact_email||''}</a>
+                </td>
+                <td>${i.participant_count}</td>
+                <td>${i.hr_users.map(u => u.username).join(', ') || '—'}</td>
+                <td>
+                  ${i.status === 'active'
+                    ? '<span class="badge badge-active">Active</span>'
+                    : '<span class="badge badge-closed">Inactive</span>'}
+                </td>
+                <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn btn-sm btn-ghost" onclick="openEditModal(${i.id})">Edit</button>
+                  <button class="btn btn-sm btn-ghost" onclick="toggleStatus(${i.id}, '${i.status}')">
+                    ${i.status === 'active' ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button class="btn btn-sm btn-ghost" onclick="openHRModal(${i.id})">HR</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteInst(${i.id}, '${i.code}')">Delete</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>
+
+      <!-- Create Modal -->
+      <div class="overlay" id="createModal">
+        <div class="modal" style="max-width:500px; width:95%;">
+          <h3>New Institution</h3>
+          <div class="form-row"><span class="form-label">Code:</span>
+            <input type="text" id="newCode" style="width:120px;" placeholder="e.g. CBTT">
+          </div>
+          <div class="form-row"><span class="form-label">Name:</span>
+            <input type="text" id="newName" class="wide" placeholder="Full institution name">
+          </div>
+          <div class="form-row"><span class="form-label">Contact:</span>
+            <input type="text" id="newContact" class="wide" placeholder="Contact person">
+          </div>
+          <div class="form-row"><span class="form-label">Email:</span>
+            <input type="email" id="newEmail" class="wide">
+          </div>
+          <div class="form-row"><span class="form-label">Phone:</span>
+            <input type="text" id="newPhone" class="wide" placeholder="1-868-000-0000">
+          </div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="createInst()">Create</button>
+            <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Modal -->
+      <div class="overlay" id="editModal">
+        <div class="modal" style="max-width:500px; width:95%;">
+          <h3>Edit Institution</h3>
+          <div id="editFormContent"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="saveEdit()">Save</button>
+            <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HR Assignment Modal -->
+      <div class="overlay" id="hrModal">
+        <div class="modal" style="max-width:460px; width:95%;">
+          <h3>Manage HR Users</h3>
+          <div id="hrModalContent"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn btn-ghost" onclick="closeModal('hrModal')">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
 }
-function quickStatus(id,status){api('/api/forms/institutions/'+id+'/status',{method:'PATCH',body:JSON.stringify({status:status})}).then(function(){toast('✓ Status updated.');return load();}).then(function(){var i=institutions.find(function(x){return x.id==id;});if(i)renderForm(i);}).catch(function(e){banner(e.message);});}
-function assignHR(iid){var sel=document.getElementById('hrAssignSel');var uid=parseInt(sel&&sel.value);if(!uid){toast('⚠ Select an HR user first.');return;}api('/api/forms/institutions/'+iid+'/assign-hr',{method:'POST',body:JSON.stringify({user_id:uid})}).then(function(){toast('✓ HR user assigned.');return load();}).then(function(){var i=institutions.find(function(x){return x.id==iid;});if(i)renderForm(i);}).catch(function(e){banner(e.message);});}
-function removeHR(iid,uid){if(!confirm('Remove this HR user?'))return;api('/api/forms/institutions/'+iid+'/remove-hr/'+uid,{method:'DELETE'}).then(function(){toast('✓ Removed.');return load();}).then(function(){var i=institutions.find(function(x){return x.id==iid;});if(i)renderForm(i);}).catch(function(e){banner(e.message);});}
-function deleteInst(id){var i=institutions.find(function(x){return x.id==id;});if(!confirm('Delete "'+(i?i.name:id)+'"?'))return;api('/api/forms/institutions/'+id,{method:'DELETE'}).then(function(){toast('✓ Deleted.');selId=null;closePanel();return load();}).catch(function(e){banner('Delete failed: '+e.message);});}
-function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderList();}
-load();
+
+let editingId = null;
+let hrInstId  = null;
+
+function openCreateModal() { document.getElementById('createModal').classList.add('active'); }
+function closeModal(id)    { document.getElementById(id).classList.remove('active'); }
+
+function openEditModal(id) {
+    editingId = id;
+    const i = allInsts.find(x => x.id === id);
+    if (!i) return;
+    document.getElementById('editFormContent').innerHTML = `
+      <div class="form-row"><span class="form-label">Code:</span>
+        <input type="text" id="editCode" style="width:120px;" value="${i.code}">
+      </div>
+      <div class="form-row"><span class="form-label">Name:</span>
+        <input type="text" id="editName" class="wide" value="${i.name}">
+      </div>
+      <div class="form-row"><span class="form-label">Contact:</span>
+        <input type="text" id="editContact" class="wide" value="${i.contact_person||''}">
+      </div>
+      <div class="form-row"><span class="form-label">Email:</span>
+        <input type="email" id="editEmail" class="wide" value="${i.contact_email||''}">
+      </div>
+      <div class="form-row"><span class="form-label">Phone:</span>
+        <input type="text" id="editPhone" class="wide" value="${i.phone||''}">
+      </div>
+    `;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function openHRModal(id) {
+    hrInstId = id;
+    const i = allInsts.find(x => x.id === id);
+    if (!i) return;
+    const assignedIds = new Set(i.hr_users.map(u => u.id));
+    const unassigned = allHR.filter(u => !u.institution_id || u.institution_id === id);
+    document.getElementById('hrModalContent').innerHTML = `
+      <p style="font-size:14px; color:var(--text-muted); margin-bottom:16px;">
+        Assign or remove HR users for <strong>${i.name}</strong>.
+      </p>
+      ${unassigned.length === 0 ? '<p style="color:var(--text-muted); font-size:14px;">No available HR users.</p>' :
+        unassigned.map(u => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:14px;">${u.username} <span style="color:var(--text-muted);">(${u.email})</span></span>
+            ${assignedIds.has(u.id)
+              ? `<button class="btn btn-sm btn-danger" onclick="removeHR(${u.id})">Remove</button>`
+              : `<button class="btn btn-sm btn-ghost" onclick="assignHR(${u.id})">Assign</button>`
+            }
+          </div>`).join('')}
+    `;
+    document.getElementById('hrModal').classList.add('active');
+}
+
+async function createInst() {
+    const code = document.getElementById('newCode').value.trim();
+    const name = document.getElementById('newName').value.trim();
+    if (!code || !name) { alert('Code and Name are required'); return; }
+    const r = await apiPost('/institutions', {
+        code, name,
+        contact_person: document.getElementById('newContact').value.trim() || null,
+        contact_email:  document.getElementById('newEmail').value.trim()   || null,
+        phone:          document.getElementById('newPhone').value.trim()    || null,
+    });
+    if (r.ok) { closeModal('createModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+async function saveEdit() {
+    const r = await apiPut(`/institutions/${editingId}`, {
+        code:           document.getElementById('editCode').value.trim(),
+        name:           document.getElementById('editName').value.trim(),
+        contact_person: document.getElementById('editContact').value.trim() || null,
+        contact_email:  document.getElementById('editEmail').value.trim()   || null,
+        phone:          document.getElementById('editPhone').value.trim()    || null,
+    });
+    if (r.ok) { closeModal('editModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+async function toggleStatus(id, current) {
+    const newStatus = current === 'active' ? 'inactive' : 'active';
+    const r = await apiPatch(`/institutions/${id}/status`, { status: newStatus });
+    if (r.ok) loadData();
+}
+
+async function assignHR(uid) {
+    const r = await apiPost(`/institutions/${hrInstId}/assign-hr`, { user_id: uid });
+    if (r.ok) { await loadData(); openHRModal(hrInstId); }
+}
+
+async function removeHR(uid) {
+    const r = await apiDelete(`/institutions/${hrInstId}/remove-hr/${uid}`);
+    if (r.ok) { await loadData(); openHRModal(hrInstId); }
+}
+
+async function deleteInst(id, code) {
+    if (!confirm(`Delete institution "${code}"?`)) return;
+    const r = await apiDelete(`/institutions/${id}`);
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error'); }
+}
+
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('overlay')) e.target.classList.remove('active');
+});
+
+loadData();
 </script>
 {% endblock %}
