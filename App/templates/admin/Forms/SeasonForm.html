@@ -6,19 +6,19 @@
 <style>
 .page-actions{display:flex;gap:8px;margin-bottom:20px;}
 .yr{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;}
-.ev-list{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
+.ev-list{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
 .tbl-action:hover{color:var(--accent);}
 .badge-planning{background:#d4ddf0;color:var(--planning);border:1px solid #98aad4;}
 /* panel */
 .form-panel{border:2px dashed var(--border-dark);background:var(--surface);margin-bottom:24px;display:none;}
 .form-panel.open{display:block;}
-.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
 .panel-close{background:none;border:none;color:var(--btn-text);opacity:.6;font-size:18px;cursor:pointer;line-height:1;}.panel-close:hover{opacity:1;}
 .form-body{padding:20px;}
 .form-actions{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .field{margin-bottom:14px;}
-.field-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
+.field-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
 .req{color:#8a1a1a;}
 .inp{border:1.5px solid var(--border);background:var(--bg);padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
 .inp:focus{border-color:var(--accent);}
@@ -26,25 +26,53 @@
 .radio-opt{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;}
 .radio-opt input{accent-color:var(--accent);width:13px;height:13px;}
 .date-pair{display:flex;align-items:center;gap:8px;}
-.date-sep{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);white-space:nowrap;}
+.date-sep{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);white-space:nowrap;}
 .section-sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
-.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
+.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
 /* events sub-table */
 .ev-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--border);}
-.ev-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
+.ev-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
 .ev-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px;}
 .ev-tbl tr:last-child td{border-bottom:none;}
 .ev-tbl input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
-.ev-tbl input[type=date]{border:1.5px solid var(--border);background:var(--bg);padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:11px;outline:none;width:130px;transition:border-color .15s;}
+.ev-tbl input[type=date]{border:1.5px solid var(--border);background:var(--bg);padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none;width:130px;transition:border-color .15s;}
 .ev-tbl input[type=date]:focus{border-color:var(--accent);}
 .ev-tbl input[type=date]:disabled{background:var(--accent-light);color:var(--text-muted);}
-.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:14px;display:none;border:1px solid;}
+.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:14px;display:none;border:1px solid;}
 .banner.err{display:block;background:#f0d4d4;border-color:#d4a0a0;color:#8a1a1a;}
+
+  /* ── Shared form font overrides ── */
+  .field-label { font-size: 13px !important; }
+  .inp { font-size: 15px !important; padding: 8px 12px !important; }
+  .radio-opt { font-size: 15px !important; }
+  .banner { font-size: 14px !important; }
+  .form-panel-header { font-size: 14px !important; letter-spacing: .06em !important; }
+  .tbl-action { font-size: 13px !important; }
+  .section-lbl { font-size: 13px !important; }
+  .sinp { font-size: 14px !important; padding: 6px 8px !important; }
+  .snum { font-size: 14px !important; }
+  .stage-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
+  .stage-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
+  .season-row { font-size: 14px !important; }
+  .yr { font-size: 17px !important; }
+  .ev-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
+  .ev-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
+  .sub-tbl th { font-size: 12px !important; }
+  .sub-tbl td { font-size: 14px !important; }
+  .history-list { font-size: 14px !important; }
+  .assign-row select { font-size: 14px !important; }
+  .import-label { font-size: 13px !important; }
+  .import-btn { font-size: 14px !important; padding: 5px 14px !important; }
+  .import-file, .import-dl { font-size: 14px !important; }
+  select, input[type=text], input[type=email], input[type=number], input[type=date], textarea {
+    font-size: 15px !important;
+  }
+
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:16px;">Manage Seasons</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);margin-bottom:16px;">Manage Seasons</div>
 <div class="banner" id="banner"></div>
 <div class="page-actions">
   <button class="btn" onclick="openNew()">+ Add New Season</button>
@@ -55,9 +83,9 @@
   <div class="card-header">Seasons List</div>
   <table>
     <thead><tr>
-      <th>Year</th><th>Status</th><th>Start Date</th><th>End Date</th><th>Events</th><th></th>
+      <th>Year</th><th>Status</th><th>Reg. Open</th><th>Reg. Close</th><th>Season Period</th><th>Events</th><th></th>
     </tr></thead>
-    <tbody id="seaTbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;">Loading…</td></tr></tbody>
+    <tbody id="seaTbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:14px;">Loading…</td></tr></tbody>
   </table>
 </div>
 
@@ -85,19 +113,21 @@ function hideBanner(){document.getElementById('banner').className='banner';}
 function load(){
   Promise.all([api('/api/forms/seasons'),api('/api/forms/events-list').catch(function(){return[];})])
     .then(function(r){seasons=r[0];allEvents=r[1];renderList();hideBanner();})
-    .catch(function(e){banner('Load failed: '+e.message);document.getElementById('seaTbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:11px;">Failed to load.</td></tr>';});
+    .catch(function(e){banner('Load failed: '+e.message);document.getElementById('seaTbody').innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">Failed to load.</td></tr>';});
 }
 
 function renderList(){
   var tb=document.getElementById('seaTbody');
-  if(!seasons.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:11px;">No seasons yet.</td></tr>';return;}
+  if(!seasons.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No seasons yet.</td></tr>';return;}
   tb.innerHTML=seasons.map(function(s){
     var evNames=(s.events||[]).map(function(e){return e.name;}).join(', ')||'—';
+    var period=(s.start_date||s.end_date)?(fmt(s.start_date)+' – '+fmt(s.end_date)):'—';
     return '<tr class="'+(s.id==selId?'sel':'')+'" onclick="selectSeason('+s.id+')" style="cursor:pointer">'
       +'<td><span class="yr">'+s.year+'</span></td>'
       +'<td><span class="badge badge-'+s.status+'">'+s.status+'</span></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;">'+fmt(s.start_date)+'</td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;">'+fmt(s.end_date)+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+fmt(s.reg_open)+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+fmt(s.reg_close)+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+period+'</td>'
       +'<td><span class="ev-list" title="'+esc(evNames)+'">'+esc(evNames)+'</span></td>'
       +'<td>'+(s.status==='active'?'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+s.id+',\'closed\')">[close]</a>':'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[reopen]</a>')
         +'<a class="tbl-action" onclick="event.stopPropagation();selectSeason('+s.id+')">[view]</a></td>'
@@ -133,7 +163,7 @@ function renderForm(s){
     +'<hr class="section-sep"><div class="section-lbl">Events in this Season</div>'
     +(allEvents.length
       ?'<table class="ev-tbl"><thead><tr><th>Event</th><th>Include?</th><th>Start – End Dates</th></tr></thead><tbody>'+evRows+'</tbody></table>'
-      :'<p style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text-muted);">No events exist yet — create events first.</p>');
+      :'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">No events exist yet — create events first.</p>');
   document.getElementById('panelFooter').innerHTML=
     '<button class="btn" id="saveBtn" onclick="saveSeason('+(s?s.id:'')+')">Save Season</button>'
     +'<button class="btn btn-ghost" onclick="closePanel()">Cancel</button>'
@@ -153,10 +183,18 @@ function saveSeason(id){
   var body={year:yr,status:stEl?stEl.value:'planning',reg_open:document.getElementById('iRegOpen').value||null,reg_close:document.getElementById('iRegClose').value||null,start_date:document.getElementById('iStart').value||null,end_date:document.getElementById('iEnd').value||null,events:evts};
   var btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
   var p=!id?api('/api/forms/seasons',{method:'POST',body:JSON.stringify(body)}):api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify(body)});
-  p.then(function(r){toast('✓ Season saved.');selId=r.id;return load();}).then(function(){var s=seasons.find(function(x){return x.id==selId;});if(s)renderForm(s);})
-   .catch(function(e){banner('Save failed: '+e.message);}).finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Season';}});
+  p.then(function(r){toast('✓ Season saved.');selId=r.id;return load();})
+   .then(function(){
+     var fresh=seasons.find(function(x){return x.id==selId;});
+     if(fresh) renderForm(fresh);
+   })
+   .catch(function(e){banner('Save failed: '+e.message);})
+   .finally(function(){var b=document.getElementById('saveBtn');if(b){b.disabled=false;b.textContent='Save Season';}});
 }
-function quickStatus(id,status){api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify({status:status})}).then(function(){toast('✓ Status updated.');return load();}).then(function(){var s=seasons.find(function(x){return x.id==id;});if(s)renderForm(s);}).catch(function(e){banner(e.message);});}
+function quickStatus(id,status){api('/api/forms/seasons/'+id,{method:'PUT',body:JSON.stringify({status:status})})
+  .then(function(){toast('✓ Status updated.');return load();})
+  .then(function(){var fresh=seasons.find(function(x){return x.id==id;});if(fresh)renderForm(fresh);})
+  .catch(function(e){banner(e.message);});}
 function archiveOld(){var closed=seasons.filter(function(s){return s.status==='closed';});if(!closed.length){toast('No closed seasons to archive.');return;}if(!confirm('Archive '+closed.length+' closed season(s)?'))return;Promise.all(closed.map(function(s){return api('/api/forms/seasons/'+s.id,{method:'PUT',body:JSON.stringify({status:'archived'})});})).then(function(){toast('✓ Archived.');return load();}).catch(function(e){banner(e.message);});}
 function deleteSeason(id){var s=seasons.find(function(x){return x.id==id;});if(!confirm('Delete season '+(s?s.year:id)+'?'))return;api('/api/forms/seasons/'+id,{method:'DELETE'}).then(function(){toast('✓ Deleted.');selId=null;closePanel();return load();}).catch(function(e){banner('Delete failed: '+e.message);});}
 function closePanel(){document.getElementById('panel').classList.remove('open');selId=null;renderList();}

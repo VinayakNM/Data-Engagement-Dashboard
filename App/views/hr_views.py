@@ -15,8 +15,9 @@ hr_views = Blueprint('hr_views', __name__, template_folder='../templates')
 def dashboard():
     if current_user.role != 'hr':
         return "Access Denied", 403
-    stats = get_hr_stats(current_user.institution_id)
-    return render_template('hr/hr.html', **stats)
+    stats  = get_hr_stats(current_user.institution_id)
+    events = get_available_events(current_user.institution_id)
+    return render_template('hr/hr.html', **stats, events=events)
 
 
 @hr_views.route('/hr/participants/add', methods=['GET', 'POST'])
@@ -43,7 +44,7 @@ def add_participant():
             institution_id=current_user.institution_id
         )
         flash('Participant added successfully!', 'success')
-        return redirect(url_for('hr_views.dashboard'))
+        return redirect(url_for('hr_views.dashboard') + '#roster')
 
     return render_template('hr/add_participant.html')
 
@@ -142,3 +143,82 @@ def register():
     participants = Participant.query.filter_by(institution_id=current_user.institution_id).all()
     events = get_available_events(current_user.institution_id)
     return render_template('hr/register.html', participants=participants, events=events)
+
+# ── EXPORTS ──────────────────────────────────────────────────────────────────
+
+@hr_views.route('/hr/export/roster')
+@jwt_required()
+def export_roster():
+    """Export institution participant roster as CSV."""
+    if current_user.role != 'hr':
+        return "Access Denied", 403
+    import csv, io
+    from flask import Response
+    from App.models import Participant
+    from App.controllers.hr_controller import get_hr_stats
+
+    stats = get_hr_stats(current_user.institution_id)
+    inst  = stats['institution']
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['First Name', 'Last Name', 'Email', 'Sex', 'Division',
+                     'Birth Date', 'Status'])
+    for p in stats['participants']:
+        if p.has_result:     status = 'Participated'
+        elif p.is_no_show:   status = 'No-Show'
+        elif p.is_registered: status = 'Registered'
+        else:                 status = 'Unregistered'
+        writer.writerow([p.first_name, p.last_name, p.email or '',
+                         p.sex or '', p.division or '',
+                         p.birth_date.isoformat() if p.birth_date else '',
+                         status])
+
+    output.seek(0)
+    filename = f"{inst.code}_roster_{stats['current_season'].year if stats['current_season'] else 'all'}.csv"
+    return Response(output.getvalue(), mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename={filename}'})
+
+
+@hr_views.route('/hr/export/results')
+@jwt_required()
+def export_results():
+    """Export stage results for this institution as CSV."""
+    if current_user.role != 'hr':
+        return "Access Denied", 403
+    import csv, io
+    from flask import Response
+    from App.models import Participant, Registration, Result, Stage, SeasonEvent, Season, Event
+
+    inst_id = current_user.institution_id
+    inst    = db.session.query(__import__('App.models', fromlist=['Institution']).Institution).get(inst_id)
+
+    current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first() \
+                  or Season.query.order_by(Season.year.desc()).first()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['First Name', 'Last Name', 'Division', 'Event',
+                     'Stage', 'Finish Time', 'Placement'])
+
+    if current_season:
+        rows = db.session.query(
+            Participant.first_name, Participant.last_name, Participant.division,
+            Event.name, Stage.stage_number, Result.finish_time, Result.placement
+        ).join(Registration, Participant.id == Registration.participant_id)\
+         .join(SeasonEvent,  Registration.season_event_id == SeasonEvent.id)\
+         .join(Event,        SeasonEvent.event_id == Event.id)\
+         .join(Result,       Registration.id == Result.registration_id)\
+         .join(Stage,        Result.stage_id == Stage.id)\
+         .filter(Participant.institution_id == inst_id,
+                 SeasonEvent.season_id == current_season.id)\
+         .order_by(Participant.last_name, Stage.stage_number).all()
+
+        for r in rows:
+            writer.writerow(list(r))
+
+    output.seek(0)
+    season_year = current_season.year if current_season else 'all'
+    filename = f"{inst.code if inst else 'export'}_results_{season_year}.csv"
+    return Response(output.getvalue(), mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename={filename}'})

@@ -5,43 +5,71 @@
 {% block extra_css %}
 <style>
 .page-actions{display:flex;gap:8px;margin-bottom:20px;}
-.inst-code{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--accent-light);color:var(--text-muted);padding:2px 7px;border:1px solid var(--border);font-weight:600;}
+.inst-code{font-family:'IBM Plex Mono',monospace;font-size:14px;background:var(--accent-light);color:var(--text-muted);padding:2px 7px;border:1px solid var(--border);font-weight:600;}
 .inst-name{font-weight:600;}
-.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
+.tbl-action{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-muted);cursor:pointer;margin-left:6px;text-decoration:underline;}
 .tbl-action:hover{color:var(--accent);}
 /* panel */
 .form-panel{border:2px dashed var(--border-dark);background:var(--surface);margin-bottom:24px;display:none;}
 .form-panel.open{display:block;}
-.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.form-panel-header{background:var(--accent);color:var(--btn-text);padding:8px 16px;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
 .panel-close{background:none;border:none;color:var(--btn-text);opacity:.6;font-size:18px;cursor:pointer;line-height:1;}.panel-close:hover{opacity:1;}
 .form-body{padding:20px;}
 .form-actions{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr;}}
 .field{margin-bottom:14px;}
-.field-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
+.field-label{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px;display:block;}
 .req{color:#8a1a1a;}
 .inp{border:1.5px solid var(--border);background:var(--bg);padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .15s;width:100%;}
 .inp:focus{border-color:var(--accent);}
 .section-sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
-.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
+.section-lbl{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
 /* sub table */
 .sub-tbl{width:100%;border-collapse:collapse;border:1.5px solid var(--border);}
-.sub-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
+.sub-tbl th{background:var(--accent-light);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);padding:7px 10px;text-align:left;border-bottom:1.5px solid var(--border);}
 .sub-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px;}
 .sub-tbl tr:last-child td{border-bottom:none;}
 .assign-row{display:flex;gap:8px;margin-top:8px;align-items:center;}
-.assign-row select{border:1.5px solid var(--border);background:var(--bg);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;flex:1;outline:none;transition:border-color .15s;}
+.assign-row select{border:1.5px solid var(--border);background:var(--bg);padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:14px;flex:1;outline:none;transition:border-color .15s;}
 .assign-row select:focus{border-color:var(--accent);}
-.history-list{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);list-style:disc;padding-left:18px;}
+.history-list{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);list-style:disc;padding-left:18px;}
 .history-list li{margin-bottom:4px;}
-.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:14px;display:none;border:1px solid;}
+.banner{padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:14px;margin-bottom:14px;display:none;border:1px solid;}
 .banner.err{display:block;background:#f0d4d4;border-color:#d4a0a0;color:#8a1a1a;}
+
+  /* ── Shared form font overrides ── */
+  .field-label { font-size: 13px !important; }
+  .inp { font-size: 15px !important; padding: 8px 12px !important; }
+  .radio-opt { font-size: 15px !important; }
+  .banner { font-size: 14px !important; }
+  .form-panel-header { font-size: 14px !important; letter-spacing: .06em !important; }
+  .tbl-action { font-size: 13px !important; }
+  .section-lbl { font-size: 13px !important; }
+  .sinp { font-size: 14px !important; padding: 6px 8px !important; }
+  .snum { font-size: 14px !important; }
+  .stage-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
+  .stage-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
+  .season-row { font-size: 14px !important; }
+  .yr { font-size: 17px !important; }
+  .ev-tbl th { font-size: 12px !important; padding: 8px 10px !important; }
+  .ev-tbl td { font-size: 14px !important; padding: 8px 10px !important; }
+  .sub-tbl th { font-size: 12px !important; }
+  .sub-tbl td { font-size: 14px !important; }
+  .history-list { font-size: 14px !important; }
+  .assign-row select { font-size: 14px !important; }
+  .import-label { font-size: 13px !important; }
+  .import-btn { font-size: 14px !important; padding: 5px 14px !important; }
+  .import-file, .import-dl { font-size: 14px !important; }
+  select, input[type=text], input[type=email], input[type=number], input[type=date], textarea {
+    font-size: 15px !important;
+  }
+
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:16px;">Manage Institutions</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text-muted);margin-bottom:16px;">Manage Institutions</div>
 <div class="banner" id="banner"></div>
 <div class="page-actions">
   <button class="btn" onclick="openNew()">+ Add New Institution</button>
@@ -53,7 +81,7 @@
     <thead><tr>
       <th>ID#</th><th>Code</th><th>Name</th><th>Users</th><th>Participants (Season)</th><th>Status</th>
     </tr></thead>
-    <tbody id="instTbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;">Loading…</td></tr></tbody>
+    <tbody id="instTbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:14px;">Loading…</td></tr></tbody>
   </table>
 </div>
 
@@ -80,22 +108,22 @@ function hideBanner(){document.getElementById('banner').className='banner';}
 function load(){
   Promise.all([api('/api/forms/institutions'),api('/api/forms/hr-users').catch(function(){return[];})])
     .then(function(r){institutions=r[0];hrUsers=r[1];renderList();hideBanner();})
-    .catch(function(e){banner('Could not load institutions: '+e.message);document.getElementById('instTbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:11px;">Failed to load.</td></tr>';});
+    .catch(function(e){banner('Could not load institutions: '+e.message);document.getElementById('instTbody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">Failed to load.</td></tr>';});
 }
 
 function renderList(){
   var tb=document.getElementById('instTbody');
   document.getElementById('instCount').textContent='('+institutions.length+')';
-  if(!institutions.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:11px;">No institutions yet.</td></tr>';return;}
+  if(!institutions.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No institutions yet.</td></tr>';return;}
   tb.innerHTML=institutions.map(function(i){
     var st=i.status||'active';
     return '<tr class="'+(i.id==selId?'sel':'')+'" onclick="selectInst('+i.id+')" style="cursor:pointer">'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text-muted);">'+i.id+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">'+i.id+'</td>'
       +'<td><span class="inst-code">'+esc(i.code)+'</span></td>'
       +'<td><span class="inst-name">'+esc(i.name)+'</span></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;">'+i.user_count
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+i.user_count
         +'<a class="tbl-action" onclick="event.stopPropagation();selectInst('+i.id+')">[manage]</a></td>'
-      +'<td style="font-family:IBM Plex Mono,monospace;font-size:11px;">'+i.participant_count+'</td>'
+      +'<td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+i.participant_count+'</td>'
       +'<td><span class="badge badge-'+(st==='active'?'active':'archived')+'">'+st+'</span>'
         +(st==='active'?'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+i.id+',\'inactive\')">[deactivate]</a>':'<a class="tbl-action" onclick="event.stopPropagation();quickStatus('+i.id+',\'active\')">[activate]</a>')
         +'<a class="tbl-action" onclick="event.stopPropagation();selectInst('+i.id+')">[edit]</a>'
@@ -116,8 +144,8 @@ function renderForm(inst){
   var cp=inst?inst.contact_person||'':'', ce=inst?inst.contact_email||'':'', ph=inst?inst.phone||'':'';
   var assignedHR=inst?inst.hr_users||[]:[];
   var hrRows=assignedHR.length
-    ?assignedHR.map(function(u){return '<tr><td style="font-family:IBM Plex Mono,monospace;font-size:11px;">'+esc(u.username)+'</td><td style="color:var(--text-muted);font-size:11px;">'+esc(u.email)+'</td><td><button class="btn btn-ghost btn-sm" onclick="removeHR('+inst.id+','+u.id+')">Remove</button></td></tr>';}).join('')
-    :'<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:11px;">No HR users assigned.</td></tr>';
+    ?assignedHR.map(function(u){return '<tr><td style="font-family:IBM Plex Mono,monospace;font-size:14px;">'+esc(u.username)+'</td><td style="color:var(--text-muted);font-size:14px;">'+esc(u.email)+'</td><td><button class="btn btn-ghost btn-sm" onclick="removeHR('+inst.id+','+u.id+')">Remove</button></td></tr>';}).join('')
+    :'<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--text-muted);font-family:IBM Plex Mono,monospace;font-size:14px;">No HR users assigned.</td></tr>';
   var availHR=hrUsers.filter(function(u){return !u.institution_id;});
   var hist=inst&&inst.participation_history?inst.participation_history:[];
   document.getElementById('panelBody').innerHTML=
@@ -131,9 +159,9 @@ function renderForm(inst){
     +(inst
       ?'<hr class="section-sep"><div class="section-lbl">HR User Assignment</div>'
        +'<table class="sub-tbl"><thead><tr><th>Username</th><th>Email</th><th></th></tr></thead><tbody>'+hrRows+'</tbody></table>'
-       +(availHR.length?'<div class="assign-row"><select id="hrAssignSel"><option value="">— Select HR user —</option>'+availHR.map(function(u){return '<option value="'+u.id+'">'+esc(u.username)+' ('+esc(u.email)+')</option>';}).join('')+'</select><button class="btn btn-ghost btn-sm" onclick="assignHR('+inst.id+')">Assign</button></div>':'<p style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text-muted);margin-top:8px;">All HR users are already assigned.</p>')
+       +(availHR.length?'<div class="assign-row"><select id="hrAssignSel"><option value="">— Select HR user —</option>'+availHR.map(function(u){return '<option value="'+u.id+'">'+esc(u.username)+' ('+esc(u.email)+')</option>';}).join('')+'</select><button class="btn btn-ghost btn-sm" onclick="assignHR('+inst.id+')">Assign</button></div>':'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);margin-top:8px;">All HR users are already assigned.</p>')
        +'<hr class="section-sep"><div class="section-lbl">Participation History</div>'
-       +(hist.length?'<ul class="history-list">'+hist.map(function(h){return '<li>'+h.year+': '+h.registered+' registered</li>';}).join('')+'</ul>':'<p style="font-family:IBM Plex Mono,monospace;font-size:11px;color:var(--text-muted);">No participation data yet.</p>')
+       +(hist.length?'<ul class="history-list">'+hist.map(function(h){return '<li>'+h.year+': '+h.registered+' registered</li>';}).join('')+'</ul>':'<p style="font-family:IBM Plex Mono,monospace;font-size:14px;color:var(--text-muted);">No participation data yet.</p>')
       :'');
   document.getElementById('panelFooter').innerHTML=
     '<button class="btn" id="saveBtn" onclick="saveInst('+(inst?inst.id:'')+')">Save Institution</button>'

@@ -4,118 +4,597 @@
 
 {% block extra_css %}
 <style>
-.upload-bar{background:var(--surface);border:1.5px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;}
-.upload-label{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);}
-.upload-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border:1.5px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;background:var(--bg);color:var(--text);transition:border-color .15s;}
-.upload-btn:hover{border-color:var(--accent);}
-.upload-file{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);}
-.dl-tpl{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);cursor:pointer;text-decoration:underline;}
-.dl-tpl:hover{color:var(--accent);}
+/* Override main completely — sidebar takes over full page layout */
+  .main { padding: 0 !important; max-width: 100% !important; }
+
+  /* ── PAGE LAYOUT: sidebar + main ── */
+.hr-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: calc(100vh - 120px);
+  width: 100%;
+}
+
+/* ── SIDEBAR ── */
+.hr-sidebar {
+  background: var(--navy);
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 3px solid var(--gold);
+}
+.hr-sidebar-header {
+  background: var(--navy);
+  color: var(--gold);
+  padding: 20px 18px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.hr-sidebar-inst {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+.hr-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-left: 4px solid transparent;
+  transition: all 0.12s;
+}
+.hr-nav-item:last-child { border-bottom: none; }
+.hr-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; border-left-color: rgba(255,255,255,0.3); }
+.hr-nav-item.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: var(--gold); font-weight: 600; }
+.hr-nav-icon { font-size: 16px; flex-shrink: 0; opacity: 0.8; }
+.hr-nav-item.active .hr-nav-icon { opacity: 1; }
+
+/* ── MAIN CONTENT PANELS ── */
+.hr-panel { display: none; }
+.hr-panel.active { display: block; }
+
+/* ── Chart tabs (inside main) ── */
+.analytics-tabs { display: flex; flex-wrap: wrap; border-bottom: 2px solid var(--blue-light); width: 100%; }
+.atab { padding: 14px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; border: none; background: none; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+.atab:hover  { color: var(--blue); }
+.atab.active { color: var(--navy); border-bottom-color: var(--blue); }
+.atab-panel  { display: none; padding: 28px 24px; min-height: 460px; }
+.atab-panel.active { display: block; }
+.analytics-empty { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--text-muted); padding: 60px; text-align: center; }
+
+/* ── Vertical bar chart ── */
+.vbar-chart { display: flex; align-items: flex-end; gap: 20px; height: 380px; padding-bottom: 44px; position: relative; }
+.vbar-col { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+.vbar-block { width: 100%; max-width: 64px; background: var(--blue); border-radius: 3px 3px 0 0; position: relative; cursor: default; transition: background 0.12s; }
+.vbar-block:hover { background: var(--blue-mid); }
+.vbar-val { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; color: var(--navy); white-space: nowrap; }
+.vbar-lbl { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: var(--text-muted); white-space: nowrap; }
+
+/* ── Horizontal bars ── */
+.hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.hbar-lbl { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--text-muted); min-width: 72px; }
+.hbar-bg  { flex: 1; height: 28px; background: var(--blue-xlight); border-radius: 3px; overflow: hidden; border: 1px solid var(--blue-light); }
+.hbar-fill-blue  { height: 100%; background: var(--blue); border-radius: 3px; }
+.hbar-fill-green { height: 100%; background: #1a6e34; border-radius: 3px; }
+.hbar-val { font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: var(--navy); min-width: 44px; text-align: right; font-weight: 600; }
+
+/* ── Gender / pie ── */
+.gender-layout { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; }
+.gender-legend { display: flex; flex-direction: column; gap: 16px; justify-content: center; flex: 1; min-width: 200px; }
+.demo-stat-bar-bg { flex: 1; height: 28px; background: var(--blue-xlight); border-radius: 4px; overflow: hidden; border: 1px solid var(--blue-light); }
+.demo-stat-bar-fill { height: 100%; border-radius: 4px; }
+
+/* ── Status pills ── */
+.status-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.s-pill { font-family: 'IBM Plex Mono', monospace; font-size: 15px; padding: 5px 14px; border-radius: 20px; font-weight: 600; }
+.s-pill-g { background: #d4f0d4; color: #1a6e34; }
+.s-pill-r { background: var(--red-light); color: var(--red); }
+.s-pill-b { background: var(--blue-light); color: var(--blue); }
+
+/* ── Upload bar ── */
+.upload-bar { background: var(--surface); border: 2px solid var(--border); border-left: 4px solid var(--blue); padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-radius: 4px; flex-wrap: wrap; }
+
+/* ── Settings ── */
+.settings-section { margin-bottom: 28px; }
+.settings-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--blue-light); }
+
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .hr-layout { flex-direction: column; min-height: unset; }
+  .hr-sidebar { width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 3px solid var(--gold); min-height: unset; }
+  .hr-sidebar-header { display: none; }
+  .hr-nav-item { border-bottom: none; border-right: 1px solid rgba(255,255,255,0.1); border-left: none; border-bottom: 4px solid transparent; white-space: nowrap; padding: 14px 16px; }
+  .hr-nav-item.active { border-bottom-color: var(--gold); border-left-color: transparent; background: rgba(255,255,255,0.12); }
+  .vbar-chart { height: 220px; gap: 10px; }
+  .atab { font-size: 11px; padding: 11px 13px; }
+
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="section-title">{{ institution.name }} Dashboard</div>
 
-<!-- Stats Cards -->
-<div class="metrics-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
-  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
-    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ reg_count }}</div>
-    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">Total Registered</div>
-  </div>
-  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
-    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ part_count }}</div>
-    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">Participated</div>
-  </div>
-  <div class="metric-card" style="background:var(--surface);border:1.5px solid var(--border);padding:16px;text-align:center;">
-    <div class="metric-value" style="font-size:32px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ no_show_count }}</div>
-    <div class="metric-label" style="font-size:11px;text-transform:uppercase;">No-Shows</div>
-  </div>
-</div>
+<!-- Full page layout: sidebar left, everything else right -->
+<div class="hr-layout">
 
-<!-- Action Buttons -->
-<div class="section-actions" style="margin-bottom:16px;">
-  <a href="{{ url_for('hr_views.add_participant') }}" class="btn">+ Add Participant</a>
-  <a href="{{ url_for('hr_views.register') }}" class="btn btn-ghost">Register for Event</a>
-</div>
+  <!-- ── SIDEBAR ── -->
+  <div class="hr-sidebar">
+    <div class="hr-sidebar-header">
+      <div>HR Portal</div>
+      <div class="hr-sidebar-inst">{{ institution.name }}</div>
+    </div>
 
-<!-- CSV Upload Bar -->
-<form method="POST" action="{{ url_for('hr_views.upload_csv') }}" enctype="multipart/form-data">
-  <div class="upload-bar">
-    <span class="upload-label">Batch Import</span>
-    <label class="upload-btn">
-      📋 Choose CSV
-      <input type="file" name="csv_file" accept=".csv" style="display:none"
-             onchange="document.getElementById('fname').textContent=this.files[0]?this.files[0].name:'No file chosen'">
-    </label>
-    <span class="upload-file" id="fname">No file chosen</span>
-    <button type="submit" class="btn btn-sm">Upload &amp; Import</button>
-    <a class="dl-tpl" onclick="downloadTemplate()">Download template ↓</a>
+    <button class="hr-nav-item active" onclick="hrPanel('dashboard', this)">
+      <span class="hr-nav-icon">📊</span> Dashboard
+    </button>
+    <button class="hr-nav-item" onclick="hrPanel('roster', this)">
+      <span class="hr-nav-icon">👥</span> Participant Roster
+    </button>
+    <button class="hr-nav-item" onclick="hrPanel('add', this)">
+      <span class="hr-nav-icon">➕</span> Add Participant
+    </button>
+    <button class="hr-nav-item" onclick="hrPanel('register', this)">
+      <span class="hr-nav-icon">📋</span> Register for Event
+    </button>
+    <button class="hr-nav-item" onclick="hrPanel('settings', this)">
+      <span class="hr-nav-icon">⚙</span> Settings
+    </button>
   </div>
-</form>
 
-<!-- Participants Table -->
-<div class="card">
-  <div class="card-header">Participant Roster ({{ participants|length }})</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Division</th>
-        <th>Sex</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in participants %}
-      <tr>
-        <td>{{ p.first_name }} {{ p.last_name }}</td>
-        <td style="font-size:11px;color:var(--text-muted);">{{ p.email or '—' }}</td>
-        <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ p.division or '—' }}</span></td>
-        <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ p.sex or '—' }}</td>
-        <td>
-          {% if p.has_result %}
-            <span class="badge badge-active">Participated</span>
-          {% elif p.is_no_show %}
-            <span class="badge badge-closed">No-Show</span>
+  <!-- ── MAIN CONTENT ── -->
+  <div style="flex: 1; background: var(--bg); min-width: 0; overflow-y: auto;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 28px 36px;">
+
+      <!-- Season indicator -->
+      {% if current_season %}
+      <div style="text-align:right; margin-bottom:14px; font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--text-muted);">
+        Season: <strong>{{ current_season.year }}</strong> ({{ current_season.status }})
+      </div>
+      {% endif %}
+
+      <!-- Metric Cards -->
+      <div class="metrics-grid" style="margin-bottom:28px;">
+        <div class="metric-card">
+          <div class="metric-value">{{ total_participants }}</div>
+          <div class="metric-label">Total Participants</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">{{ reg_count }}</div>
+          <div class="metric-label">Registered</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">{{ part_count }}</div>
+          <div class="metric-label">Participated</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">{{ participation_rate }}%</div>
+          <div class="metric-label">Participation Rate</div>
+        </div>
+      </div>
+
+    <!-- ══ PANEL: DASHBOARD (charts) ══ -->
+    <div class="hr-panel active" id="panel-dashboard">
+
+      <!-- Export bar -->
+      <div style="background:var(--surface); border:2px solid var(--border); border-left:4px solid var(--gold); padding:12px 20px; display:flex; align-items:center; gap:10px; margin-bottom:20px; border-radius:4px; flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--navy); margin-right:4px;">Export</span>
+        <a href="{{ url_for('hr_views.export_roster') }}" class="btn btn-sm btn-ghost">Roster CSV</a>
+        <a href="{{ url_for('hr_views.export_results') }}" class="btn btn-sm btn-ghost">Results CSV</a>
+      </div>
+
+      <!-- Unified chart card -->
+      <div class="card" style="margin-bottom: 0;">
+        <div class="card-header" style="padding: 0;">
+          <div class="analytics-tabs">
+            <button class="atab active" onclick="hrTab('division',this)">By Division</button>
+            <button class="atab" onclick="hrTab('status',this)">Participation Status</button>
+            <button class="atab" onclick="hrTab('funnel',this)">Stage Drop-off</button>
+            <button class="atab" onclick="hrTab('gender',this)">Gender Split</button>
+          </div>
+        </div>
+
+        <!-- TAB 1 — BY DIVISION -->
+        <div class="atab-panel active" id="hr-tab-division">
+          {% if division_data %}
+            {% set div_max = division_data[0].count %}
+            <div class="vbar-chart">
+              {% for d in division_data %}
+              <div class="vbar-col">
+                <div class="vbar-block" style="height: {{ ((d.count / div_max) * 340)|int }}px; min-height: 20px;">
+                  <span class="vbar-val">{{ d.count }}</span>
+                </div>
+                <span class="vbar-lbl">{{ d.division }}</span>
+              </div>
+              {% endfor %}
+            </div>
           {% else %}
-            <span class="badge badge-planning">Pending</span>
+            <p class="analytics-empty">No division data yet.</p>
           {% endif %}
-        </td>
-      </tr>
-      {% else %}
-      <tr>
-        <td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);font-family:'IBM Plex Mono',monospace;font-size:11px;">
-          No participants yet — add manually or import a CSV.
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </div>
+
+        <!-- TAB 2 — PARTICIPATION STATUS -->
+        <div class="atab-panel" id="hr-tab-status">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+              {% if reg_count > 0 %}
+                {% set part_deg = ((part_count / reg_count) * 360)|round(1) %}
+                <div style="width:200px; height:200px; border-radius:50%; box-shadow:0 2px 8px rgba(13,43,84,0.15);
+                            background:conic-gradient(#1a6e34 0deg {{ part_deg }}deg, var(--red) {{ part_deg }}deg 360deg);"></div>
+                <div class="pie-legend">
+                  <div class="legend-item"><span class="legend-color" style="background:#1a6e34;"></span><span>Participated ({{ ((part_count/reg_count)*100)|round(1) }}%)</span></div>
+                  <div class="legend-item"><span class="legend-color no-show"></span><span>No-Show ({{ ((no_show_count/reg_count)*100)|round(1) }}%)</span></div>
+                </div>
+              {% else %}
+                <p class="analytics-empty">No registrations yet.</p>
+              {% endif %}
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:18px;">Stage Completion</div>
+              {% if stage_completion %}
+                {% for s in stage_completion %}
+                <div class="hbar-row">
+                  <span class="hbar-lbl">Stage {{ s.stage }}</span>
+                  <div class="hbar-bg"><div class="hbar-fill-green" style="width:{{ s.completion }}%;"></div></div>
+                  <span class="hbar-val">{{ s.completion }}%</span>
+                </div>
+                {% endfor %}
+              {% else %}
+                <p style="font-size:13px; color:var(--text-muted);">No stage data yet.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3 — STAGE DROP-OFF -->
+        <div class="atab-panel" id="hr-tab-funnel">
+          {% if stage_completion %}
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--text-muted); margin-bottom:22px; text-transform:uppercase; letter-spacing:0.06em;">
+              {{ institution.name }} — {{ reg_count }} registered
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px; max-width:680px;">
+              {% for s in stage_completion %}
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                  <div style="flex:1; height:52px; background:var(--blue-xlight); border-radius:4px; overflow:hidden; border:1px solid var(--blue-light);">
+                    <div style="height:100%; background:var(--blue); border-radius:4px; width:{{ s.completion }}%; display:flex; align-items:center; min-width:44px; transition:width 0.5s ease;">
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:700; color:#fff; padding-left:14px; white-space:nowrap;">{{ s.completed }}</span>
+                    </div>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:var(--navy); min-width:60px; text-align:right;">{{ s.completion }}%</span>
+                </div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--text-muted); padding-left:4px;">Stage {{ s.stage }}</div>
+                {% if not loop.last %}
+                  {% set next = stage_completion[loop.index] %}
+                  {% set diff = s.completed - next.completed %}
+                  {% if diff > 0 %}
+                    {% set dpct = ((diff / s.completed) * 100)|round(1) if s.completed else 0 %}
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--red); padding:4px 4px 10px;">▼ {{ diff }} dropped ({{ dpct }}%)</div>
+                  {% elif diff < 0 %}
+                    {% set gpct = (((diff|abs) / s.completed) * 100)|round(1) if s.completed else 0 %}
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:#1a6e34; padding:4px 4px 10px;">▲ {{ diff|abs }} gained ({{ gpct }}%)</div>
+                  {% else %}
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-muted); padding:4px 4px 10px;">— no change</div>
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="analytics-empty">No stage data available yet.</p>
+          {% endif %}
+        </div>
+
+        <!-- TAB 4 — GENDER SPLIT -->
+        <div class="atab-panel" id="hr-tab-gender">
+          {% if gender_data %}
+            {% set m_list = gender_data | selectattr('sex','eq','M') | list %}
+            {% set f_list = gender_data | selectattr('sex','eq','F') | list %}
+            {% set m_count = m_list[0].count if m_list else 0 %}
+            {% set f_count = f_list[0].count if f_list else 0 %}
+            {% set g_total = m_count + f_count %}
+            {% set m_deg = ((m_count / g_total) * 360)|round(1) if g_total else 0 %}
+            <div class="gender-layout">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:16px; min-width:200px;">
+                <div style="width:200px; height:200px; border-radius:50%; box-shadow:0 2px 8px rgba(13,43,84,0.15);
+                            background:conic-gradient(var(--blue) 0deg {{ m_deg }}deg, #c0437a {{ m_deg }}deg 360deg);"></div>
+                <div class="pie-legend">
+                  <div class="legend-item"><span class="legend-color" style="background:var(--blue);"></span><span>Male ({{ m_count }})</span></div>
+                  <div class="legend-item"><span class="legend-color" style="background:#c0437a;"></span><span>Female ({{ f_count }})</span></div>
+                </div>
+              </div>
+              <div class="gender-legend">
+                {% for g in gender_data %}
+                <div>
+                  <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:600; margin-bottom:8px; color:var(--navy);">
+                    <span>{{ 'Male' if g.sex == 'M' else 'Female' }}</span>
+                    <span>{{ g.count }} ({{ g.pct }}%)</span>
+                  </div>
+                  <div class="demo-stat-bar-bg">
+                    <div class="demo-stat-bar-fill" style="width:{{ g.pct }}%; background:{{ 'var(--blue)' if g.sex == 'M' else '#c0437a' }};"></div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <p class="analytics-empty">No gender data available yet.</p>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+    <!-- END DASHBOARD PANEL -->
+
+
+    <!-- ══ PANEL: PARTICIPANT ROSTER ══ -->
+    <div class="hr-panel" id="panel-roster">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>Participant Roster ({{ participants|length }})</span>
+          <div style="display:flex; gap:8px;">
+            <a href="{{ url_for('hr_views.export_roster') }}" class="btn btn-sm btn-ghost">Export CSV</a>
+          </div>
+        </div>
+        <div class="table-scroll"><table>
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Division</th><th>Sex</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for p in participants %}
+            <tr>
+              <td>{{ p.first_name }} {{ p.last_name }}</td>
+              <td style="color:var(--text-muted);">{{ p.email or '—' }}</td>
+              <td><span style="font-family:'IBM Plex Mono',monospace;">{{ p.division or '—' }}</span></td>
+              <td style="font-family:'IBM Plex Mono',monospace;">{{ p.sex or '—' }}</td>
+              <td>
+                {% if p.has_result %}<span class="badge badge-active">Participated</span>
+                {% elif p.is_no_show %}<span class="badge badge-closed">No-Show</span>
+                {% else %}<span class="badge badge-planning">Pending</span>{% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" style="text-align:center; padding:32px; color:var(--text-muted); font-family:'IBM Plex Mono',monospace;">
+              No participants yet — use Add Participant or import a CSV.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table></div>
+      </div>
+
+      <!-- CSV import inside roster panel -->
+      <form method="POST" action="{{ url_for('hr_views.upload_csv') }}" enctype="multipart/form-data">
+        <div class="upload-bar">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--navy);">Batch Import</span>
+          <label class="btn btn-sm btn-ghost" style="cursor:pointer;">
+            Choose CSV
+            <input type="file" name="csv_file" accept=".csv" style="display:none"
+                   onchange="document.getElementById('fname').textContent=this.files[0]?this.files[0].name:'No file chosen'">
+          </label>
+          <span id="fname" style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-muted);">No file chosen</span>
+          <button type="submit" class="btn btn-sm">Upload &amp; Import</button>
+          <a class="btn btn-sm btn-ghost" style="margin-left:auto; cursor:pointer;" onclick="downloadTemplate()">Download template</a>
+        </div>
+      </form>
+    </div>
+    <!-- END ROSTER PANEL -->
+
+
+    <!-- ══ PANEL: ADD PARTICIPANT ══ -->
+    <div class="hr-panel" id="panel-add">
+      <div class="card">
+        <div class="card-header">Add New Participant</div>
+        <div class="form-body">
+          <form method="POST" action="{{ url_for('hr_views.add_participant') }}">
+            <div class="form-row">
+              <span class="form-label">First Name:</span>
+              <input type="text" name="first_name" required class="wide" placeholder="e.g. Jane">
+            </div>
+            <div class="form-row">
+              <span class="form-label">Last Name:</span>
+              <input type="text" name="last_name" required class="wide" placeholder="e.g. Smith">
+            </div>
+            <div class="form-row">
+              <span class="form-label">Email:</span>
+              <input type="email" name="email" class="wide" placeholder="jane.smith@example.com">
+            </div>
+            <div class="form-row">
+              <span class="form-label">Date of Birth:</span>
+              <input type="date" name="birth_date" style="width:200px;">
+            </div>
+            <div class="form-row">
+              <span class="form-label">Sex:</span>
+              <div class="radio-group">
+                <label class="radio-option"><input type="radio" name="sex" value="M"> Male</label>
+                <label class="radio-option"><input type="radio" name="sex" value="F"> Female</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <span class="form-label">Division:</span>
+              <select name="division" style="width:200px;">
+                <option value="">— Select —</option>
+                {% for div in ['M2029','M3039','M4049','M5059','M60+','F2029','F3039','F4049','F5059','F60+'] %}
+                <option value="{{ div }}">{{ div }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn">Add Participant</button>
+              <button type="button" class="btn btn-ghost" onclick="hrPanel('roster', document.querySelector('[onclick*=roster]'))">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- END ADD PANEL -->
+
+
+    <!-- ══ PANEL: REGISTER FOR EVENT ══ -->
+    <div class="hr-panel" id="panel-register">
+      <div class="card">
+        <div class="card-header">Register Participants for an Event</div>
+        <div class="form-body">
+          <form method="POST" action="{{ url_for('hr_views.register') }}">
+            <div class="form-row">
+              <span class="form-label">Event:</span>
+              <select name="season_event_id" required style="width:300px;">
+                <option value="">— Select Event —</option>
+                {% for ev in events %}
+                <option value="{{ ev.id }}">{{ ev.name }}{% if ev.date and ev.date != 'TBD' %} ({{ ev.date }}){% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-row" style="align-items:flex-start;">
+              <span class="form-label" style="padding-top:8px;">Participants:</span>
+              <div style="flex:1;">
+                <div style="margin-bottom:8px; display:flex; gap:8px;">
+                  <button type="button" class="btn btn-sm btn-ghost" onclick="selectAll(true)">Select All</button>
+                  <button type="button" class="btn btn-sm btn-ghost" onclick="selectAll(false)">Clear All</button>
+                </div>
+                <div style="border:2px solid var(--border); border-radius:4px; max-height:320px; overflow-y:auto;">
+                  {% for p in participants %}
+                  <label style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer; font-size:14px;">
+                    <input type="checkbox" name="participant_ids" value="{{ p.id }}" class="p-check" style="width:16px; height:16px; accent-color:var(--blue);">
+                    {{ p.first_name }} {{ p.last_name }}
+                    {% if p.division %}<span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-muted);">({{ p.division }})</span>{% endif %}
+                    {% if p.is_registered %}<span class="badge badge-planning" style="margin-left:auto;">Registered</span>{% endif %}
+                  </label>
+                  {% else %}
+                  <div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13px;">No participants yet.</div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn">Register Selected</button>
+              <button type="button" class="btn btn-ghost" onclick="hrPanel('dashboard', document.querySelector('[onclick*=dashboard]'))">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- END REGISTER PANEL -->
+
+
+    <!-- ══ PANEL: SETTINGS ══ -->
+    <div class="hr-panel" id="panel-settings">
+      <div class="card">
+        <div class="card-header">Settings</div>
+        <div class="form-body">
+
+          <div class="settings-section">
+            <div class="settings-section-title">Account</div>
+            <div class="form-row">
+              <span class="form-label">Name:</span>
+              <span style="font-size:15px;">{{ current_user.firstname }} {{ current_user.lastname }}</span>
+            </div>
+            <div class="form-row">
+              <span class="form-label">Email:</span>
+              <span style="font-size:15px; color:var(--text-muted);">{{ current_user.email }}</span>
+            </div>
+            <div class="form-row">
+              <span class="form-label">Institution:</span>
+              <span style="font-size:15px;">{{ institution.name }}</span>
+            </div>
+            <div class="form-row">
+              <span class="form-label">Role:</span>
+              <span class="badge badge-planning">{{ current_user.role|capitalize }}</span>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Exports</div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:15px; font-weight:500; color:var(--navy);">Roster CSV</div>
+                  <div style="font-size:13px; color:var(--text-muted);">All participants with participation status</div>
+                </div>
+                <a href="{{ url_for('hr_views.export_roster') }}" class="btn btn-sm btn-ghost">Download</a>
+              </div>
+              <div style="border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:15px; font-weight:500; color:var(--navy);">Results CSV</div>
+                  <div style="font-size:13px; color:var(--text-muted);">Stage times and placements</div>
+                </div>
+                <a href="{{ url_for('hr_views.export_results') }}" class="btn btn-sm btn-ghost">Download</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-section-title">Session</div>
+            <a href="{{ url_for('auth_views.logout') }}" class="btn btn-danger">Logout</a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <!-- END SETTINGS PANEL -->
+
+    </div><!-- end centring wrapper -->
+  </div>
 </div>
 
-@app.route('/hr/upload', methods=['POST'])
-@login_required
-def hr_upload_csv():
-    if 'csv_file' not in request.files:
-        flash('No file selected')
-        return redirect(request.url)
-    
-    file = request.files['csv_file']
+<script>
+function hrPanel(name, btn) {
+  document.querySelectorAll('.hr-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.hr-nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
 
-    if file.filename == '':
-        flash('No file selected')
-        return redirect(request.url)
-    
-    if file and file.filename.endswith('.csv'):
-        count = process_process_participants_csv(file, current_user.institution_id)
-        flash(f'Successfully imported {count} participants!')
-        return redirect(url_for('hr_views'))
-    
-    flash('Invalid file type. Please upload a CSV file.')
-    return redirect (request.url)
+function hrTab(name, btn) {
+  document.querySelectorAll('.atab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.atab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('hr-tab-' + name).classList.add('active');
+}
 
+function selectAll(checked) {
+  document.querySelectorAll('.p-check').forEach(cb => cb.checked = checked);
+}
 
+function downloadTemplate() {
+  const csv = [
+    'first_name,last_name,email,sex,div,birth_date',
+    'Jane,Smith,jane.smith@example.com,F,F3039,1988-04-15',
+    'John,Doe,john.doe@example.com,M,M4049,1978-11-02'
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'participants_template.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// If redirected back with a flash message, switch to the right panel
+window.addEventListener('DOMContentLoaded', () => {
+  const hash = window.location.hash.replace('#','');
+  if (hash && document.getElementById('panel-' + hash)) {
+    const btn = document.querySelector(`[onclick*="${hash}"]`);
+    hrPanel(hash, btn);
+  }
+});
+</script>
 
 {% endblock %}

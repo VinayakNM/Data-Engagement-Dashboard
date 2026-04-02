@@ -31,51 +31,56 @@ def _parse_date(val):
 def form_get_events():
     """
     GET /api/forms/events?season_id=<id>
-    Returns events for a season (with stages) OR all events (no season_id).
+    Always returns ALL events including unassigned ones.
+    When season_id provided, marks which events are in that season and includes stage data.
     """
     season_id = request.args.get('season_id', type=int)
-    if season_id:
-        ses = SeasonEvent.query.filter_by(season_id=season_id).all()
-        result = []
-        for se in ses:
-            e = se.event
-            if not e:
-                continue
-            stages = Stage.query.filter_by(season_event_id=se.id)\
-                                .order_by(Stage.stage_number).all()
-            result.append({
-                'id':              e.id,
-                'season_event_id': se.id,
-                'name':            e.name,
-                'event_type':      e.event_type or 'run',
-                'description':     e.description or '',
-                'status':          se.status or 'active',
-                'start_date':      se.start_date.isoformat() if se.start_date else None,
-                'end_date':        se.end_date.isoformat()   if se.end_date   else None,
-                'stages': [{
-                    'id':           st.id,
-                    'stage_number': st.stage_number,
-                    'distance':     st.distance  or '',
-                    'location':     st.location  or '',
-                    'stage_date':   st.stage_date.isoformat() if st.stage_date else '',
-                } for st in stages],
-            })
-        return jsonify(result)
 
-    # All events (no season context) — lightweight list for the table
+    # Build lookup: event_id -> SeasonEvent for selected season
+    se_map = {}
+    if season_id:
+        for se in SeasonEvent.query.filter_by(season_id=season_id).all():
+            se_map[se.event_id] = se
+
     events = Event.query.order_by(Event.name).all()
     result = []
     for e in events:
-        total_stages = sum(len(se.stages) for se in e.season_events)
+        se = se_map.get(e.id)
+        stages = []
+        if se:
+            stages = [{
+                'id':           st.id,
+                'stage_number': st.stage_number,
+                'distance':     st.distance  or '',
+                'location':     st.location  or '',
+                'stage_date':   st.stage_date.isoformat() if st.stage_date else '',
+            } for st in Stage.query.filter_by(season_event_id=se.id)
+                                   .order_by(Stage.stage_number).all()]
+
+        assigned_seasons = [
+            {'id': x.season_id, 'year': x.season.year if x.season else '?'}
+            for x in e.season_events if x.season
+        ]
+        total_stages = len(stages) or sum(
+            Stage.query.filter_by(season_event_id=x.id).count()
+            for x in e.season_events
+        )
+
         result.append({
-            'id':          e.id,
-            'name':        e.name,
-            'event_type':  e.event_type or 'run',
-            'description': e.description or '',
-            'stage_count': total_stages,
+            'id':                 e.id,
+            'season_event_id':    se.id if se else None,
+            'name':               e.name,
+            'event_type':         e.event_type or 'run',
+            'description':        e.description or '',
+            'status':             se.status if se else 'unassigned',
+            'start_date':         se.start_date.isoformat() if se and se.start_date else None,
+            'end_date':           se.end_date.isoformat()   if se and se.end_date   else None,
+            'stage_count':        total_stages,
+            'assigned_seasons':   assigned_seasons,
+            'in_selected_season': se is not None,
+            'stages':             stages,
         })
     return jsonify(result)
-
 
 @forms_api.route('/events', methods=['POST'])
 @jwt_required()
@@ -350,10 +355,13 @@ def form_get_institutions():
         # HR users assigned to this institution
         hr_users = [u for u in i.users if u.role == 'hr']
 
-        # Participant count for the current/most recent season only
-        current_season = Season.query.filter_by(status='active')            .order_by(Season.year.desc()).first()
+        # Participant count for the active season only
+        # Prefer 'active', then 'closed' — never use a planning season (no data)
+        current_season = Season.query.filter_by(status='active').order_by(Season.year.desc()).first()
         if not current_season:
-            current_season = Season.query.order_by(Season.year.desc()).first()
+            current_season = Season.query.filter_by(status='closed').order_by(Season.year.desc()).first()
+        if not current_season:
+            current_season = Season.query.filter(Season.status.notin_(['planning'])).order_by(Season.year.desc()).first()
         season_participant_count = 0
         if current_season:
             season_participant_count = db.session.query(

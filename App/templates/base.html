@@ -61,8 +61,6 @@
                 </div>
             </div>
             {% elif current_user.role == 'hr' %}
-            <a href="{{ url_for('hr_views.dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('hr_views.add_participant') }}">Add Participant</a>
             {% endif %}
             <a href="{{ url_for('auth_views.logout') }}">Logout</a>
         </div>
