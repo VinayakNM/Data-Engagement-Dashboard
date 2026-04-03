@@ -14,5 +14,11 @@ def load_config(app, overrides):
     app.config["JWT_COOKIE_SECURE"] = True
     app.config["JWT_COOKIE_CSRF_PROTECT"] = False
     app.config['FLASK_ADMIN_SWATCH'] = 'darkly'
+
+    # Fix Render's postgres:// URI to postgresql:// for SQLAlchemy
+    db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    if db_url.startswith("postgres://"):
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_url.replace("postgres://", "postgresql://", 1)
+
     for key in overrides:
         app.config[key] = overrides[key]
