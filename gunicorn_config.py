@@ -2,18 +2,21 @@
 import multiprocessing
 
 # The socket to bind.
-# "0.0.0.0" to bind to all interfaces. 8000 is the port number.
 bind = "0.0.0.0:8080"
 
-# The number of worker processes for handling requests.
-workers = 4
+# Reduced workers — free tier has limited RAM (512MB)
+# 4 workers was likely causing memory exhaustion too
+workers = 2
 
-# Use the 'gevent' worker type for async performance.
+# Sync worker
 worker_class = 'sync'
+
+# Timeout in seconds — increased for Excel import processing
+timeout = 300
 
 # Log level
 loglevel = 'info'
 
 # Where to log to
 accesslog = '-'  # '-' means log to stdout
-errorlog = '-'  # '-' means log to stderr
+errorlog = '-'   # '-' means log to stderr
