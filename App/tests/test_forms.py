@@ -14,7 +14,7 @@ def test_app():
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'JWT_SECRET_KEY': 'forms-test-secret',
-        'JWT_TOKEN_LOCATION': ['headers', 'cookies'],
+        'JWT_TOKEN_LOCATION': ['headers'],
         'JWT_COOKIE_CSRF_PROTECT': False,
         'WTF_CSRF_ENABLED': False,
     })
@@ -398,8 +398,9 @@ class TestInstitutionAPI:
         assert client.post('/api/forms/institutions', headers=auth(token),
                            json={'name': 'X', 'code': 'XX'}).status_code == 403
 
-    def test_unauthenticated_blocked(self, client):
-        assert client.get('/api/forms/institutions').status_code == 401
+    def test_unauthenticated_blocked(self, test_app):
+        fresh = test_app.test_client()
+        assert fresh.get('/api/forms/institutions').status_code == 401
 
 
 class TestSeasonAPI:
@@ -454,14 +455,12 @@ class TestSeasonAPI:
 
     def test_update_include_and_exclude_events(self, client, seed):
         token = get_token(client, seed['admin_email'], 'Admin123!')
-        # include event2
         resp = client.put(f'/api/forms/seasons/{seed["season_id"]}',
                           headers=auth(token),
                           json={'events': [{'event_id': seed['event2_id'],
                                             'included': True,
                                             'start_date': '2025-05-01'}]})
         assert resp.status_code == 200
-        # exclude event2
         resp = client.put(f'/api/forms/seasons/{seed["season_id"]}',
                           headers=auth(token),
                           json={'events': [{'event_id': seed['event2_id'],
@@ -481,8 +480,9 @@ class TestSeasonAPI:
         assert client.post('/api/forms/seasons', headers=auth(token),
                            json={'year': 2080}).status_code == 403
 
-    def test_unauthenticated_blocked(self, client):
-        assert client.get('/api/forms/seasons').status_code == 401
+    def test_unauthenticated_blocked(self, test_app):
+        fresh = test_app.test_client()
+        assert fresh.get('/api/forms/seasons').status_code == 401
 
 
 class TestEventAPI:
@@ -583,5 +583,6 @@ class TestEventAPI:
         assert client.post('/api/forms/events', headers=auth(token),
                            json={'name': 'X', 'event_type': 'run'}).status_code == 403
 
-    def test_unauthenticated_blocked(self, client):
-        assert client.get('/api/forms/events').status_code == 401
+    def test_unauthenticated_blocked(self, test_app):
+        fresh = test_app.test_client()
+        assert fresh.get('/api/forms/events').status_code == 401

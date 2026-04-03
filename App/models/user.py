@@ -184,7 +184,9 @@ class SeasonEvent(db.Model):
     __table_args__ = (db.UniqueConstraint('season_id', 'event_id', name='_season_event_uc'),)
 
     def __init__(self, season_id, event_id, **kwargs):
-        self.season_id = season_id; self.event_id = event_id
+        self.season_id = season_id
+        self.event_id = event_id
+        self.status = 'active'
         for k, v in kwargs.items(): setattr(self, k, v)
 
 
