@@ -127,9 +127,8 @@ function render() {
               ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year}</option>`).join('')}
             </select>
           </div>
-          <div id="newStagesWrap"></div>
           <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
-            <button class="btn" onclick="createEvent()">Create</button>
+            <button class="btn" onclick="createNewEvent()">Create</button>
             <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
           </div>
         </div>
@@ -203,7 +202,7 @@ function closeModal(id) {
     document.getElementById(id).classList.remove('active');
 }
 
-async function createEvent() {
+async function createNewEvent() {
     const name = document.getElementById('newName').value.trim();
     const type = document.getElementById('newType').value;
     const sid  = document.getElementById('newSeason').value;
