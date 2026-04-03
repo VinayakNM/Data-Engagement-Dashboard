@@ -1,21 +1,32 @@
 from App.models import User
 from App.database import db
 
+
 def create_user(firstname, lastname, username, email, password):
-    newuser = User(firstname=firstname, lastname=lastname, username=username, email=email, password=password)
+    newuser = User(
+        firstname=firstname,
+        lastname=lastname,
+        username=username,
+        email=email,
+        password=password,
+    )
     db.session.add(newuser)
     db.session.commit()
     return newuser
+
 
 def get_user_by_username(username):
     result = db.session.execute(db.select(User).filter_by(username=username))
     return result.scalar_one_or_none()
 
+
 def get_user(id):
     return db.session.get(User, id)
 
+
 def get_all_users():
     return db.session.scalars(db.select(User)).all()
+
 
 def get_all_users_json():
     users = get_all_users()
@@ -23,6 +34,7 @@ def get_all_users_json():
         return []
     users = [user.get_json() for user in users]
     return users
+
 
 def update_user(id, username):
     user = get_user(id)

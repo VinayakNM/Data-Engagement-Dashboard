@@ -7,7 +7,9 @@ from App.views import auth_views
 from flask_jwt_extended import JWTManager
 from App.database import db
 from App.config import load_config
+
 # from App.controllers.admin_controller import admin_bp
+
 
 def create_app(overrides={}):
     app = Flask(__name__)
@@ -23,6 +25,7 @@ def create_app(overrides={}):
     def inject_user():
         """Make current_user available in all templates."""
         from flask_jwt_extended import current_user
+
         try:
             # If we're in a JWT-protected route, current_user will be set
             return dict(current_user=current_user)
@@ -31,48 +34,53 @@ def create_app(overrides={}):
             pass
 
         # Fallback to session if available
-        if 'user_id' in session:
+        if "user_id" in session:
             from App.models import User
-            user = User.query.get(session['user_id'])
+
+            user = User.query.get(session["user_id"])
             if user:
                 return dict(current_user=user)
-    
-        return dict(current_user=None)
-        
 
+        return dict(current_user=None)
 
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
         return User.query.get(identity)
-    
 
     # Register blueprints
 
     from App.views.index import index_views
+
     app.register_blueprint(index_views)
 
     from App.views.auth_views import auth_views
+
     app.register_blueprint(auth_views)
 
-    #from App.views.dashboards import dashboard_views
-    #app.register_blueprint(dashboard_views)
-    #from App.views.dashboards import dashboard_views
-    #app.register_blueprint(dashboard_views)
+    # from App.views.dashboards import dashboard_views
+    # app.register_blueprint(dashboard_views)
+    # from App.views.dashboards import dashboard_views
+    # app.register_blueprint(dashboard_views)
 
     from App.views.admin_views import admin_views
+
     app.register_blueprint(admin_views)
 
     from App.views.hr_views import hr_views
+
     app.register_blueprint(hr_views)
 
     from App.views.scorer_views import scorer_views
+
     app.register_blueprint(scorer_views)
 
     from App.views.forms import forms_views
+
     app.register_blueprint(forms_views)
 
     from App.views.forms_api import forms_api
+
     app.register_blueprint(forms_api)
 
     # Auto-create tables on first deploy (idempotent — safe to run every startup)

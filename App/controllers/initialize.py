@@ -7,10 +7,10 @@ def initialize():
     db.drop_all()
     db.create_all()
     create_user_by_admin(
-        firstname='Bob',
-        lastname='Test',
-        username='bob',
-        email='bob@email.com',
-        password='bobpass',
-        role='admin'
+        firstname="Bob",
+        lastname="Test",
+        username="bob",
+        email="bob@email.com",
+        password="bobpass",
+        role="admin",
     )

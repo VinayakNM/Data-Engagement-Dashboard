@@ -61,7 +61,7 @@ function render() {
         <div class="card-header">Seasons</div>
         <div class="table-scroll"><table>
           <thead><tr>
-            <th>Year</th><th>Status</th><th>Reg Open</th><th>Start</th><th>End</th><th>Events</th><th>Actions</th>
+            <th>Year</th><th>Status</th><th>Reg Opens</th><th>Reg Closes</th><th>Start</th><th>End</th><th>Events</th><th>Actions</th>
           </tr></thead>
           <tbody>
             ${allSeasons.map(s => `
@@ -74,6 +74,7 @@ function render() {
                    :                           '<span class="badge badge-planning">Planning</span>' }
                 </td>
                 <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.reg_open||'—'}</td>
+                <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.reg_close||'—'}</td>
                 <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.start_date||'—'}</td>
                 <td style="font-family:'IBM Plex Mono',monospace; font-size:13px;">${s.end_date||'—'}</td>
                 <td>${s.events.map(e => e.name).join(', ') || '—'}</td>

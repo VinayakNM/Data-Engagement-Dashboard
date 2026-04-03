@@ -9,14 +9,14 @@ bind = "0.0.0.0:8080"
 workers = 2
 
 # Sync worker
-worker_class = 'sync'
+worker_class = "sync"
 
 # Timeout in seconds — increased for Excel import processing
 timeout = 300
 
 # Log level
-loglevel = 'info'
+loglevel = "info"
 
 # Where to log to
-accesslog = '-'  # '-' means log to stdout
-errorlog = '-'   # '-' means log to stderr
+accesslog = "-"  # '-' means log to stdout
+errorlog = "-"  # '-' means log to stderr

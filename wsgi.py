@@ -4,7 +4,7 @@ from flask.cli import with_appcontext, AppGroup
 from App import create_app
 from App.database import db, get_migrate
 from App.models import User
-from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
+from App.controllers import create_user, get_all_users_json, get_all_users, initialize
 
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -12,21 +12,24 @@ sys.path.insert(0, os.path.dirname(__file__))
 app = create_app()
 migrate = get_migrate(app)
 
+
 # This command creates and initializes the database
 @app.cli.command("init", help="Creates and initializes the database")
 def init():
     """Initialize the database."""
     db.create_all()
     initialize()
-    print('database initialized')
+    print("database initialized")
 
-'''
+
+"""
 User Commands
-'''
+"""
 
 
 # eg : flask user <command>
-user_cli = AppGroup('user', help='User object commands') 
+user_cli = AppGroup("user", help="User object commands")
+
 
 # Then define the command and any parameters and annotate it with the group (@)
 @user_cli.command("create", help="Creates a user")
@@ -37,23 +40,26 @@ user_cli = AppGroup('user', help='User object commands')
 @click.argument("password", default="robpass")
 def create_user_command(firstname, lastname, username, email, password):
     create_user(firstname, lastname, username, email, password)
-    print(f'{username} created!')
+    print(f"{username} created!")
+
 
 @user_cli.command("list", help="Lists users in the database")
 @click.argument("format", default="string")
 def list_user_command(format):
-    if format == 'string':
+    if format == "string":
         print(get_all_users())
     else:
         print(get_all_users_json())
 
-app.cli.add_command(user_cli) # add the group to the cli
 
-'''
+app.cli.add_command(user_cli)  # add the group to the cli
+
+"""
 Test Commands
-'''
+"""
 
-test = AppGroup('test', help='Testing commands') 
+test = AppGroup("test", help="Testing commands")
+
 
 @test.command("user", help="Run User tests")
 @click.argument("type", default="all")
@@ -64,23 +70,25 @@ def user_tests_command(type):
         sys.exit(pytest.main(["-k", "UserIntegrationTests"]))
     else:
         sys.exit(pytest.main(["-k", "App"]))
-    
+
+
 app.cli.add_command(test)
 
 with app.app_context():
     db.create_all()
     from App.models import Admin
-    if not Admin.query.filter_by(email='admin@carifin.com').first():
+
+    if not Admin.query.filter_by(email="admin@carifin.com").first():
         admin = Admin(
-            firstname='Admin',
-            lastname='User',
-            username='admin',
-            email='admin@carifin.com',
-            password='Admin123!'
+            firstname="Admin",
+            lastname="User",
+            username="admin",
+            email="admin@carifin.com",
+            password="Admin123!",
         )
         db.session.add(admin)
         db.session.commit()
-        print('Admin user created')
+        print("Admin user created")
 
 if __name__ == "__main__":
     app.run()

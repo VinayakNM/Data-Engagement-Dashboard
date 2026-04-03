@@ -92,10 +92,14 @@ function render() {
                 <td>${e.stage_count}</td>
                 <td style="display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="btn btn-sm btn-ghost" onclick="openEditModal(${e.id})">Edit</button>
-                  ${selectedSeason && e.status !== 'unassigned' ? `
-                    <button class="btn btn-sm btn-ghost" onclick="toggleStatus(${e.id}, '${e.status}')">
-                      ${e.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </button>` : ''}
+                  ${selectedSeason ? (
+                    e.status === 'unassigned'
+                      ? `<button class="btn btn-sm btn-ghost" onclick="assignToSeason(${e.id})">Add to Season</button>`
+                      : `<button class="btn btn-sm btn-ghost" onclick="toggleStatus(${e.id}, '${e.status}')">
+                           ${e.status === 'active' ? 'Deactivate' : 'Activate'}
+                         </button>
+                         <button class="btn btn-sm btn-warning" onclick="removeFromSeason(${e.id}, '${e.name}')">Remove</button>`
+                  ) : ''}
                   <button class="btn btn-sm btn-danger" onclick="deleteEvent(${e.id}, '${e.name}')">Delete</button>
                 </td>
               </tr>`).join('')}
@@ -127,6 +131,18 @@ function render() {
               ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year}</option>`).join('')}
             </select>
           </div>
+
+          <!-- Stages section for new event -->
+          <div style="margin-top:20px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid var(--blue-light);">
+              Stages <span style="font-weight:400; font-size:11px;">(optional — only saved if a season is selected)</span>
+            </div>
+            <div id="newStagesWrap">
+              <!-- stages added dynamically -->
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="addNewStage()" style="margin-top:6px;">+ Add Stage</button>
+          </div>
+
           <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
             <button class="btn" onclick="createNewEvent()">Create</button>
             <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
@@ -136,7 +152,7 @@ function render() {
 
       <!-- Edit Modal -->
       <div class="overlay" id="editModal">
-        <div class="modal" style="max-width:520px; width:95%;">
+        <div class="modal" style="max-width:560px; width:95%;">
           <h3>Edit Event</h3>
           <div id="editFormContent"></div>
           <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
@@ -149,8 +165,27 @@ function render() {
 }
 
 let editingId = null;
+let newStageCount = 0;
+
+function addNewStage() {
+    const wrap = document.getElementById('newStagesWrap');
+    const i = newStageCount++;
+    const div = document.createElement('div');
+    div.id = `ns_row_${i}`;
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;';
+    div.innerHTML = `
+      <input type="number" placeholder="Stage #" id="ns_num_${i}" style="width:72px;" min="1">
+      <input type="text" placeholder="Distance (e.g. 5K)" id="ns_dist_${i}" style="width:90px;">
+      <input type="text" placeholder="Location" id="ns_loc_${i}" style="flex:1;min-width:120px;">
+      <input type="date" id="ns_date_${i}" style="width:140px;">
+      <button class="btn btn-sm btn-danger" onclick="document.getElementById('ns_row_${i}').remove()" style="padding:4px 8px;">✕</button>
+    `;
+    wrap.appendChild(div);
+}
 
 function openCreateModal() {
+    newStageCount = 0;
+    document.getElementById('newStagesWrap').innerHTML = '';
     document.getElementById('createModal').classList.add('active');
 }
 
@@ -170,32 +205,54 @@ function openEditModal(id) {
             `<option value="${t}" ${e.event_type===t?'selected':''}>${t}</option>`).join('')}
         </select>
       </div>
-      ${selectedSeason ? `
-      <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Stages</div>
-      <div id="editStages">
-        ${(e.stages||[]).map((st,i) => `
-          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-            <input type="text" placeholder="Distance" value="${st.distance}" id="es_dist_${i}" style="width:90px;">
-            <input type="text" placeholder="Location" value="${st.location}" id="es_loc_${i}" style="flex:1; min-width:120px;">
-            <input type="date" value="${st.stage_date}" id="es_date_${i}" style="width:140px;">
-          </div>`).join('')}
-        <button class="btn btn-sm btn-ghost" onclick="addEditStage()">+ Add Stage</button>
-      </div>` : ''}
+
+      <!-- Season assignment -->
+      <div class="form-row">
+        <span class="form-label">Season:</span>
+        <select id="editSeason" style="width:200px;">
+          <option value="">— None —</option>
+          ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year}</option>`).join('')}
+        </select>
+      </div>
+
+      <!-- Stages section -->
+      <div style="margin-top:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid var(--blue-light);">
+          Stages <span style="font-weight:400; font-size:11px;">(requires a season to be selected)</span>
+        </div>
+        <div id="editStages">
+          ${(e.stages||[]).map((st, i) => `
+            <div id="es_row_${i}" style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+              <input type="number" placeholder="Stage #" value="${st.stage_number||i+1}" id="es_num_${i}" style="width:72px;" min="1">
+              <input type="text" placeholder="Distance" value="${st.distance||''}" id="es_dist_${i}" style="width:90px;">
+              <input type="text" placeholder="Location" value="${st.location||''}" id="es_loc_${i}" style="flex:1; min-width:120px;">
+              <input type="date" value="${st.stage_date||''}" id="es_date_${i}" style="width:140px;">
+              <button class="btn btn-sm btn-danger" onclick="document.getElementById('es_row_${i}').remove()" style="padding:4px 8px;">✕</button>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="addEditStage()" style="margin-top:6px;">+ Add Stage</button>
+      </div>
     `;
     document.getElementById('editModal').classList.add('active');
 }
 
+let editStageCount = 0;
+
 function addEditStage() {
     const wrap = document.getElementById('editStages');
-    const i = wrap.querySelectorAll('[id^=es_dist]').length;
+    const existing = wrap.querySelectorAll('[id^=es_dist]').length;
+    const i = existing + editStageCount++;
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;';
+    div.id = `es_row_${i}`;
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;';
     div.innerHTML = `
+      <input type="number" placeholder="Stage #" id="es_num_${i}" style="width:72px;" min="1" value="${i+1}">
       <input type="text" placeholder="Distance" id="es_dist_${i}" style="width:90px;">
       <input type="text" placeholder="Location" id="es_loc_${i}" style="flex:1;min-width:120px;">
       <input type="date" id="es_date_${i}" style="width:140px;">
+      <button class="btn btn-sm btn-danger" onclick="document.getElementById('es_row_${i}').remove()" style="padding:4px 8px;">✕</button>
     `;
-    wrap.insertBefore(div, wrap.lastElementChild);
+    wrap.appendChild(div);
 }
 
 function closeModal(id) {
@@ -207,8 +264,28 @@ async function createNewEvent() {
     const type = document.getElementById('newType').value;
     const sid  = document.getElementById('newSeason').value;
     if (!name) { alert('Name is required'); return; }
+
     const body = { name, event_type: type };
     if (sid) body.season_id = parseInt(sid);
+
+    // Collect stages if a season is selected
+    if (sid) {
+        const wrap = document.getElementById('newStagesWrap');
+        const distInputs = wrap.querySelectorAll('[id^=ns_dist]');
+        if (distInputs.length > 0) {
+            body.stages = [];
+            distInputs.forEach((inp, idx) => {
+                const i = inp.id.replace('ns_dist_', '');
+                body.stages.push({
+                    stage_number: parseInt(document.getElementById(`ns_num_${i}`)?.value) || idx + 1,
+                    distance:     document.getElementById(`ns_dist_${i}`)?.value || '',
+                    location:     document.getElementById(`ns_loc_${i}`)?.value  || '',
+                    stage_date:   document.getElementById(`ns_date_${i}`)?.value || '',
+                });
+            });
+        }
+    }
+
     const r = await apiPost('/events', body);
     if (r.ok) { closeModal('createModal'); loadData(); }
     else { const d = await r.json(); alert(d.error || 'Error creating event'); }
@@ -217,22 +294,25 @@ async function createNewEvent() {
 async function saveEdit() {
     const name = document.getElementById('editName').value.trim();
     const type = document.getElementById('editType').value;
+    const sid  = document.getElementById('editSeason').value;
     const body = { name, event_type: type };
-    if (selectedSeason) {
-        body.season_id = parseInt(selectedSeason);
-        const stageWrap = document.getElementById('editStages');
-        if (stageWrap) {
-            const n = stageWrap.querySelectorAll('[id^=es_dist]').length;
-            body.stages = [];
-            for (let i = 0; i < n; i++) {
-                body.stages.push({
-                    distance:   document.getElementById(`es_dist_${i}`)?.value || '',
-                    location:   document.getElementById(`es_loc_${i}`)?.value  || '',
-                    stage_date: document.getElementById(`es_date_${i}`)?.value || '',
-                });
-            }
-        }
+    if (sid) body.season_id = parseInt(sid);
+
+    const stageWrap = document.getElementById('editStages');
+    if (stageWrap && sid) {
+        const distInputs = stageWrap.querySelectorAll('[id^=es_dist]');
+        body.stages = [];
+        distInputs.forEach((inp, idx) => {
+            const i = inp.id.replace('es_dist_', '');
+            body.stages.push({
+                stage_number: parseInt(document.getElementById(`es_num_${i}`)?.value) || idx + 1,
+                distance:     document.getElementById(`es_dist_${i}`)?.value || '',
+                location:     document.getElementById(`es_loc_${i}`)?.value  || '',
+                stage_date:   document.getElementById(`es_date_${i}`)?.value || '',
+            });
+        });
     }
+
     const r = await apiPut(`/events/${editingId}`, body);
     if (r.ok) { closeModal('editModal'); loadData(); }
     else { const d = await r.json(); alert(d.error || 'Error saving'); }
@@ -242,6 +322,30 @@ async function toggleStatus(eid, currentStatus) {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const r = await apiPatch(`/events/${eid}/status`, { season_id: parseInt(selectedSeason), status: newStatus });
     if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error updating status'); }
+}
+
+async function assignToSeason(eid) {
+    if (!selectedSeason) { alert('Please select a season first.'); return; }
+    const e = allEvents.find(x => x.id === eid);
+    // Use PUT — creates the SeasonEvent if it doesn't exist yet
+    const r = await apiPut(`/events/${eid}`, {
+        name:       e ? e.name       : '',
+        event_type: e ? e.event_type : 'run',
+        season_id:  parseInt(selectedSeason),
+        status:     'active',
+    });
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error assigning to season'); }
+}
+
+async function removeFromSeason(eid, name) {
+    if (!selectedSeason) return;
+    if (!confirm(`Remove "${name}" from this season? The event itself won't be deleted.`)) return;
+    // SeasonEvent exists at this point so PATCH is safe
+    const r = await apiPatch(`/events/${eid}/status`, { season_id: parseInt(selectedSeason), status: 'inactive' });
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error removing from season'); }
 }
 
 async function deleteEvent(eid, name) {
