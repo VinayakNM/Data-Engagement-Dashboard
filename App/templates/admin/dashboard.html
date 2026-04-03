@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CariFin Data Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='test.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ════════════════════════════════════════
+   TOPBAR EXTENSIONS
+════════════════════════════════════════ */
+.topbar-brand { font-size: 15px; }
+
+/* User badge */
+.user-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 12px 3px 5px;
+  font-size: 12px; font-weight: 500;
+}
+.user-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--navy); color: #fff;
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.user-role {
+  font-size: 10px; font-weight: 600;
+  background: var(--accent-light); color: var(--accent);
+  border-radius: 10px; padding: 1px 7px; margin-left: 1px;
+  text-transform: capitalize;
+}
+
+/* System dropdown */
+.sys-wrap { position: relative; }
+.sys-btn {
+  background: none; border: none; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  cursor: pointer; padding: 5px 8px; border-radius: 5px;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: background 0.12s; text-decoration: none;
+}
+.sys-btn:hover { background: var(--accent-light); }
+.sys-chevron { font-size: 9px; display: inline-block; transition: transform 0.2s; }
+.sys-btn.open .sys-chevron { transform: rotate(180deg); }
+
+.sys-dd {
+  display: none; position: absolute;
+  top: calc(100% + 8px); right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+  z-index: 400; overflow: hidden;
+  animation: ddFade 0.14s ease;
+}
+.sys-dd.open { display: block; }
+@keyframes ddFade { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+
+.dd-section { padding: 5px 0; border-bottom: 1px solid var(--border); }
+.dd-section:last-child { border-bottom: none; }
+.dd-section-lbl {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-light);
+  padding: 5px 14px 3px;
+}
+.dd-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 14px; font-size: 13px; color: var(--text);
+  cursor: pointer; transition: background 0.1s; text-decoration: none;
+  border: none; background: none; width: 100%; font-family: inherit;
+  text-align: left;
+}
+.dd-item:hover { background: var(--accent-light); color: var(--accent); }
+.dd-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+.dd-item .dd-ic { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.dd-item.danger:hover { background: #fee2e2; color: var(--closed); }
+
+/* ════════════════════════════════════════
+   PAGE SYSTEM
+════════════════════════════════════════ */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ════════════════════════════════════════
+   API ERROR BANNER
+════════════════════════════════════════ */
+.api-banner {
+  display: none; margin-bottom: 16px;
+  padding: 10px 14px; border-radius: 6px; font-size: 12px;
+  border-left: 4px solid;
+}
+.api-banner.err  { background:#fee2e2; color:#dc2626; border-color:#dc2626; display:block; }
+.api-banner.warn { background:#fef3c7; color:#d97706; border-color:#d97706; display:block; }
+.api-banner.ok   { background:#dcfce7; color:#16a34a; border-color:#16a34a; display:block; }
+
+/* Skeleton loader */
+@keyframes shimmer { 0%,100%{opacity:1}50%{opacity:.45} }
+.skel { background:#e5e7eb; border-radius:4px; animation:shimmer 1.4s infinite; display:inline-block; }
+
+/* ════════════════════════════════════════
+   DASHBOARD PAGE
+════════════════════════════════════════ */
+.db-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 16px 28px; display: flex; align-items: center; gap: 12px;
+}
+.db-logo { width: 38px; height: 38px; border: 1.5px solid var(--border-mid); border-radius: 6px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+.db-title { font-size: 21px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.db-body { padding: 24px 28px; max-width: 980px; }
+
+.db-sec-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+
+/* Stats strip */
+.stats-strip { display: flex; border: 1px solid var(--border); background: var(--surface); margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.stat-cell { flex: 1; padding: 14px 20px; border-right: 1px solid var(--border); }
+.stat-cell:last-child { border-right: none; }
+.stat-cell-lbl { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+.stat-cell-val { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+
+/* Two-col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); background: var(--surface); margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
+.plain-box { padding: 14px 16px; border-right: 1px solid var(--border); }
+.plain-box:last-child { border-right: none; }
+.plain-box-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 9px; }
+.plain-box ul { list-style: none; }
+.plain-box ul li { font-size: 12px; padding: 3px 0; color: var(--text); }
+.plain-box ul li a, .plain-box ul li button { color: var(--accent); text-decoration: none; font-size: 11px; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+.plain-box ul li a:hover, .plain-box ul li button:hover { text-decoration: underline; }
+
+/* Quick filters */
+.filter-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; }
+.filter-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-right: 4px; }
+.f-chip { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; }
+.f-chip select { border: 1px solid var(--border); background: var(--bg); border-radius: 4px; padding: 3px 8px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer; color: var(--text); transition: border-color 0.12s; }
+.f-chip select:focus { border-color: var(--accent); }
+
+/* Metrics + institutions */
+.metrics-inst { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.dashed-panel { border: 1px dashed var(--border-mid); background: var(--surface); padding: 14px 16px; border-radius: 8px; }
+.dashed-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.m-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.m-row:last-child { border-bottom: none; }
+.m-lbl { color: var(--text-muted); }
+.m-val { font-weight: 600; }
+.m-pct { font-weight: 400; font-size: 11px; color: var(--text-muted); }
+.solid-panel { border: 1px solid var(--border); background: var(--surface); padding: 14px 16px; border-radius: 8px; }
+.solid-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.inst-list { list-style: none; }
+.inst-list li { font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.inst-list li:last-child { border-bottom: none; }
+.inst-rank { font-weight: 700; color: var(--accent); margin-right: 6px; }
+.inst-ct { color: var(--text-muted); font-size: 11px; }
+
+/* Funnel + participation */
+.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.funnel-panel { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; overflow: hidden; }
+.funnel-bar { background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 6px 14px; }
+.funnel-body { padding: 12px 16px; }
+.funnel-ev { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.funnel-line { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+.part-panel { border: 1px solid var(--border); background: var(--surface); padding: 14px 16px; border-radius: 8px; }
+.part-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.bar-row { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.bar-yr { font-size: 12px; font-weight: 600; width: 34px; flex-shrink: 0; }
+.bar-bg { flex: 1; height: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--navy); border-radius: 3px; transition: width 0.6s ease; }
+.bar-pct { font-size: 11px; color: var(--text-muted); width: 32px; text-align: right; }
+
+/* ════════════════════════════════════════
+   EVENT MANAGEMENT PAGE
+════════════════════════════════════════ */
+.import-strip {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.import-strip-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+.file-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1.5px dashed var(--border-mid); padding: 5px 12px;
+  background: var(--bg); border-radius: 5px; font-size: 12px;
+  color: var(--text-muted); cursor: pointer; font-family: inherit;
+  transition: all 0.12s;
+}
+.file-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.file-btn input[type="file"] { display: none; }
+.import-msg { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.import-msg.ok  { color: var(--active); font-style: normal; font-weight: 600; }
+.import-msg.err { color: var(--closed); font-style: normal; }
+.tpl-link { margin-left: auto; font-size: 11px; }
+.tpl-link a { color: var(--accent); text-decoration: none; }
+.tpl-link a:hover { text-decoration: underline; }
+
+/* Stage table overrides */
+.stage-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.stage-table th { font-size: 10px; padding: 7px 10px; background: #f8f9fb; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; text-align: left; }
+.stage-table td { padding: 6px 8px; font-size: 12px; border-bottom: 1px solid var(--border); }
+.stage-table tr:last-child td { border-bottom: none; }
+.stage-table td:first-child { text-align: center; font-weight: 700; color: var(--accent); width: 44px; background: #f8f9fb; }
+.stage-table input[type="text"],
+.stage-table input[type="date"] { width: 100%; font-size: 12px; padding: 4px 8px; }
+.stage-table input[type="date"] { min-width: 130px; }
+.stage-actions { display: flex; gap: 6px; margin-bottom: 16px; }
+.desc-cell { max-width: 180px; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+/* Saving state */
+.spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.5); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; margin-right:5px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.input-err { border-color: var(--closed) !important; }
+
+/* Preview table */
+.preview-wrap { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px; }
+.preview-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.preview-tbl th { background: #f8f9fb; padding: 5px 8px; border-bottom: 1px solid var(--border); font-weight: 600; text-align: left; position: sticky; top: 0; }
+.preview-tbl td { padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.preview-tbl tr:last-child td { border-bottom: none; }
+
+/* Wider modal for import preview */
+.modal-wide { max-width: 560px !important; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     SHARED TOP BAR
+════════════════════════════════════════ -->
+<div class="topbar">
+  <span class="topbar-brand">CariFin Data Dashboard</span>
+  <div class="topbar-right">
+
+    <!-- Dynamic user badge: populated by loadCurrentUser() via GET /api/me -->
+    <div class="user-badge" id="userBadge">
+      <div class="user-avatar" id="userInitial">?</div>
+      <span id="userGreeting"><span class="skel" style="width:100px;height:12px;display:inline-block;"></span></span>
+      <span class="user-role" id="userRole" style="display:none;"></span>
+    </div>
+
+    <span class="divider">|</span>
+
+    <!-- System dropdown — all items navigate to real management pages -->
+    <div class="sys-wrap">
+      <button class="sys-btn" id="sysBtn" onclick="toggleSys(event)">
+        System <span class="sys-chevron">▾</span>
+      </button>
+      <div class="sys-dd" id="sysDd">
+
+        <div class="dd-section">
+          <div class="dd-section-lbl">Dashboard</div>
+          <button class="dd-item active" id="dd-dashboard" onclick="showPage('dashboard')">
+            <span class="dd-ic">📊</span> General Overview
+          </button>
+        </div>
+
+        <div class="dd-section">
+          <div class="dd-section-lbl">Management</div>
+          <button class="dd-item" id="dd-events" onclick="showPage('events')">
+            <span class="dd-ic">🏃</span> Event Management
+          </button>
+          <button class="dd-item" id="dd-seasons" onclick="showPage('seasons')">
+            <span class="dd-ic">📅</span> Season Management
+          </button>
+          <button class="dd-item" id="dd-institutions" onclick="showPage('institutions')">
+            <span class="dd-ic">🏢</span> Institution Management
+          </button>
+          <button class="dd-item" id="dd-users" onclick="showPage('users')">
+            <span class="dd-ic">👤</span> User Management
+          </button>
+        </div>
+
+        <div class="dd-section">
+          <div class="dd-section-lbl">Equipment</div>
+          <button class="dd-item" id="dd-bibnos" onclick="showPage('bibnos')">
+            <span class="dd-ic">🏷</span> Bib No. Management
+          </button>
+          <button class="dd-item" id="dd-bibtags" onclick="showPage('bibtags')">
+            <span class="dd-ic">🔖</span> Bib Tag Management
+          </button>
+        </div>
+
+        <div class="dd-section">
+          <button class="dd-item danger" onclick="handleLogout()">
+            <span class="dd-ic">🚪</span> Logout
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <span class="divider">|</span>
+    <a href="#" onclick="handleLogout(); return false;">Logout</a>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE: GENERAL OVERVIEW (Dashboard)
+════════════════════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="db-header">
+    <div class="db-logo">🏔</div>
+    <div class="db-title">CariFin Data Dashboard</div>
+  </div>
+  <div class="db-body">
+
+    <div class="api-banner" id="dashBanner"></div>
+
+    <!-- SYSTEM STATS: GET /api/stats -->
+    <div class="db-sec-lbl">System Stats</div>
+    <div class="stats-strip">
+      <div class="stat-cell">
+        <div class="stat-cell-lbl">Total Users</div>
+        <div class="stat-cell-val" id="statUsers"><span class="skel" style="width:40px;height:26px;"></span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-lbl">Active Events</div>
+        <div class="stat-cell-val" id="statEvents"><span class="skel" style="width:30px;height:26px;"></span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-lbl">Current Season</div>
+        <div class="stat-cell-val" id="statSeason"><span class="skel" style="width:55px;height:26px;"></span></div>
+      </div>
+    </div>
+
+    <!-- FORMS + QUICK ACTIONS -->
+    <div class="two-col">
+      <div class="plain-box">
+        <div class="plain-box-title">Forms →</div>
+        <ul>
+          <li>General Overview</li>
+          <li>Institution Participation</li>
+          <li>Event Participation</li>
+          <li>Division Participation</li>
+        </ul>
+      </div>
+      <div class="plain-box">
+        <div class="plain-box-title">Quick Actions</div>
+        <ul>
+          <li>Add User <button onclick="showPage('users')">(+)</button></li>
+          <li>Add Event <button onclick="showPage('events')">(+)</button></li>
+          <li>Add Season <button onclick="showPage('seasons')">(+)</button></li>
+          <li>Add Institution <button onclick="showPage('institutions')">(+)</button></li>
+          <li>Manage Bib Nos. <button onclick="showPage('bibnos')">(+)</button></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- QUICK FILTERS: dropdowns populated from API -->
+    <div class="filter-bar">
+      <span class="filter-lbl">Quick Filters</span>
+      <span class="f-chip">[Season:
+        <select id="fSeason" onchange="applyDashFilters()"><option value="">All Seasons</option></select>]
+      </span>
+      <span class="f-chip">[Event:
+        <select id="fEvent" onchange="applyDashFilters()"><option value="">All Events</option></select>]
+      </span>
+      <span class="f-chip">[Institution:
+        <select id="fInst" onchange="applyDashFilters()"><option value="">All</option></select>]
+      </span>
+    </div>
+
+    <!-- KEY METRICS + TOP INSTITUTIONS -->
+    <div class="metrics-inst">
+      <div class="dashed-panel">
+        <div class="dashed-panel-title">Key Metrics</div>
+        <div class="m-row"><span class="m-lbl">Registered</span>   <span class="m-val" id="mReg">—</span></div>
+        <div class="m-row"><span class="m-lbl">Participated</span> <span class="m-val" id="mPart">—</span></div>
+        <div class="m-row"><span class="m-lbl">No-shows</span>     <span class="m-val" id="mNoshow">—</span></div>
+        <div class="m-row"><span class="m-lbl">Completed</span>    <span class="m-val" id="mCompleted">—</span></div>
+      </div>
+      <div class="solid-panel">
+        <div class="solid-panel-title">Top Institutions</div>
+        <ol class="inst-list" id="topInstList">
+          <li><span style="color:var(--text-muted);font-size:12px;">Loading…</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- DROP-OFF FUNNEL + PARTICIPATION BREAKDOWN -->
+    <div class="bottom-row">
+      <div class="funnel-panel">
+        <div class="funnel-bar">Drop-off Funnel</div>
+        <div class="funnel-body">
+          <div class="funnel-ev" id="funnelName">—</div>
+          <div class="funnel-line" id="funnelCounts">—</div>
+          <div class="funnel-line" id="funnelRates" style="font-size:11px;">—</div>
+        </div>
+      </div>
+      <div class="part-panel">
+        <div class="part-panel-title">Participation Breakdown</div>
+        <div id="partChart"><div style="color:var(--text-muted);font-size:12px;">Loading…</div></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /page-dashboard -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: EVENT MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-events">
+  <div class="page-header">
+    <div class="logo-box">🏔</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> Event Management</div>
+  </div>
+  <div class="main">
+
+    <div class="section-title">Manage Events</div>
+    <div class="api-banner" id="evBanner"></div>
+
+    <!-- Import strip -->
+    <div class="import-strip">
+      <span class="import-strip-lbl">Import</span>
+      <label class="file-btn">📄 CSV <input type="file" id="csvInput" accept=".csv" onchange="handleImport(event,'csv')"></label>
+      <label class="file-btn">📊 Excel <input type="file" id="xlsxInput" accept=".xlsx,.xls" onchange="handleImport(event,'xlsx')"></label>
+      <span class="import-msg" id="importMsg">No file loaded</span>
+      <span class="tpl-link"><a href="#" onclick="dlTemplate();return false;">Download template ↓</a></span>
+    </div>
+
+    <!-- Actions -->
+    <div class="section-actions">
+      <button class="btn" onclick="openEventForm('new')">+ Add New Event</button>
+      <button class="btn btn-ghost" onclick="exportEventsCSV()">↓ Export CSV</button>
+    </div>
+
+    <!-- Events table -->
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        Active Events
+        <span id="evCount" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID#</th><th>Event Name</th><th>Type</th>
+            <th style="text-align:center;">Stages</th>
+            <th>Description</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="evTableBody">
+          <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading events…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add/Edit form panel -->
+    <div class="form-panel" id="eventForm">
+      <div class="form-panel-header">
+        <span id="evFormTitle">Add / Edit Event Form</span>
+        <button class="close-btn" onclick="closeEventForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">Event Name:</span>
+          <input type="text" class="wide" id="evName" placeholder="e.g. Urban Challenge">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Event Type:</span>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="evType" value="run"> Run</label>
+            <label class="radio-option"><input type="radio" name="evType" value="walk" checked> Walk</label>
+            <label class="radio-option"><input type="radio" name="evType" value="mixed"> Mixed</label>
+            <label class="radio-option"><input type="radio" name="evType" value="other"> Other</label>
+          </div>
+        </div>
+        <div class="form-row top-align">
+          <span class="form-label">Description:</span>
+          <textarea id="evDesc" placeholder="Brief description of the event…"></textarea>
+        </div>
+        <div class="events-label" style="margin-top:4px;">Stage Configuration</div>
+        <table class="stage-table">
+          <thead><tr><th>#</th><th>Distance</th><th>Location</th><th>Date</th><th></th></tr></thead>
+          <tbody id="stageBody"></tbody>
+        </table>
+        <div class="stage-actions">
+          <button class="btn btn-ghost btn-sm" onclick="addStageRow()">+ Add Stage</button>
+          <button class="btn btn-ghost btn-sm" onclick="removeLastStage()">− Remove Last</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="evSaveBtn" onclick="saveEvent()">Save Event</button>
+        <button class="btn btn-ghost" onclick="closeEventForm()">Cancel</button>
+        <button class="btn btn-danger" id="evDeleteBtn" onclick="deleteEventFromForm()" style="display:none;margin-left:auto;">Delete Event</button>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /page-events -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: SEASON MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-seasons">
+  <div class="page-header">
+    <div class="logo-box">📅</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> Season Management</div>
+  </div>
+  <div class="main">
+    <div class="section-title">Manage Seasons</div>
+    <div class="api-banner" id="seaBanner"></div>
+    <div class="section-actions">
+      <button class="btn" onclick="openSeasonForm('new')">+ Add New Season</button>
+    </div>
+    <div class="card">
+      <div class="card-header">All Seasons</div>
+      <table>
+        <thead><tr><th>ID#</th><th>Year</th><th>Description</th><th>Events Linked</th><th></th></tr></thead>
+        <tbody id="seaTableBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="form-panel" id="seasonForm">
+      <div class="form-panel-header">
+        <span id="seaFormTitle">Add / Edit Season</span>
+        <button class="close-btn" onclick="closeSeasonForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">Year:</span>
+          <input type="number" id="seaYear" placeholder="e.g. 2026" style="width:120px;" min="2000" max="2099">
+        </div>
+        <div class="form-row top-align">
+          <span class="form-label">Description:</span>
+          <textarea id="seaDesc" placeholder="Optional notes about this season…" style="max-width:300px;min-height:60px;"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="seaSaveBtn" onclick="saveSeason()">Save Season</button>
+        <button class="btn btn-ghost" onclick="closeSeasonForm()">Cancel</button>
+        <button class="btn btn-danger" id="seaDeleteBtn" onclick="deleteSeasonFromForm()" style="display:none;margin-left:auto;">Delete Season</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-seasons -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: INSTITUTION MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-institutions">
+  <div class="page-header">
+    <div class="logo-box">🏢</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> Institution Management</div>
+  </div>
+  <div class="main">
+    <div class="section-title">Manage Institutions</div>
+    <div class="api-banner" id="instBanner"></div>
+    <div class="section-actions">
+      <button class="btn" onclick="openInstForm('new')">+ Add New Institution</button>
+    </div>
+    <div class="card">
+      <div class="card-header">All Institutions</div>
+      <table>
+        <thead><tr><th>ID#</th><th>Code</th><th>Name</th><th>HR Users</th><th>Participants</th><th></th></tr></thead>
+        <tbody id="instTableBody"><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="form-panel" id="instForm">
+      <div class="form-panel-header">
+        <span id="instFormTitle">Add / Edit Institution</span>
+        <button class="close-btn" onclick="closeInstForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">Institution Code:</span>
+          <input type="text" id="instCode" placeholder="e.g. CBTT" style="width:140px;" maxlength="20">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Institution Name:</span>
+          <input type="text" class="wide" id="instName" placeholder="e.g. Central Bank of T&T">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="instSaveBtn" onclick="saveInstitution()">Save Institution</button>
+        <button class="btn btn-ghost" onclick="closeInstForm()">Cancel</button>
+        <button class="btn btn-danger" id="instDeleteBtn" onclick="deleteInstFromForm()" style="display:none;margin-left:auto;">Delete Institution</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-institutions -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: USER MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-users">
+  <div class="page-header">
+    <div class="logo-box">👤</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> User Management</div>
+  </div>
+  <div class="main">
+    <div class="section-title">Manage Users</div>
+    <div class="api-banner" id="usersBanner"></div>
+    <div class="section-actions">
+      <button class="btn" onclick="openUserForm('new')">+ Add New User</button>
+    </div>
+    <div class="card">
+      <div class="card-header">All Users</div>
+      <table>
+        <thead><tr><th>ID#</th><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Institution</th><th></th></tr></thead>
+        <tbody id="usersTableBody"><tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="form-panel" id="userForm">
+      <div class="form-panel-header">
+        <span id="userFormTitle">Add / Edit User</span>
+        <button class="close-btn" onclick="closeUserForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">First Name:</span>
+          <input type="text" id="uFirstname" placeholder="First name" style="width:200px;">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Last Name:</span>
+          <input type="text" id="uLastname" placeholder="Last name" style="width:200px;">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Username:</span>
+          <input type="text" id="uUsername" placeholder="Unique username" style="width:200px;" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Email:</span>
+          <input type="text" id="uEmail" placeholder="user@example.com" style="width:260px;" autocomplete="off">
+        </div>
+        <div class="form-row" id="uPasswordRow">
+          <span class="form-label">Password:</span>
+          <input type="text" id="uPassword" placeholder="Temporary password" style="width:200px;" autocomplete="new-password">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Role:</span>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="uRole" value="admin"> Admin</label>
+            <label class="radio-option"><input type="radio" name="uRole" value="scorer"> Scorer</label>
+            <label class="radio-option"><input type="radio" name="uRole" value="hr" checked> HR</label>
+            <label class="radio-option"><input type="radio" name="uRole" value="pulse_leader"> Pulse Leader</label>
+          </div>
+        </div>
+        <!-- Institution select — required for HR and Pulse Leader -->
+        <div class="form-row" id="uInstRow">
+          <span class="form-label">Institution:</span>
+          <select id="uInstitution" style="width:260px;">
+            <option value="">— Select Institution —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="userSaveBtn" onclick="saveUser()">Save User</button>
+        <button class="btn btn-ghost" onclick="closeUserForm()">Cancel</button>
+        <button class="btn btn-danger" id="userDeleteBtn" onclick="deleteUserFromForm()" style="display:none;margin-left:auto;">Delete User</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-users -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: BIB NO. MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-bibnos">
+  <div class="page-header">
+    <div class="logo-box">🏷</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> Bib No. Management</div>
+  </div>
+  <div class="main">
+    <div class="section-title">Manage Bib Numbers</div>
+    <div class="api-banner" id="bibNoBanner"></div>
+    <div class="section-actions">
+      <button class="btn" onclick="openBibNoForm('new')">+ Add Bib No.</button>
+    </div>
+    <div class="card">
+      <div class="card-header">All Bib Numbers</div>
+      <table>
+        <thead><tr><th>ID#</th><th>Bib Value</th><th>Season</th><th>Institution</th><th></th></tr></thead>
+        <tbody id="bibNoTableBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="form-panel" id="bibNoForm">
+      <div class="form-panel-header">
+        <span id="bibNoFormTitle">Add Bib Number</span>
+        <button class="close-btn" onclick="closeBibNoForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">Bib Value:</span>
+          <input type="text" id="bibNoVal" placeholder="e.g. A001" style="width:160px;">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Season:</span>
+          <select id="bibNoSeason" style="width:200px;"><option value="">— Select Season —</option></select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Institution:</span>
+          <select id="bibNoInst" style="width:260px;"><option value="">— None —</option></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="bibNoSaveBtn" onclick="saveBibNo()">Save Bib No.</button>
+        <button class="btn btn-ghost" onclick="closeBibNoForm()">Cancel</button>
+        <button class="btn btn-danger" id="bibNoDeleteBtn" onclick="deleteBibNoFromForm()" style="display:none;margin-left:auto;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-bibnos -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: BIB TAG MANAGEMENT
+════════════════════════════════════════ -->
+<div class="page" id="page-bibtags">
+  <div class="page-header">
+    <div class="logo-box">🔖</div>
+    <div class="breadcrumb"><span>System &rsaquo;</span> Bib Tag Management</div>
+  </div>
+  <div class="main">
+    <div class="section-title">Manage Bib Tags</div>
+    <div class="api-banner" id="bibTagBanner"></div>
+    <div class="section-actions">
+      <button class="btn" onclick="openBibTagForm('new')">+ Add Bib Tag</button>
+    </div>
+    <div class="card">
+      <div class="card-header">All Bib Tags</div>
+      <table>
+        <thead><tr><th>ID#</th><th>Bib Value</th><th>Season</th><th>Institution</th><th></th></tr></thead>
+        <tbody id="bibTagTableBody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="form-panel" id="bibTagForm">
+      <div class="form-panel-header">
+        <span id="bibTagFormTitle">Add Bib Tag</span>
+        <button class="close-btn" onclick="closeBibTagForm()">✕</button>
+      </div>
+      <div class="form-body">
+        <div class="form-row">
+          <span class="form-label">Bib Value:</span>
+          <input type="text" id="bibTagVal" placeholder="e.g. T001" style="width:160px;">
+        </div>
+        <div class="form-row">
+          <span class="form-label">Season:</span>
+          <select id="bibTagSeason" style="width:200px;"><option value="">— Select Season —</option></select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Institution:</span>
+          <select id="bibTagInst" style="width:260px;"><option value="">— None —</option></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" id="bibTagSaveBtn" onclick="saveBibTag()">Save Bib Tag</button>
+        <button class="btn btn-ghost" onclick="closeBibTagForm()">Cancel</button>
+        <button class="btn btn-danger" id="bibTagDeleteBtn" onclick="deleteBibTagFromForm()" style="display:none;margin-left:auto;">Delete</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /page-bibtags -->
+
+
+<!-- IMPORT PREVIEW MODAL -->
+<div class="overlay" id="importOverlay">
+  <div class="modal modal-wide">
+    <h3 id="importModalTitle">Preview Import</h3>
+    <p id="importModalMsg" style="margin-bottom:10px;"></p>
+    <div class="preview-wrap"><table class="preview-tbl" id="previewTbl"></table></div>
+    <p id="importNote" style="font-size:11px;color:var(--text-muted);margin-bottom:14px;"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cancelImport()">Cancel</button>
+      <button class="btn" onclick="confirmImport()">Import All</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL (reused for all delete/archive confirmations) -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn" id="confirmOkBtn" onclick="doConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   API LAYER
+   BASE_URL = '' means all requests go to the same Flask server.
+   Every call sends credentials: 'include' so the Flask-Login session
+   cookie is automatically attached.
+   Endpoints map 1-to-1 with Flask blueprint routes in /api/
+════════════════════════════════════════════════════════════════════ */
+const BASE = '';
+
+async function api(method, path, body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  };
+  if (body !== null) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  if (res.status === 401) {
+    showToast('Session expired — redirecting to login…', 'warn');
+    setTimeout(() => { window.location.href = '/login'; }, 1500);
+    return null;
+  }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(e.error || `HTTP ${res.status}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+const apiGET    = p        => api('GET',    p);
+const apiPOST   = (p, b)   => api('POST',   p, b);
+const apiPUT    = (p, b)   => api('PUT',    p, b);
+const apiDELETE = p        => api('DELETE', p);
+
+
+/* ════════════════════════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════════════════════════ */
+const PAGE_LOADERS = {
+  dashboard:    loadDashboard,
+  events:       loadEvents,
+  seasons:      loadSeasons,
+  institutions: loadInstitutions,
+  users:        loadUsers,
+  bibnos:       loadBibNos,
+  bibtags:      loadBibTags,
+};
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dd-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const ddItem = document.getElementById('dd-' + name);
+  if (ddItem) ddItem.classList.add('active');
+  closeSys();
+  if (PAGE_LOADERS[name]) PAGE_LOADERS[name]();
+}
+
+function toggleSys(e) {
+  e.stopPropagation();
+  document.getElementById('sysBtn').classList.toggle('open');
+  document.getElementById('sysDd').classList.toggle('open');
+}
+function closeSys() {
+  document.getElementById('sysBtn').classList.remove('open');
+  document.getElementById('sysDd').classList.remove('open');
+}
+document.addEventListener('click', () => closeSys());
+
+
+/* ════════════════════════════════════════════════════════════════════
+   AUTH — CURRENT USER
+   GET /api/me  →  User.get_json():
+   { id, firstname, lastname, username, email, role, institution_id }
+════════════════════════════════════════════════════════════════════ */
+let currentUser = null;
+
+async function loadCurrentUser() {
+  try {
+    const u = await apiGET('/api/me');
+    if (!u) return;
+    currentUser = u;
+
+    // Populate topbar
+    const name = `Hi, ${u.username} (${u.role})`;
+    document.getElementById('userGreeting').textContent = name;
+    document.getElementById('userInitial').textContent  = u.username[0].toUpperCase();
+    const roleEl = document.getElementById('userRole');
+    roleEl.textContent   = u.role;
+    roleEl.style.display = 'inline';
+
+    // Role-based menu visibility
+    // HR and pulse_leader cannot manage users, seasons, bib equipment
+    if (u.role === 'hr' || u.role === 'pulse_leader') {
+      ['dd-users', 'dd-seasons', 'dd-bibnos', 'dd-bibtags'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+    // Scorer: read-only, hide all add/manage items except overview
+    if (u.role === 'scorer') {
+      ['dd-seasons', 'dd-institutions', 'dd-users', 'dd-bibnos', 'dd-bibtags'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+  } catch (err) {
+    document.getElementById('userGreeting').textContent = 'Not logged in';
+    // Uncomment to enforce login redirect:
+    // window.location.href = '/login';
+  }
+}
+
+function handleLogout() {
+  apiPOST('/logout', {}).finally(() => {
+    window.location.href = '/login';
+  });
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   DASHBOARD — stats, filters, metrics, funnel, breakdown
+════════════════════════════════════════════════════════════════════ */
+async function loadDashboard() {
+  setBanner('dashBanner', '');
+  try {
+    await Promise.all([
+      loadStats(),
+      loadFilterSelects(),
+      loadMetrics(),
+      loadTopInstitutions(),
+      loadFunnel(),
+      loadParticipationBreakdown(),
+    ]);
+  } catch (err) {
+    setBanner('dashBanner', 'Could not load some dashboard data: ' + err.message, 'warn');
+  }
+}
+
+/* GET /api/stats
+   Flask: { total_users, active_events, current_season }
+   Query: User.query.count(), Event active count, max(Season.year) */
+async function loadStats() {
+  const d = await apiGET('/api/stats');
+  if (!d) return;
+  document.getElementById('statUsers').textContent  = d.total_users    ?? '—';
+  document.getElementById('statEvents').textContent = d.active_events  ?? '—';
+  document.getElementById('statSeason').textContent = d.current_season ?? '—';
+}
+
+/* Populate all three Quick Filter dropdowns from their respective APIs */
+async function loadFilterSelects() {
+  const [seasons, events, insts] = await Promise.all([
+    apiGET('/api/seasons'),
+    apiGET('/api/events'),
+    apiGET('/api/institutions'),
+  ]);
+  fillSelect('fSeason', seasons || [], 'id', s => s.year, 'All Seasons');
+  fillSelect('fEvent',  events  || [], 'id', e => e.name, 'All Events');
+  fillSelect('fInst',   insts   || [], 'id', i => `${i.code} – ${i.name}`, 'All');
+}
+
+function fillSelect(id, items, valKey, labelFn, placeholder) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    items.map(i => `<option value="${i[valKey]}">${esc(String(labelFn(i)))}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+/* GET /api/metrics?season_id=&event_id=&institution_id=
+   Flask: { registered, participated, no_shows, completed }
+   Query: Registration.count(), Result distinct reg_id count, etc. */
+async function loadMetrics() {
+  const d = await apiGET('/api/metrics' + filterQS());
+  if (!d) return;
+  const reg = d.registered || 0;
+  const fmt = (n) => reg
+    ? `${n} <span class="m-pct">(${((n / reg) * 100).toFixed(1)}%)</span>`
+    : String(n ?? '—');
+  document.getElementById('mReg').textContent      = reg || '—';
+  document.getElementById('mPart').innerHTML       = fmt(d.participated  ?? 0);
+  document.getElementById('mNoshow').innerHTML     = fmt(d.no_shows      ?? 0);
+  document.getElementById('mCompleted').innerHTML  = fmt(d.completed     ?? 0);
+}
+
+/* GET /api/top-institutions?season_id=&event_id=
+   Flask: [{ id, name, code, participant_count }]  (top 4)
+   Query: join Institution→Participant, group by institution, order by count desc, limit 4 */
+async function loadTopInstitutions() {
+  const d = await apiGET('/api/top-institutions' + filterQS());
+  const list = document.getElementById('topInstList');
+  if (!d || !d.length) {
+    list.innerHTML = '<li style="color:var(--text-muted);font-size:12px;">No data available</li>';
+    return;
+  }
+  list.innerHTML = d.map((inst, i) =>
+    `<li>
+      <span><span class="inst-rank">${i + 1}.</span>${esc(inst.name)}&nbsp;
+        <span style="font-size:11px;color:var(--text-muted);">(${esc(inst.code)})</span>
+      </span>
+      <span class="inst-ct">${inst.participant_count} participants</span>
+    </li>`
+  ).join('');
+}
+
+/* GET /api/funnel?season_id=&event_id=
+   Flask: { event_name, stages: [{ stage_number, registered, completed }] }
+   Query: per Stage→Result counts */
+async function loadFunnel() {
+  const d = await apiGET('/api/funnel' + filterQS());
+  if (!d || !d.stages || !d.stages.length) {
+    document.getElementById('funnelName').textContent   = 'No data';
+    document.getElementById('funnelCounts').textContent = '—';
+    document.getElementById('funnelRates').textContent  = '—';
+    return;
+  }
+  document.getElementById('funnelName').textContent = d.event_name || '—';
+  const counts = d.stages.map(s => s.completed ?? s.registered ?? 0);
+  document.getElementById('funnelCounts').textContent = counts.join(' → ');
+  const rates = [];
+  for (let i = 1; i < counts.length; i++) {
+    if (counts[i - 1]) rates.push(((1 - counts[i] / counts[i - 1]) * 100).toFixed(1) + '% drop');
+  }
+  document.getElementById('funnelRates').textContent = rates.length ? rates.join(' | ') : '';
+}
+
+/* GET /api/participation-by-year
+   Flask: [{ year, participation_rate }]
+   Query: per Season→Registration→Result ratios */
+async function loadParticipationBreakdown() {
+  const d = await apiGET('/api/participation-by-year');
+  const el = document.getElementById('partChart');
+  if (!d || !d.length) {
+    el.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No data</div>';
+    return;
+  }
+  el.innerHTML = d.map(row => `
+    <div class="bar-row">
+      <span class="bar-yr">${row.year}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${row.participation_rate}%"></div></div>
+      <span class="bar-pct">${row.participation_rate}%</span>
+    </div>`
+  ).join('');
+}
+
+function applyDashFilters() { loadMetrics(); loadTopInstitutions(); loadFunnel(); }
+
+function filterQS() {
+  const s = document.getElementById('fSeason')?.value || '';
+  const e = document.getElementById('fEvent')?.value  || '';
+  const i = document.getElementById('fInst')?.value   || '';
+  const p = [s&&`season_id=${s}`, e&&`event_id=${e}`, i&&`institution_id=${i}`].filter(Boolean);
+  return p.length ? '?' + p.join('&') : '';
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   EVENTS CRUD
+   Model: Event(name, description, event_type)
+          SeasonEvent(season_id, event_id, start_date, end_date)
+          Stage(season_event_id, stage_number, location, stage_date)
+════════════════════════════════════════════════════════════════════ */
+let evCache = [], evEditId = null, evMode = 'new', evPending = [], evPendingImport = [];
+
+/* GET /api/events
+   Returns: [{
+     id, name, event_type, description,
+     season_events: [{ id, season_id, season_year, stages: [{id, stage_number, location, stage_date}] }]
+   }] */
+async function loadEvents() {
+  setBanner('evBanner', '');
+  const tb = document.getElementById('evTableBody');
+  tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    evCache = await apiGET('/api/events') || [];
+    renderEventsTable();
+    // Update dashboard active count
+    document.getElementById('statEvents').textContent = evCache.filter(e => e.status !== 'inactive').length;
+  } catch (err) {
+    setBanner('evBanner', 'Could not load events: ' + err.message, 'err');
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--closed);">Failed to load.</td></tr>';
+  }
+}
+
+function renderEventsTable() {
+  const tb = document.getElementById('evTableBody');
+  document.getElementById('evCount').textContent = evCache.length
+    ? `${evCache.length} record${evCache.length > 1 ? 's' : ''}` : '';
+  if (!evCache.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No events found. Add one or import.</td></tr>';
+    return;
+  }
+  tb.innerHTML = evCache.map(e => {
+    const stages  = (e.season_events || []).reduce((s, se) => s + (se.stages || []).length, 0);
+    const active  = e.status !== 'inactive';
+    const status  = active
+      ? `<span class="status-dot dot-active"></span> Active`
+      : `<span class="status-dot dot-closed"></span> Inactive`;
+    const actions = active
+      ? `<button class="btn btn-sm" onclick="openEventForm('edit',${e.id})">Edit</button>
+         <button class="btn btn-sm btn-ghost" onclick="archiveEvent(${e.id})">Archive</button>`
+      : `<button class="btn btn-sm btn-ghost" onclick="activateEvent(${e.id})">Activate</button>
+         <button class="btn btn-sm btn-danger" onclick="confirmDeleteEvent(${e.id})">Delete</button>`;
+    return `<tr>
+      <td style="font-weight:700;text-align:center;">${e.id}</td>
+      <td><strong>${esc(e.name)}</strong></td>
+      <td>${esc(e.event_type || '—')}</td>
+      <td style="text-align:center;">${stages}</td>
+      <td class="desc-cell">${esc(e.description || '—')}</td>
+      <td>${status}</td>
+      <td style="white-space:nowrap;">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openEventForm(mode, id) {
+  evMode = mode; evEditId = id ?? null;
+  clearInputErrors();
+  document.getElementById('evName').value = '';
+  document.getElementById('evDesc').value = '';
+  document.querySelectorAll('input[name="evType"]')[1].checked = true;
+  document.getElementById('stageBody').innerHTML = '';
+  document.getElementById('evDeleteBtn').style.display = 'none';
+
+  if (mode === 'new') {
+    document.getElementById('evFormTitle').textContent = 'Add New Event';
+    addStageRow();
+  } else {
+    const ev = evCache.find(e => e.id === id); if (!ev) return;
+    document.getElementById('evFormTitle').textContent = `Edit Event – ${ev.name}`;
+    document.getElementById('evName').value = ev.name;
+    document.getElementById('evDesc').value = ev.description || '';
+    document.querySelectorAll('input[name="evType"]').forEach(r => r.checked = r.value === ev.event_type);
+    const stages = (ev.season_events || [])[0]?.stages || [];
+    stages.forEach(s => addStageRow({ location: s.location, date: s.stage_date }));
+    if (!stages.length) addStageRow();
+    document.getElementById('evDeleteBtn').style.display = 'inline-flex';
+  }
+  document.getElementById('eventForm').classList.add('active');
+  setTimeout(() => document.getElementById('eventForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+
+function closeEventForm() { document.getElementById('eventForm').classList.remove('active'); }
+
+function addStageRow(data = {}) {
+  const tb = document.getElementById('stageBody');
+  const n  = tb.rows.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${n}</td>
+    <td><input type="text" placeholder="e.g. 5K" value="${esc(data.distance||'')}"></td>
+    <td><input type="text" placeholder="Location" value="${esc(data.location||'')}"></td>
+    <td><input type="date" value="${data.date||''}"></td>
+    <td><button class="btn btn-sm btn-ghost" onclick="this.closest('tr').remove();renumStages();" title="Remove">✕</button></td>`;
+  tb.appendChild(tr);
+}
+function removeLastStage() { const tb=document.getElementById('stageBody'); if(tb.rows.length) tb.deleteRow(tb.rows.length-1); }
+function renumStages() { document.querySelectorAll('#stageBody tr').forEach((r,i)=>r.cells[0].textContent=i+1); }
+function getStagesFromForm() {
+  return Array.from(document.querySelectorAll('#stageBody tr')).map((r,i) => ({
+    stage_number: i + 1,
+    distance:     r.cells[1].querySelector('input').value.trim(),
+    location:     r.cells[2].querySelector('input').value.trim(),
+    stage_date:   r.cells[3].querySelector('input').value || null,
+  }));
+}
+
+/* POST /api/events  body: { name, event_type, description, stages }
+   PUT  /api/events/<id>  body: same + optional status
+   Flask creates Event row; if stages provided, creates Stage rows (requires a SeasonEvent to exist).
+   If no SeasonEvent yet, stages are stored and linked when Season is assigned. */
+async function saveEvent() {
+  const name = document.getElementById('evName').value.trim();
+  if (!name) { markError('evName'); showToast('⚠ Event Name required.', 'warn'); return; }
+  const body = {
+    name,
+    event_type:  document.querySelector('input[name="evType"]:checked')?.value || 'walk',
+    description: document.getElementById('evDesc').value.trim(),
+    stages:      getStagesFromForm(),
+  };
+  setSaving('evSaveBtn', true);
+  try {
+    if (evMode === 'new') {
+      await apiPOST('/api/events', body);
+      showToast(`✓ Event "${name}" created.`);
+    } else {
+      await apiPUT(`/api/events/${evEditId}`, body);
+      showToast(`✓ Event "${name}" updated.`);
+    }
+    await loadEvents();
+    closeEventForm();
+  } catch (err) {
+    setBanner('evBanner', 'Save failed: ' + err.message, 'err');
+    showToast('⚠ ' + err.message, 'err');
+  } finally { setSaving('evSaveBtn', false); }
+}
+
+async function archiveEvent(id) {
+  evPending = async () => {
+    await apiPUT(`/api/events/${id}`, { status: 'inactive' });
+    await loadEvents(); showToast('✓ Event archived.');
+  };
+  openConfirm('Archive Event', 'Mark this event as inactive?');
+}
+async function activateEvent(id) {
+  try {
+    await apiPUT(`/api/events/${id}`, { status: 'active' });
+    await loadEvents(); showToast('✓ Event activated.');
+  } catch (err) { showToast('⚠ ' + err.message, 'err'); }
+}
+async function confirmDeleteEvent(id) {
+  const ev = evCache.find(e => e.id === id);
+  evPending = async () => {
+    await apiDELETE(`/api/events/${id}`);
+    await loadEvents(); showToast(`✓ "${ev?.name}" deleted.`);
+  };
+  openConfirm('Delete Event', `Permanently delete "${ev?.name}"? Cannot be undone.`, true);
+}
+async function deleteEventFromForm() {
+  const ev = evCache.find(e => e.id === evEditId);
+  evPending = async () => {
+    await apiDELETE(`/api/events/${evEditId}`);
+    await loadEvents(); closeEventForm(); showToast(`✓ "${ev?.name}" deleted.`);
+  };
+  openConfirm('Delete Event', `Permanently delete "${ev?.name}"? Cannot be undone.`, true);
+}
+
+
+/* ─── CSV / EXCEL IMPORT ─── */
+function handleImport(e, type) {
+  const file = e.target.files[0]; if (!file) return;
+  setImportMsg(`Reading "${file.name}"…`, '');
+  if (type === 'csv') {
+    Papa.parse(file, { header: true, skipEmptyLines: true,
+      complete: r => previewImport(r.data, file.name),
+      error:    r => setImportMsg('⚠ ' + r.message, 'err') });
+  } else {
+    const fr = new FileReader();
+    fr.onload = ev => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: 'binary', cellDates: true });
+        previewImport(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }), file.name);
+      } catch (err) { setImportMsg('⚠ ' + err.message, 'err'); }
+    };
+    fr.readAsBinaryString(file);
+  }
+  e.target.value = '';
+}
+function normRow(row) {
+  const g = (...ks) => { for (const k of ks) { const f = Object.keys(row).find(rk => rk.trim().toLowerCase() === k); if (f && row[f] !== '') return String(row[f]).trim(); } return ''; };
+  return {
+    name: g('name','event_name','event name'), event_type: g('type','event_type','event type')||'walk',
+    description: g('description','desc'), distance: g('distance','dist'),
+    location: g('location','loc','venue'), stage_date: g('stage_date','date','event_date'),
+  };
+}
+function previewImport(rawRows, fname) {
+  if (!rawRows.length) { setImportMsg('⚠ File is empty.', 'err'); return; }
+  const map = new Map(); const skip = [];
+  rawRows.forEach((raw, i) => {
+    const r = normRow(raw);
+    if (!r.name) { skip.push(i + 2); return; }
+    if (!map.has(r.name)) map.set(r.name, { name: r.name, event_type: r.event_type, description: r.description, stages: [] });
+    if (r.distance || r.location || r.stage_date)
+      map.get(r.name).stages.push({ stage_number: map.get(r.name).stages.length + 1, distance: r.distance, location: r.location, stage_date: r.stage_date || null });
+  });
+  evPendingImport = [...map.values()];
+  if (!evPendingImport.length) { setImportMsg('⚠ No valid event rows.', 'err'); return; }
+  const rows = [];
+  evPendingImport.forEach(ev => {
+    if (!ev.stages.length) rows.push({ n: ev.name, t: ev.event_type, d: ev.description, s:'—', di:'—', lo:'—', dt:'—' });
+    else ev.stages.forEach((st,i) => rows.push({ n:i===0?ev.name:'', t:i===0?ev.event_type:'', d:i===0?ev.description:'', s:i+1, di:st.distance, lo:st.location, dt:st.stage_date||'' }));
+  });
+  document.getElementById('previewTbl').innerHTML =
+    `<thead><tr><th>Event</th><th>Type</th><th>Desc</th><th>#</th><th>Dist</th><th>Location</th><th>Date</th></tr></thead>
+     <tbody>${rows.map(r=>`<tr><td>${esc(r.n)}</td><td>${esc(r.t)}</td><td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.d)}</td><td style="text-align:center">${r.s}</td><td>${esc(r.di)}</td><td>${esc(r.lo)}</td><td>${esc(r.dt)}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('importModalTitle').textContent  = `Preview — ${fname}`;
+  document.getElementById('importModalMsg').textContent    = `Found ${evPendingImport.length} event(s) across ${rawRows.length} row(s).`;
+  document.getElementById('importNote').textContent        = skip.length ? `Skipped ${skip.length} row(s) with no event name.` : '';
+  document.getElementById('importOverlay').classList.add('active');
+}
+async function confirmImport() {
+  document.getElementById('importOverlay').classList.remove('active');
+  setImportMsg('Importing…', '');
+  try {
+    /* POST /api/events/bulk-import
+       Body: { events: [{ name, event_type, description, stages }] }
+       Returns: { created, updated } */
+    const r = await apiPOST('/api/events/bulk-import', { events: evPendingImport });
+    await loadEvents();
+    setImportMsg(`✓ ${r?.created||0} created, ${r?.updated||0} updated`, 'ok');
+    showToast('✓ Import complete.');
+  } catch (err) {
+    setImportMsg('⚠ Import failed: ' + err.message, 'err');
+    showToast('⚠ ' + err.message, 'err');
+  }
+  evPendingImport = [];
+}
+function cancelImport() { document.getElementById('importOverlay').classList.remove('active'); evPendingImport = []; setImportMsg('Import cancelled.', ''); }
+function setImportMsg(msg, cls) { const el=document.getElementById('importMsg'); el.textContent=msg; el.className='import-msg'+(cls?' '+cls:''); }
+function exportEventsCSV() {
+  if (!evCache.length) { showToast('⚠ No events to export.', 'warn'); return; }
+  const rows = [['id','name','event_type','description','stage_number','location','stage_date']];
+  evCache.forEach(ev => {
+    const stages = (ev.season_events||[]).flatMap(se=>se.stages||[]);
+    if (!stages.length) rows.push([ev.id, ev.name, ev.event_type||'', ev.description||'','','','']);
+    else stages.forEach(s => rows.push([ev.id, ev.name, ev.event_type||'', ev.description||'', s.stage_number, s.location||'', s.stage_date||'']));
+  });
+  dlBlob(rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n'), `carifin_events_${today()}.csv`, 'text/csv');
+  showToast('✓ Exported.');
+}
+function dlTemplate() {
+  dlBlob(['name,event_type,description,stage_number,distance,location,stage_date',
+    'Urban Challenge,run,Multi-stage run,1,5K,Queens Park,2025-02-15',
+    'Urban Challenge,run,,2,5K,Brian Lara,2025-02-22',
+    'Cross Country,run,Annual race,1,10K,Arima,2025-03-10'].join('\n'),
+    'carifin_events_template.csv', 'text/csv');
+  showToast('✓ Template downloaded.');
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   SEASONS CRUD
+   Model: Season(year, description)
+════════════════════════════════════════════════════════════════════ */
+let seaCache = [], seaEditId = null, seaMode = 'new', seaPending = null;
+
+/* GET /api/seasons
+   Returns: [{ id, year, description, event_count }] */
+async function loadSeasons() {
+  setBanner('seaBanner', '');
+  const tb = document.getElementById('seaTableBody');
+  tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    seaCache = await apiGET('/api/seasons') || [];
+    renderSeasonsTable();
+  } catch (err) {
+    setBanner('seaBanner', 'Could not load seasons: ' + err.message, 'err');
+  }
+}
+function renderSeasonsTable() {
+  const tb = document.getElementById('seaTableBody');
+  if (!seaCache.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">No seasons found.</td></tr>'; return;
+  }
+  tb.innerHTML = seaCache.map(s => `<tr>
+    <td style="font-weight:700;text-align:center;">${s.id}</td>
+    <td><strong>${s.year}</strong></td>
+    <td>${esc(s.description||'—')}</td>
+    <td style="text-align:center;">${s.event_count ?? 0}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm" onclick="openSeasonForm('edit',${s.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteSeason(${s.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openSeasonForm(mode, id) {
+  seaMode = mode; seaEditId = id ?? null; clearInputErrors();
+  document.getElementById('seaYear').value = '';
+  document.getElementById('seaDesc').value = '';
+  document.getElementById('seaDeleteBtn').style.display = 'none';
+  if (mode === 'new') {
+    document.getElementById('seaFormTitle').textContent = 'Add New Season';
+  } else {
+    const s = seaCache.find(x => x.id === id); if (!s) return;
+    document.getElementById('seaFormTitle').textContent = `Edit Season – ${s.year}`;
+    document.getElementById('seaYear').value = s.year;
+    document.getElementById('seaDesc').value = s.description || '';
+    document.getElementById('seaDeleteBtn').style.display = 'inline-flex';
+  }
+  document.getElementById('seasonForm').classList.add('active');
+  setTimeout(() => document.getElementById('seasonForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+function closeSeasonForm() { document.getElementById('seasonForm').classList.remove('active'); }
+
+/* POST /api/seasons  body: { year, description }
+   PUT  /api/seasons/<id>  body: same */
+async function saveSeason() {
+  const year = parseInt(document.getElementById('seaYear').value);
+  if (!year || year < 2000 || year > 2099) { markError('seaYear'); showToast('⚠ Enter a valid year (2000–2099).', 'warn'); return; }
+  const body = { year, description: document.getElementById('seaDesc').value.trim() };
+  setSaving('seaSaveBtn', true);
+  try {
+    if (seaMode === 'new') {
+      await apiPOST('/api/seasons', body); showToast(`✓ Season ${year} created.`);
+    } else {
+      await apiPUT(`/api/seasons/${seaEditId}`, body); showToast(`✓ Season ${year} updated.`);
+    }
+    await loadSeasons(); closeSeasonForm();
+    await loadFilterSelects(); // refresh filter dropdown
+  } catch (err) {
+    setBanner('seaBanner', 'Save failed: ' + err.message, 'err');
+    showToast('⚠ ' + err.message, 'err');
+  } finally { setSaving('seaSaveBtn', false); }
+}
+async function confirmDeleteSeason(id) {
+  const s = seaCache.find(x => x.id === id);
+  seaPending = async () => {
+    await apiDELETE(`/api/seasons/${id}`);
+    await loadSeasons(); showToast(`✓ Season ${s?.year} deleted.`);
+  };
+  openConfirm('Delete Season', `Delete season ${s?.year}? All linked SeasonEvents and Stages will also be removed.`, true);
+}
+async function deleteSeasonFromForm() {
+  const s = seaCache.find(x => x.id === seaEditId);
+  seaPending = async () => {
+    await apiDELETE(`/api/seasons/${seaEditId}`);
+    await loadSeasons(); closeSeasonForm(); showToast(`✓ Season deleted.`);
+  };
+  openConfirm('Delete Season', `Delete season ${s?.year}? Cannot be undone.`, true);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   INSTITUTIONS CRUD
+   Model: Institution(name, code)
+════════════════════════════════════════════════════════════════════ */
+let instCache = [], instEditId = null, instMode = 'new', instPending = null;
+
+/* GET /api/institutions
+   Returns: [{ id, name, code, hr_user_count, participant_count }] */
+async function loadInstitutions() {
+  setBanner('instBanner', '');
+  const tb = document.getElementById('instTableBody');
+  tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    instCache = await apiGET('/api/institutions') || [];
+    renderInstTable();
+  } catch (err) {
+    setBanner('instBanner', 'Could not load institutions: ' + err.message, 'err');
+  }
+}
+function renderInstTable() {
+  const tb = document.getElementById('instTableBody');
+  if (!instCache.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">No institutions found.</td></tr>'; return;
+  }
+  tb.innerHTML = instCache.map(i => `<tr>
+    <td style="font-weight:700;text-align:center;">${i.id}</td>
+    <td><strong>${esc(i.code)}</strong></td>
+    <td>${esc(i.name)}</td>
+    <td style="text-align:center;">${i.hr_user_count ?? 0}</td>
+    <td style="text-align:center;">${i.participant_count ?? 0}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm" onclick="openInstForm('edit',${i.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteInst(${i.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openInstForm(mode, id) {
+  instMode = mode; instEditId = id ?? null; clearInputErrors();
+  document.getElementById('instCode').value = '';
+  document.getElementById('instName').value = '';
+  document.getElementById('instDeleteBtn').style.display = 'none';
+  if (mode === 'new') {
+    document.getElementById('instFormTitle').textContent = 'Add New Institution';
+  } else {
+    const inst = instCache.find(x => x.id === id); if (!inst) return;
+    document.getElementById('instFormTitle').textContent = `Edit Institution – ${inst.code}`;
+    document.getElementById('instCode').value = inst.code;
+    document.getElementById('instName').value = inst.name;
+    document.getElementById('instDeleteBtn').style.display = 'inline-flex';
+  }
+  document.getElementById('instForm').classList.add('active');
+  setTimeout(() => document.getElementById('instForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+function closeInstForm() { document.getElementById('instForm').classList.remove('active'); }
+
+/* POST /api/institutions  body: { name, code }
+   PUT  /api/institutions/<id>  body: same */
+async function saveInstitution() {
+  const code = document.getElementById('instCode').value.trim().toUpperCase();
+  const name = document.getElementById('instName').value.trim();
+  if (!code) { markError('instCode'); showToast('⚠ Code required.', 'warn'); return; }
+  if (!name) { markError('instName'); showToast('⚠ Name required.', 'warn'); return; }
+  const body = { name, code };
+  setSaving('instSaveBtn', true);
+  try {
+    if (instMode === 'new') {
+      await apiPOST('/api/institutions', body); showToast(`✓ Institution "${code}" created.`);
+    } else {
+      await apiPUT(`/api/institutions/${instEditId}`, body); showToast(`✓ Institution "${code}" updated.`);
+    }
+    await loadInstitutions(); closeInstForm();
+    await loadFilterSelects();
+  } catch (err) {
+    setBanner('instBanner', 'Save failed: ' + err.message, 'err');
+    showToast('⚠ ' + err.message, 'err');
+  } finally { setSaving('instSaveBtn', false); }
+}
+async function confirmDeleteInst(id) {
+  const inst = instCache.find(x => x.id === id);
+  instPending = async () => { await apiDELETE(`/api/institutions/${id}`); await loadInstitutions(); showToast(`✓ Institution deleted.`); };
+  openConfirm('Delete Institution', `Delete "${inst?.name}"? All linked HR users and participants will be unlinked.`, true);
+}
+async function deleteInstFromForm() {
+  instPending = async () => { await apiDELETE(`/api/institutions/${instEditId}`); await loadInstitutions(); closeInstForm(); showToast('✓ Institution deleted.'); };
+  openConfirm('Delete Institution', 'Delete this institution? Cannot be undone.', true);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   USERS CRUD
+   Models: Admin, Scorer, HR, PulseLeader (all extend User)
+════════════════════════════════════════════════════════════════════ */
+let usersCache = [], userEditId = null, userMode = 'new', userPending = null;
+
+/* GET /api/users
+   Returns: [User.get_json() ... ] for all roles */
+async function loadUsers() {
+  setBanner('usersBanner', '');
+  const tb = document.getElementById('usersTableBody');
+  tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    usersCache = await apiGET('/api/users') || [];
+    renderUsersTable();
+    // Also populate institution dropdowns
+    if (instCache.length === 0) instCache = await apiGET('/api/institutions') || [];
+    fillInstDropdowns();
+  } catch (err) {
+    setBanner('usersBanner', 'Could not load users: ' + err.message, 'err');
+  }
+}
+function renderUsersTable() {
+  const tb = document.getElementById('usersTableBody');
+  if (!usersCache.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No users found.</td></tr>'; return;
+  }
+  tb.innerHTML = usersCache.map(u => `<tr>
+    <td style="font-weight:700;text-align:center;">${u.id}</td>
+    <td><strong>${esc(u.username)}</strong></td>
+    <td>${esc(u.firstname)} ${esc(u.lastname)}</td>
+    <td>${esc(u.email)}</td>
+    <td><span class="badge ${roleBadgeClass(u.role)}">${u.role}</span></td>
+    <td>${u.institution_id ? (instCache.find(i=>i.id===u.institution_id)?.code||u.institution_id) : '—'}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm" onclick="openUserForm('edit',${u.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser(${u.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function roleBadgeClass(role) {
+  return { admin:'badge-active', scorer:'badge-planning', hr:'badge-archived', pulse_leader:'badge-closed' }[role] || 'badge-archived';
+}
+function fillInstDropdowns() {
+  const opts = `<option value="">— Select Institution —</option>` +
+    instCache.map(i => `<option value="${i.id}">${esc(i.code)} – ${esc(i.name)}</option>`).join('');
+  ['uInstitution','bibNoInst','bibTagInst'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = opts;
+  });
+}
+function openUserForm(mode, id) {
+  userMode = mode; userEditId = id ?? null; clearInputErrors();
+  ['uFirstname','uLastname','uUsername','uEmail','uPassword'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('input[name="uRole"]')[2].checked = true; // default HR
+  document.getElementById('uPasswordRow').style.display = 'flex';
+  document.getElementById('userDeleteBtn').style.display = 'none';
+  toggleInstField();
+  if (mode === 'new') {
+    document.getElementById('userFormTitle').textContent = 'Add New User';
+  } else {
+    const u = usersCache.find(x => x.id === id); if (!u) return;
+    document.getElementById('userFormTitle').textContent = `Edit User – ${u.username}`;
+    document.getElementById('uFirstname').value = u.firstname || '';
+    document.getElementById('uLastname').value  = u.lastname  || '';
+    document.getElementById('uUsername').value  = u.username;
+    document.getElementById('uEmail').value     = u.email;
+    document.querySelectorAll('input[name="uRole"]').forEach(r => r.checked = r.value === u.role);
+    document.getElementById('uInstitution').value = u.institution_id || '';
+    // Hide password field for edits (use separate password reset flow)
+    document.getElementById('uPasswordRow').style.display = 'none';
+    document.getElementById('userDeleteBtn').style.display = 'inline-flex';
+    toggleInstField();
+  }
+  document.getElementById('userForm').classList.add('active');
+  setTimeout(() => document.getElementById('userForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+function closeUserForm() { document.getElementById('userForm').classList.remove('active'); }
+function toggleInstField() {
+  const role = document.querySelector('input[name="uRole"]:checked')?.value;
+  const row  = document.getElementById('uInstRow');
+  const sel  = document.getElementById('uInstitution');
+  const needsInst = ['hr', 'pulse_leader'].includes(role);
+  row.style.display = needsInst ? 'flex' : 'none';
+  sel.required = needsInst;
+}
+// Listen for role change to show/hide institution field
+document.querySelectorAll('input[name="uRole"]').forEach(r => r.addEventListener('change', toggleInstField));
+
+/* POST /api/users  body: { firstname, lastname, username, email, password, role, institution_id? }
+   PUT  /api/users/<id>  body: same minus password */
+async function saveUser() {
+  const fn  = document.getElementById('uFirstname').value.trim();
+  const ln  = document.getElementById('uLastname').value.trim();
+  const un  = document.getElementById('uUsername').value.trim();
+  const em  = document.getElementById('uEmail').value.trim();
+  const pw  = document.getElementById('uPassword').value.trim();
+  const role= document.querySelector('input[name="uRole"]:checked')?.value;
+  const instId = document.getElementById('uInstitution').value || null;
+  if (!fn) { markError('uFirstname'); showToast('⚠ First name required.', 'warn'); return; }
+  if (!ln) { markError('uLastname');  showToast('⚠ Last name required.',  'warn'); return; }
+  if (!un) { markError('uUsername');  showToast('⚠ Username required.',   'warn'); return; }
+  if (!em) { markError('uEmail');     showToast('⚠ Email required.',      'warn'); return; }
+  if (userMode === 'new' && !pw) { markError('uPassword'); showToast('⚠ Password required.', 'warn'); return; }
+  if (['hr','pulse_leader'].includes(role) && !instId) { markError('uInstitution'); showToast('⚠ Institution required for this role.', 'warn'); return; }
+  const body = { firstname: fn, lastname: ln, username: un, email: em, role };
+  if (userMode === 'new') body.password = pw;
+  if (instId) body.institution_id = parseInt(instId);
+  setSaving('userSaveBtn', true);
+  try {
+    if (userMode === 'new') {
+      await apiPOST('/api/users', body); showToast(`✓ User "${un}" created.`);
+    } else {
+      await apiPUT(`/api/users/${userEditId}`, body); showToast(`✓ User "${un}" updated.`);
+    }
+    await loadUsers(); closeUserForm();
+    await loadStats();
+  } catch (err) {
+    setBanner('usersBanner', 'Save failed: ' + err.message, 'err');
+    showToast('⚠ ' + err.message, 'err');
+  } finally { setSaving('userSaveBtn', false); }
+}
+async function confirmDeleteUser(id) {
+  const u = usersCache.find(x => x.id === id);
+  userPending = async () => { await apiDELETE(`/api/users/${id}`); await loadUsers(); await loadStats(); showToast(`✓ User "${u?.username}" deleted.`); };
+  openConfirm('Delete User', `Delete "${u?.username}"? Cannot be undone.`, true);
+}
+async function deleteUserFromForm() {
+  userPending = async () => { await apiDELETE(`/api/users/${userEditId}`); await loadUsers(); closeUserForm(); await loadStats(); showToast('✓ User deleted.'); };
+  openConfirm('Delete User', 'Delete this user? Cannot be undone.', true);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   BIB NO. CRUD
+   Model: BibNo(bib_value, season_id, institution_id)
+════════════════════════════════════════════════════════════════════ */
+let bibNoCache = [], bibNoEditId = null, bibNoMode = 'new', bibNoPending = null;
+
+async function loadBibNos() {
+  setBanner('bibNoBanner', '');
+  const tb = document.getElementById('bibNoTableBody');
+  tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    bibNoCache = await apiGET('/api/bibnos') || [];
+    // Ensure dropdowns are populated
+    if (seaCache.length === 0) seaCache = await apiGET('/api/seasons') || [];
+    if (instCache.length === 0) instCache = await apiGET('/api/institutions') || [];
+    fillSeasonDropdowns(); fillInstDropdowns();
+    renderBibNoTable();
+  } catch (err) { setBanner('bibNoBanner', 'Could not load bib numbers: ' + err.message, 'err'); }
+}
+function fillSeasonDropdowns() {
+  const opts = `<option value="">— Select Season —</option>` + seaCache.map(s=>`<option value="${s.id}">${s.year}</option>`).join('');
+  ['bibNoSeason','bibTagSeason'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+}
+function renderBibNoTable() {
+  const tb = document.getElementById('bibNoTableBody');
+  if (!bibNoCache.length) { tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">No bib numbers found.</td></tr>'; return; }
+  tb.innerHTML = bibNoCache.map(b => `<tr>
+    <td style="font-weight:700;text-align:center;">${b.id}</td>
+    <td><strong>${esc(b.bib_value)}</strong></td>
+    <td>${seaCache.find(s=>s.id===b.season_id)?.year||b.season_id}</td>
+    <td>${b.institution_id ? (instCache.find(i=>i.id===b.institution_id)?.code||b.institution_id):'—'}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm" onclick="openBibNoForm('edit',${b.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteBibNo(${b.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openBibNoForm(mode, id) {
+  bibNoMode = mode; bibNoEditId = id ?? null; clearInputErrors();
+  document.getElementById('bibNoVal').value = '';
+  document.getElementById('bibNoSeason').value = '';
+  document.getElementById('bibNoInst').value = '';
+  document.getElementById('bibNoDeleteBtn').style.display = 'none';
+  if (mode === 'new') { document.getElementById('bibNoFormTitle').textContent = 'Add Bib Number'; }
+  else {
+    const b = bibNoCache.find(x=>x.id===id); if(!b) return;
+    document.getElementById('bibNoFormTitle').textContent = `Edit Bib No. – ${b.bib_value}`;
+    document.getElementById('bibNoVal').value = b.bib_value;
+    document.getElementById('bibNoSeason').value = b.season_id || '';
+    document.getElementById('bibNoInst').value   = b.institution_id || '';
+    document.getElementById('bibNoDeleteBtn').style.display = 'inline-flex';
+  }
+  document.getElementById('bibNoForm').classList.add('active');
+  setTimeout(()=>document.getElementById('bibNoForm').scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function closeBibNoForm() { document.getElementById('bibNoForm').classList.remove('active'); }
+async function saveBibNo() {
+  const val = document.getElementById('bibNoVal').value.trim();
+  const sid = document.getElementById('bibNoSeason').value;
+  if (!val) { markError('bibNoVal'); showToast('⚠ Bib value required.','warn'); return; }
+  if (!sid) { markError('bibNoSeason'); showToast('⚠ Season required.','warn'); return; }
+  const body = { bib_value: val, season_id: parseInt(sid), institution_id: document.getElementById('bibNoInst').value ? parseInt(document.getElementById('bibNoInst').value) : null };
+  setSaving('bibNoSaveBtn', true);
+  try {
+    if (bibNoMode==='new') { await apiPOST('/api/bibnos', body); showToast(`✓ Bib No. "${val}" created.`); }
+    else { await apiPUT(`/api/bibnos/${bibNoEditId}`, body); showToast(`✓ Bib No. "${val}" updated.`); }
+    await loadBibNos(); closeBibNoForm();
+  } catch (err) { setBanner('bibNoBanner','Save failed: '+err.message,'err'); showToast('⚠ '+err.message,'err'); }
+  finally { setSaving('bibNoSaveBtn', false); }
+}
+async function confirmDeleteBibNo(id) {
+  const b = bibNoCache.find(x=>x.id===id);
+  bibNoPending = async () => { await apiDELETE(`/api/bibnos/${id}`); await loadBibNos(); showToast(`✓ Bib No. deleted.`); };
+  openConfirm('Delete Bib No.', `Delete bib "${b?.bib_value}"?`, true);
+}
+async function deleteBibNoFromForm() {
+  bibNoPending = async () => { await apiDELETE(`/api/bibnos/${bibNoEditId}`); await loadBibNos(); closeBibNoForm(); showToast('✓ Bib No. deleted.'); };
+  openConfirm('Delete Bib No.', 'Delete this bib number? Cannot be undone.', true);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   BIB TAG CRUD
+   Model: BibTag(bib_value, season_id, institution_id)
+════════════════════════════════════════════════════════════════════ */
+let bibTagCache = [], bibTagEditId = null, bibTagMode = 'new', bibTagPending = null;
+
+async function loadBibTags() {
+  setBanner('bibTagBanner', '');
+  const tb = document.getElementById('bibTagTableBody');
+  tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">Loading…</td></tr>';
+  try {
+    bibTagCache = await apiGET('/api/bibtags') || [];
+    if (seaCache.length===0) seaCache = await apiGET('/api/seasons') || [];
+    if (instCache.length===0) instCache = await apiGET('/api/institutions') || [];
+    fillSeasonDropdowns(); fillInstDropdowns();
+    renderBibTagTable();
+  } catch (err) { setBanner('bibTagBanner','Could not load bib tags: '+err.message,'err'); }
+}
+function renderBibTagTable() {
+  const tb = document.getElementById('bibTagTableBody');
+  if (!bibTagCache.length) { tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">No bib tags found.</td></tr>'; return; }
+  tb.innerHTML = bibTagCache.map(b => `<tr>
+    <td style="font-weight:700;text-align:center;">${b.id}</td>
+    <td><strong>${esc(b.bib_value)}</strong></td>
+    <td>${seaCache.find(s=>s.id===b.season_id)?.year||b.season_id}</td>
+    <td>${b.institution_id?(instCache.find(i=>i.id===b.institution_id)?.code||b.institution_id):'—'}</td>
+    <td style="white-space:nowrap;">
+      <button class="btn btn-sm" onclick="openBibTagForm('edit',${b.id})">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteBibTag(${b.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+function openBibTagForm(mode,id) {
+  bibTagMode=mode; bibTagEditId=id??null; clearInputErrors();
+  document.getElementById('bibTagVal').value='';
+  document.getElementById('bibTagSeason').value='';
+  document.getElementById('bibTagInst').value='';
+  document.getElementById('bibTagDeleteBtn').style.display='none';
+  if(mode==='new'){document.getElementById('bibTagFormTitle').textContent='Add Bib Tag';}
+  else{
+    const b=bibTagCache.find(x=>x.id===id);if(!b)return;
+    document.getElementById('bibTagFormTitle').textContent=`Edit Bib Tag – ${b.bib_value}`;
+    document.getElementById('bibTagVal').value=b.bib_value;
+    document.getElementById('bibTagSeason').value=b.season_id||'';
+    document.getElementById('bibTagInst').value=b.institution_id||'';
+    document.getElementById('bibTagDeleteBtn').style.display='inline-flex';
+  }
+  document.getElementById('bibTagForm').classList.add('active');
+  setTimeout(()=>document.getElementById('bibTagForm').scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function closeBibTagForm(){document.getElementById('bibTagForm').classList.remove('active');}
+async function saveBibTag(){
+  const val=document.getElementById('bibTagVal').value.trim();
+  const sid=document.getElementById('bibTagSeason').value;
+  if(!val){markError('bibTagVal');showToast('⚠ Bib value required.','warn');return;}
+  if(!sid){markError('bibTagSeason');showToast('⚠ Season required.','warn');return;}
+  const body={bib_value:val,season_id:parseInt(sid),institution_id:document.getElementById('bibTagInst').value?parseInt(document.getElementById('bibTagInst').value):null};
+  setSaving('bibTagSaveBtn',true);
+  try{
+    if(bibTagMode==='new'){await apiPOST('/api/bibtags',body);showToast(`✓ Bib Tag "${val}" created.`);}
+    else{await apiPUT(`/api/bibtags/${bibTagEditId}`,body);showToast(`✓ Bib Tag "${val}" updated.`);}
+    await loadBibTags();closeBibTagForm();
+  }catch(err){setBanner('bibTagBanner','Save failed: '+err.message,'err');showToast('⚠ '+err.message,'err');}
+  finally{setSaving('bibTagSaveBtn',false);}
+}
+async function confirmDeleteBibTag(id){
+  const b=bibTagCache.find(x=>x.id===id);
+  bibTagPending=async()=>{await apiDELETE(`/api/bibtags/${id}`);await loadBibTags();showToast(`✓ Bib Tag deleted.`);};
+  openConfirm('Delete Bib Tag',`Delete tag "${b?.bib_value}"?`,true);
+}
+async function deleteBibTagFromForm(){
+  bibTagPending=async()=>{await apiDELETE(`/api/bibtags/${bibTagEditId}`);await loadBibTags();closeBibTagForm();showToast('✓ Bib Tag deleted.');};
+  openConfirm('Delete Bib Tag','Delete this bib tag? Cannot be undone.',true);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   SHARED CONFIRM MODAL
+   pendingAction is set by each page before calling openConfirm()
+════════════════════════════════════════════════════════════════════ */
+let pendingAction = null;
+
+function openConfirm(title, msg, danger = false) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.className   = danger ? 'btn btn-danger' : 'btn';
+  btn.textContent = danger ? 'Delete' : 'Confirm';
+  document.getElementById('confirmOverlay').classList.add('active');
+  // Collect the right pending action for each module
+  pendingAction = evPending || seaPending || instPending || userPending || bibNoPending || bibTagPending;
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+  pendingAction = evPending = seaPending = instPending = userPending = bibNoPending = bibTagPending = null;
+}
+async function doConfirm() {
+  if (pendingAction) { try { await pendingAction(); } catch (err) { showToast('⚠ ' + err.message, 'err'); } }
+  closeConfirm();
+}
+
+
+/* ════════════════════════════════════════════════════════════════════
+   SHARED UI HELPERS
+════════════════════════════════════════════════════════════════════ */
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type === 'err' ? ' err' : type === 'warn' ? ' warn' : '');
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3400);
+}
+// Extra toast colours via inline style override
+document.getElementById('toast').style.setProperty('--toast-err-border','#dc2626');
+
+function setBanner(id, msg, type = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg ? '⚠ ' + msg : '';
+  el.className = 'api-banner' + (type ? ' ' + type : '');
+}
+
+function setSaving(btnId, on) {
+  const btn = document.getElementById(btnId); if (!btn) return;
+  btn.disabled = on;
+  btn.innerHTML = on ? '<span class="spinner"></span>Saving…' : btn.getAttribute('data-label') || 'Save';
+  if (!on && !btn.getAttribute('data-label')) {
+    btn.textContent = btn.id.includes('ev') ? 'Save Event'
+      : btn.id.includes('sea') ? 'Save Season'
+      : btn.id.includes('inst') ? 'Save Institution'
+      : btn.id.includes('user') ? 'Save User'
+      : btn.id.includes('bibNo') ? 'Save Bib No.'
+      : btn.id.includes('bibTag') ? 'Save Bib Tag' : 'Save';
+  }
+}
+
+function markError(id) {
+  const el = document.getElementById(id); if (el) el.classList.add('input-err');
+}
+function clearInputErrors() {
+  document.querySelectorAll('.input-err').forEach(el => el.classList.remove('input-err'));
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function today() { return new Date().toISOString().slice(0, 10); }
+function dlBlob(c, n, t) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([c], { type: t }));
+  a.download = n; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════════════════ */
+(async function init() {
+  await loadCurrentUser();   // 1. Get logged-in user → populate topbar + restrict menu
+  await loadDashboard();     // 2. Load all dashboard data
+  // Other pages load lazily when navigated to via showPage()
+})();
+</script>
+</body>
+</html>

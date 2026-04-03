@@ -2,18 +2,26 @@ services:
   - type: web
     name: carifin-dashboard
     env: python
-    repo: https://github.com/JasMintTea/Data-Engagement-Dashboard.git
+    repo: https://github.com/VinayakNM/Data-Engagement-Dashboard.git
     plan: free
     branch: main
     healthCheckPath: /health
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn wsgi:app"
+    buildCommand: "pip install -r requirements.txt && python seed.py"
+    startCommand: "gunicorn wsgi:app -c gunicorn_config.py"
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_ENV
         value: production
-      - key: SQLALCHEMY_DATABASE_URI
-        value: sqlite:///carifin.db
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: SQLALCHEMY_DATABASE_URI
+        fromDatabase:
+          name: carifin-db
+          property: connectionString
+
+databases:
+  - name: carifin-db
+    plan: free
+    databaseName: carifin
+    user: carifin

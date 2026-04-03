@@ -57,6 +57,8 @@ def create_app(overrides={}):
 
     #from App.views.dashboards import dashboard_views
     #app.register_blueprint(dashboard_views)
+    #from App.views.dashboards import dashboard_views
+    #app.register_blueprint(dashboard_views)
 
     from App.views.admin_views import admin_views
     app.register_blueprint(admin_views)
@@ -66,5 +68,15 @@ def create_app(overrides={}):
 
     from App.views.scorer_views import scorer_views
     app.register_blueprint(scorer_views)
+
+    from App.views.forms import forms_views
+    app.register_blueprint(forms_views)
+
+    from App.views.forms_api import forms_api
+    app.register_blueprint(forms_api)
+
+    # Auto-create tables on first deploy (idempotent — safe to run every startup)
+    with app.app_context():
+        db.create_all()
 
     return app

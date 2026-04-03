@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CariFin Data Dashboard – Event Management</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='test.css') }}">
+<style>
+  .stage-table input[type="text"],
+  .stage-table input[type="date"] {
+    width: 100%; font-size: 11px; padding: 3px 7px;
+  }
+  .stage-table input[type="date"] { width: auto; min-width: 130px; }
+
+  textarea {
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    padding: 7px 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px; color: var(--text);
+    outline: none; resize: vertical;
+    width: 100%; max-width: 420px; min-height: 70px;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+
+  .form-row.top-align { align-items: flex-start; }
+  .form-row.top-align .form-label { margin-top: 6px; }
+
+  .stage-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .stage-table th { font-size: 10px; padding: 6px 10px; background: #f0ece4; }
+  .stage-table td { padding: 6px 8px; font-size: 12px; }
+  .stage-table td:first-child {
+    text-align: center; font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600; width: 48px;
+  }
+  .stage-actions { display: flex; gap: 6px; margin-bottom: 16px; }
+  .desc-cell { max-width: 180px; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+  /* Season selector in header area */
+  .season-selector {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .season-selector select {
+    border: 1px solid var(--border);
+    background: var(--bg); padding: 3px 8px;
+    font-family: inherit; font-size: 12px;
+    color: var(--text); outline: none; cursor: pointer;
+    border-radius: 4px;
+  }
+  .season-selector select:focus { border-color: var(--accent); }
+
+  /* Loading state */
+  .loading-row td { text-align: center; color: var(--text-muted); padding: 24px; font-style: italic; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* API error banner */
+  .api-error {
+    background: #fff3cd; border: 1px solid #ffc107;
+    padding: 10px 14px; margin-bottom: 12px;
+    font-size: 12px; color: #856404;
+    display: none; border-radius: 4px;
+  }
+  .api-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>CariFin Data Dashboard</span>
+  <div class="topbar-right">
+    <!-- Dynamic user — Flask injects via Jinja2 -->
+    <span>Hi, {{ current_user.username }} ({{ current_user.role | capitalize }})</span>
+
+    <!-- System Dropdown -->
+    <div class="sys-wrap" style="position:relative; display:inline-block;">
+      <button class="sys-btn" id="sysBtn" onclick="toggleSysMenu(event)">
+        System ▾
+      </button>
+      <div class="sys-dd" id="sysDd" style="display:none; position:absolute; right:0; top:100%; z-index:200; background:#fff; border:1px solid var(--border); min-width:200px; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+        <a class="sys-dd-item" href="{{ url_for('admin.dashboard') }}">General Overview</a>
+        <a class="sys-dd-item active" href="{{ url_for('admin.event_management') }}">Event Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.season_management') }}">Season Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.bib_no_management') }}">Bib No. Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.bib_tag_management') }}">Bib Tag Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.institution_management') }}">Institution Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.user_management') }}">User Management</a>
+        <a class="sys-dd-item" href="{{ url_for('admin.forms') }}">Forms</a>
+      </div>
+    </div>
+
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="logo-box">🏔</div>
+  <div class="breadcrumb">
+    <span>System ›</span> Event Management
+    <!-- Season selector — events are always tied to a season -->
+    <span class="season-selector" style="margin-left: 16px;">
+      Season:
+      <select id="seasonSelect" onchange="onSeasonChange()">
+        <option value="">Loading…</option>
+      </select>
+    </span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="section-title">Manage Events</div>
+
+  <!-- API error banner (shown if fetch fails) -->
+  <div class="api-error" id="apiError"></div>
+
+  <!-- ACTIVE EVENTS TABLE -->
+  <div class="card">
+    <div class="card-header">Active Events</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID#</th>
+          <th>Event Name</th>
+          <th>Type</th>
+          <th>Stages</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="eventsTableBody">
+        <tr class="loading-row">
+          <td colspan="7"><span class="spin">⟳</span> Loading events…</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ADD NEW EVENT button -->
+  <div class="section-actions" style="text-align:left; margin-bottom: 20px;">
+    <button class="btn" onclick="openForm('new')">+ Add New Event</button>
+  </div>
+
+  <!-- ADD/EDIT EVENT FORM -->
+  <div class="form-panel" id="eventForm">
+    <div class="form-panel-header">
+      <span id="formTitle">Add / Edit Event Form</span>
+      <button class="close-btn" onclick="closeForm()" title="Close">✕</button>
+    </div>
+    <div class="form-body">
+
+      <!-- Hidden edit ID -->
+      <input type="hidden" id="editingSeasonEventId">
+      <input type="hidden" id="editingEventId">
+
+      <!-- Event Name -->
+      <div class="form-row">
+        <span class="form-label">Event Name:</span>
+        <input type="text" class="wide" id="eventName" placeholder="e.g. Urban Challenge">
+      </div>
+
+      <!-- Event Type -->
+      <div class="form-row">
+        <span class="form-label">Event Type:</span>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="eventType" value="Run"> Run</label>
+          <label class="radio-option"><input type="radio" name="eventType" value="Walk" checked> Walk</label>
+          <label class="radio-option"><input type="radio" name="eventType" value="Mixed"> Mixed</label>
+          <label class="radio-option"><input type="radio" name="eventType" value="Other"> Other</label>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="form-row top-align">
+        <span class="form-label">Description:</span>
+        <textarea id="eventDescription" placeholder="Brief description of the event…"></textarea>
+      </div>
+
+      <!-- Stage Configuration -->
+      <div class="events-label" style="margin-top: 6px;">Stage Configuration</div>
+      <table class="stage-table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Distance</th>
+            <th>Location</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stageTableBody"></tbody>
+      </table>
+
+      <div class="stage-actions">
+        <button class="btn btn-ghost btn-sm" onclick="addStage()">Add Stage</button>
+        <button class="btn btn-ghost btn-sm" onclick="removeStage()">Remove Stage</button>
+      </div>
+
+    </div><!-- /form-body -->
+
+    <!-- FORM ACTIONS -->
+    <div class="form-actions">
+      <button class="btn" id="saveBtn" onclick="handleSave()">Save Event</button>
+      <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-danger" id="deleteBtn" onclick="handleDelete()" style="margin-left:auto; display:none;">Delete Event</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <p id="confirmMsg">Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn" id="confirmOkBtn" onclick="confirmAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let events         = [];         // loaded from API
+let seasons        = [];         // loaded from API
+let currentSeasonId = null;      // currently selected season
+let currentMode    = 'new';
+let editingSeasonEventId = null;
+let pendingAction  = null;
+
+/* ═══════════════════════════════════════════
+   SYSTEM DROPDOWN
+═══════════════════════════════════════════ */
+function toggleSysMenu(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('sysDd');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', () => {
+  document.getElementById('sysDd').style.display = 'none';
+});
+
+/* ═══════════════════════════════════════════
+   API HELPERS
+═══════════════════════════════════════════ */
+async function apiFetch(url, opts = {}) {
+  const defaults = {
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    credentials: 'same-origin'
+  };
+  const res = await fetch(url, { ...defaults, ...opts, headers: { ...defaults.headers, ...(opts.headers||{}) } });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function showApiError(msg) {
+  const el = document.getElementById('apiError');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+/* ═══════════════════════════════════════════
+   INIT — load seasons, then load events
+═══════════════════════════════════════════ */
+async function init() {
+  try {
+    seasons = await apiFetch('/api/seasons');
+    const sel = document.getElementById('seasonSelect');
+    if (!seasons.length) {
+      sel.innerHTML = '<option value="">No seasons found</option>';
+      renderTable([]);
+      return;
+    }
+    sel.innerHTML = seasons.map(s => `<option value="${s.id}">${s.year}</option>`).join('');
+    // Default to latest season
+    currentSeasonId = seasons[seasons.length - 1].id;
+    sel.value = currentSeasonId;
+    await loadEvents();
+  } catch (err) {
+    showApiError('Could not load seasons: ' + err.message);
+    renderTable([]);
+  }
+}
+
+async function onSeasonChange() {
+  currentSeasonId = document.getElementById('seasonSelect').value;
+  await loadEvents();
+}
+
+/* ═══════════════════════════════════════════
+   LOAD EVENTS
+═══════════════════════════════════════════ */
+async function loadEvents() {
+  document.getElementById('eventsTableBody').innerHTML =
+    `<tr class="loading-row"><td colspan="7"><span class="spin">⟳</span> Loading…</td></tr>`;
+  try {
+    // Returns list of season_events with nested event + stages for this season
+    events = await apiFetch(`/api/seasons/${currentSeasonId}/events`);
+    renderTable();
+  } catch (err) {
+    showApiError('Could not load events: ' + err.message);
+    renderTable([]);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   RENDER TABLE
+═══════════════════════════════════════════ */
+function renderTable() {
+  const tbody = document.getElementById('eventsTableBody');
+  if (!events.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No events for this season. Add one below.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = events.map(se => {
+    // se = SeasonEvent object: { id, event_id, event_name, event_type, description, status, stages: [...] }
+    const isActive = se.status === 'active';
+    const statusBadge = isActive
+      ? `<span class="status-dot dot-active"></span> Active`
+      : `<span class="status-dot dot-closed"></span> Inactive`;
+    const actions = isActive
+      ? `<button class="btn btn-sm" onclick="openForm('edit',${se.id})">Edit</button>
+         <button class="btn btn-sm btn-ghost" onclick="triggerArchive(${se.id})">Archive</button>`
+      : `<button class="btn btn-sm btn-ghost" onclick="triggerActivate(${se.id})">Activate</button>
+         <button class="btn btn-sm btn-danger" onclick="triggerDelete(${se.id})">Delete</button>`;
+    return `
+      <tr>
+        <td style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:center;">${se.event_id}</td>
+        <td><strong>${esc(se.event_name)}</strong></td>
+        <td>${esc(se.event_type)}</td>
+        <td style="text-align:center;">${(se.stages||[]).length}</td>
+        <td class="desc-cell">${esc(se.description || '—')}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space:nowrap;">${actions}</td>
+      </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ═══════════════════════════════════════════
+   STAGE ROWS
+═══════════════════════════════════════════ */
+function addStageRow(num, data = {}) {
+  const tbody = document.getElementById('stageTableBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${num}</td>
+    <td><input type="text" placeholder="e.g. 5K" value="${esc(data.distance || '')}"></td>
+    <td><input type="text" placeholder="Location" value="${esc(data.location || '')}"></td>
+    <td><input type="date" value="${data.stage_date || ''}"></td>
+    <td><button class="btn btn-sm btn-ghost" onclick="this.closest('tr').remove(); renumberStages();" title="Remove">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function addStage()    { addStageRow(document.getElementById('stageTableBody').rows.length + 1); }
+function removeStage() { const tb = document.getElementById('stageTableBody'); if (tb.rows.length) tb.deleteRow(tb.rows.length - 1); }
+function renumberStages() { document.querySelectorAll('#stageTableBody tr').forEach((r,i) => r.cells[0].textContent = i+1); }
+
+function getStagesFromTable() {
+  return Array.from(document.querySelectorAll('#stageTableBody tr')).map((r, i) => ({
+    stage_number: i + 1,
+    distance:    r.cells[1].querySelector('input').value.trim(),
+    location:    r.cells[2].querySelector('input').value.trim(),
+    stage_date:  r.cells[3].querySelector('input').value || null,
+  }));
+}
+
+/* ═══════════════════════════════════════════
+   OPEN / CLOSE FORM
+═══════════════════════════════════════════ */
+function openForm(mode, seasonEventId) {
+  currentMode = mode;
+  editingSeasonEventId = seasonEventId || null;
+
+  // Reset
+  document.getElementById('eventName').value = '';
+  document.getElementById('eventDescription').value = '';
+  document.querySelectorAll('input[name="eventType"]')[1].checked = true;
+  document.getElementById('stageTableBody').innerHTML = '';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('editingSeasonEventId').value = '';
+  document.getElementById('editingEventId').value = '';
+  setSaveLoading(false);
+
+  if (mode === 'new') {
+    document.getElementById('formTitle').textContent = 'Add New Event';
+    addStageRow(1);
+  } else {
+    const se = events.find(e => e.id === seasonEventId);
+    if (!se) return;
+    document.getElementById('formTitle').textContent = `Edit Event – ${se.event_name}`;
+    document.getElementById('eventName').value = se.event_name;
+    document.getElementById('eventDescription').value = se.description || '';
+    document.getElementById('editingSeasonEventId').value = se.id;
+    document.getElementById('editingEventId').value = se.event_id;
+    document.querySelectorAll('input[name="eventType"]').forEach(r => r.checked = r.value === se.event_type);
+    (se.stages || []).forEach((s, i) => addStageRow(i + 1, s));
+    document.getElementById('deleteBtn').style.display = 'inline-block';
+  }
+
+  document.getElementById('eventForm').classList.add('active');
+  setTimeout(() => document.getElementById('eventForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+}
+
+function closeForm() {
+  document.getElementById('eventForm').classList.remove('active');
+  editingSeasonEventId = null;
+}
+
+function setSaveLoading(loading) {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = loading;
+  btn.textContent = loading ? '⟳ Saving…' : 'Save Event';
+}
+
+/* ═══════════════════════════════════════════
+   SAVE  (POST /api/events  or  PUT /api/season-events/:id)
+═══════════════════════════════════════════ */
+async function handleSave() {
+  const name = document.getElementById('eventName').value.trim();
+  if (!name) { showToast('⚠ Please enter an Event Name.'); return; }
+  if (!currentSeasonId) { showToast('⚠ Please select a Season first.'); return; }
+
+  const payload = {
+    name,
+    event_type:  document.querySelector('input[name="eventType"]:checked')?.value || 'Walk',
+    description: document.getElementById('eventDescription').value.trim(),
+    season_id:   currentSeasonId,
+    stages:      getStagesFromTable(),
+  };
+
+  setSaveLoading(true);
+  try {
+    if (currentMode === 'new') {
+      // POST creates Event + SeasonEvent + Stages in one call
+      const created = await apiFetch('/api/events', { method: 'POST', body: JSON.stringify(payload) });
+      showToast(`✓ "${name}" added to season.`);
+    } else {
+      // PUT updates Event fields + replaces stages
+      const seId = document.getElementById('editingSeasonEventId').value;
+      await apiFetch(`/api/season-events/${seId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast(`✓ "${name}" updated.`);
+    }
+    await loadEvents();
+    closeForm();
+  } catch (err) {
+    showApiError('Save failed: ' + err.message);
+    showToast('✕ Save failed: ' + err.message);
+  } finally {
+    setSaveLoading(false);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ARCHIVE  (PATCH /api/season-events/:id/status)
+═══════════════════════════════════════════ */
+function triggerArchive(seasonEventId) {
+  const se = events.find(e => e.id === seasonEventId);
+  pendingAction = async () => {
+    try {
+      await apiFetch(`/api/season-events/${seasonEventId}/status`, {
+        method: 'PATCH', body: JSON.stringify({ status: 'inactive' })
+      });
+      await loadEvents();
+      showToast(`✓ "${se.event_name}" archived.`);
+    } catch (err) { showApiError('Archive failed: ' + err.message); }
+  };
+  openConfirm('Archive Event', `Archive "${se?.event_name}"? It will be marked inactive.`);
+}
+
+/* ═══════════════════════════════════════════
+   ACTIVATE  (PATCH /api/season-events/:id/status)
+═══════════════════════════════════════════ */
+async function triggerActivate(seasonEventId) {
+  const se = events.find(e => e.id === seasonEventId);
+  try {
+    await apiFetch(`/api/season-events/${seasonEventId}/status`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'active' })
+    });
+    await loadEvents();
+    showToast(`✓ "${se?.event_name}" is now Active.`);
+  } catch (err) { showApiError('Activate failed: ' + err.message); }
+}
+
+/* ═══════════════════════════════════════════
+   DELETE  (DELETE /api/season-events/:id)
+═══════════════════════════════════════════ */
+function triggerDelete(seasonEventId) {
+  const se = events.find(e => e.id === seasonEventId);
+  pendingAction = async () => {
+    try {
+      await apiFetch(`/api/season-events/${seasonEventId}`, { method: 'DELETE' });
+      await loadEvents();
+      showToast(`✓ "${se?.event_name}" removed from this season.`);
+    } catch (err) { showApiError('Delete failed: ' + err.message); }
+  };
+  openConfirm('Remove from Season', `Remove "${se?.event_name}" from this season? This also deletes its stages and results.`, true);
+}
+
+function handleDelete() {
+  if (!editingSeasonEventId) return;
+  triggerDelete(editingSeasonEventId);
+  closeForm();
+}
+
+/* ═══════════════════════════════════════════
+   CONFIRM MODAL
+═══════════════════════════════════════════ */
+function openConfirm(title, msg, danger = false) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.className = danger ? 'btn btn-danger' : 'btn';
+  btn.textContent = danger ? 'Delete' : 'Confirm';
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+  pendingAction = null;
+}
+async function confirmAction() {
+  if (pendingAction) await pendingAction();
+  closeConfirm();
+}
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

@@ -1,8 +1,16 @@
-from .user import create_user
 from App.database import db
+from App.models import Admin, Institution
+from App.controllers.admin_controller import create_user_by_admin
 
 
 def initialize():
     db.drop_all()
     db.create_all()
-    create_user('bob', 'test', 'bob', 'bob@email.com', 'bobpass')
+    create_user_by_admin(
+        firstname='Bob',
+        lastname='Test',
+        username='bob',
+        email='bob@email.com',
+        password='bobpass',
+        role='admin'
+    )

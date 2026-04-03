@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CariFin – Participant Management</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='test.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── SYSTEM DROPDOWN ── */
+.sys-wrap { position:relative; display:inline-block; }
+.sys-btn { background:none; border:none; font-family:inherit; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer; padding:5px 8px; border-radius:5px; transition:background 0.12s; }
+.sys-btn:hover { background:var(--accent-light); }
+.sys-dd { display:none; position:absolute; right:0; top:100%; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:6px; min-width:210px; box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+.sys-dd.open { display:block; }
+.sys-dd-item { display:block; padding:9px 14px; font-size:12px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--border); transition:background 0.1s; }
+.sys-dd-item:last-child { border-bottom:none; }
+.sys-dd-item:hover { background:var(--accent-light); color:var(--accent); }
+.sys-dd-item.active { font-weight:700; color:var(--accent); }
+
+/* ── ACTION BAR ── */
+.action-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+.action-bar .spacer { flex:1; }
+
+/* ── IMPORT STRIP ── */
+.import-strip {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  border:1px solid var(--border); padding:8px 12px;
+  margin-bottom:14px; background:#fafafa; border-radius:6px;
+}
+.import-strip label { display:inline-flex; align-items:center; gap:4px; font-size:12px; cursor:pointer; border:1px solid var(--border); padding:3px 10px; border-radius:4px; background:var(--surface); }
+.import-strip label:hover { background:var(--accent-light); }
+.import-strip input[type="file"] { display:none; }
+.import-msg { font-size:11px; color:var(--text-muted); font-style:italic; }
+.import-msg.ok  { color:var(--active); font-style:normal; font-weight:600; }
+.import-msg.err { color:var(--closed); font-style:normal; }
+
+/* ── PARTICIPANT TABLE ── */
+.spin { display:inline-block; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── FORMS ── */
+.form-2col { display:grid; grid-template-columns:1fr 1fr; gap:0 28px; }
+.form-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap; }
+.form-row.top { align-items:flex-start; }
+.form-row.top .form-label { margin-top:4px; }
+.form-label { font-size:12px; font-weight:500; color:var(--text-muted); min-width:110px; flex-shrink:0; }
+.form-label .req { color:var(--closed); }
+.form-input { border:1.5px solid var(--border); border-radius:5px; padding:6px 10px; font-family:inherit; font-size:13px; color:var(--text); outline:none; transition:border-color 0.15s; width:240px; }
+.form-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+.form-input[readonly] { background:#f8f9fb; color:var(--text-muted); cursor:not-allowed; }
+.form-input.wide { width:300px; }
+.radio-group { display:flex; gap:16px; }
+.radio-opt { display:flex; align-items:center; gap:5px; font-size:13px; cursor:pointer; }
+.radio-opt input { accent-color:var(--accent); }
+
+/* Form divider */
+.form-divider { border:none; border-top:1px dashed var(--border); margin:14px 0; }
+
+/* Duplicate warning */
+.dup-warn { font-size:11px; color:var(--closed); font-weight:600; display:none; }
+.dup-warn.show { display:inline; }
+
+/* Event registration checkboxes */
+.event-list { list-style:none; padding:0; }
+.event-list li { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.event-list li:last-child { border-bottom:none; }
+.event-list input[type="checkbox"] { accent-color:var(--accent); width:14px; height:14px; }
+
+/* Bib assignment section */
+.bib-section { border:1px dashed var(--border); padding:12px; border-radius:6px; margin-top:10px; background:#fafafa; }
+.bib-section-lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-muted); margin-bottom:8px; }
+
+/* Preview table */
+.preview-scroll { max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; margin-bottom:10px; }
+.preview-tbl { width:100%; border-collapse:collapse; font-size:11px; }
+.preview-tbl th { background:#f0f0f0; padding:5px 8px; border-bottom:1px solid var(--border); font-weight:700; text-align:left; position:sticky; top:0; }
+.preview-tbl td { padding:4px 8px; border-bottom:1px solid #eee; }
+.preview-tbl tr:last-child td { border-bottom:none; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span>CariFin Data Dashboard</span>
+  <div class="topbar-right">
+    <span>Hi, {{ current_user.username }} (HR)</span>
+    <span class="divider">|</span>
+    <div class="sys-wrap">
+      <button class="sys-btn" onclick="toggleSys(event)">System ▾</button>
+      <div class="sys-dd" id="sysDd">
+        <a class="sys-dd-item" href="{{ url_for('dashboard_views.hr_page') }}">HR Dashboard</a>
+        <a class="sys-dd-item active" href="{{ url_for('dashboard_views.hr_participants') }}">Participant Management</a>
+        <a class="sys-dd-item" href="{{ url_for('auth_views.logout') }}">Logout</a>
+      </div>
+    </div>
+    <span class="divider">|</span>
+    <a href="{{ url_for('auth_views.logout') }}">Logout</a>
+  </div>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="logo-box">🏔</div>
+  <div class="breadcrumb"><span>System ›</span> Participant Management</div>
+</div>
+
+<div class="main">
+  <div class="section-title">Manage Participants</div>
+
+  <!-- ── ACTION BAR ── -->
+  <div class="action-bar">
+    <button class="btn" onclick="openAddForm()">+ Add Participant</button>
+    <button class="btn btn-ghost" onclick="bulkMarkStatus('completed')">Mark as Completed</button>
+    <button class="btn btn-ghost" onclick="bulkMarkStatus('no-show')">Mark as No-show</button>
+    <span class="action-bar spacer"></span>
+    <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <!-- ── IMPORT STRIP ── -->
+  <div class="import-strip">
+    <strong style="font-size:11px;color:var(--text-muted);">Bulk Import:</strong>
+    <label>📄 CSV <input type="file" id="csvInput" accept=".csv" onchange="handleImport(event,'csv')"></label>
+    <label>📊 Excel <input type="file" id="xlsxInput" accept=".xlsx,.xls" onchange="handleImport(event,'xlsx')"></label>
+    <span class="import-msg" id="importMsg">No file loaded</span>
+    <span style="margin-left:auto;font-size:11px;"><a href="#" onclick="dlTemplate();return false;">Download template</a></span>
+  </div>
+
+  <!-- ── ADD/EDIT PARTICIPANT FORM ── -->
+  <div class="form-panel" id="participantForm">
+    <div class="form-panel-header">
+      <span id="formTitle">Participant Details</span>
+      <button class="close-btn" onclick="closeForm()">✕</button>
+    </div>
+    <div class="form-body">
+      <input type="hidden" id="editingPid">
+
+      <div class="form-2col">
+        <div>
+          <!-- Name -->
+          <div class="form-row">
+            <span class="form-label">First Name: <span class="req">*Required</span></span>
+            <input type="text" class="form-input" id="fFirstName" placeholder="e.g. Nekeisha"
+              oninput="checkDup()">
+          </div>
+          <div class="form-row">
+            <span class="form-label">Last Name: <span class="req">*Required</span></span>
+            <input type="text" class="form-input" id="fLastName" placeholder="e.g. Blackman"
+              oninput="checkDup()">
+          </div>
+          <span class="dup-warn" id="dupWarn">⚠ A participant with this name already exists.</span>
+
+          <hr class="form-divider">
+
+          <!-- Bio -->
+          <div class="form-row">
+            <span class="form-label">Birth Date:</span>
+            <input type="date" class="form-input" id="fBirthDate" onchange="autoCalcFields()">
+            <small style="color:var(--text-muted);font-size:11px;">(DD/MM/YYYY)</small>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Sex:</span>
+            <div class="radio-group">
+              <label class="radio-opt"><input type="radio" name="fSex" value="M" onchange="autoCalcFields()"> Male</label>
+              <label class="radio-opt"><input type="radio" name="fSex" value="F" onchange="autoCalcFields()"> Female</label>
+            </div>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Division:</span>
+            <input type="text" class="form-input" id="fDivision" readonly placeholder="Auto-calculated">
+            <small style="color:var(--text-muted);font-size:11px;">(Auto-calculated)</small>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Age:</span>
+            <input type="text" class="form-input" id="fAge" readonly placeholder="Auto-calculated">
+            <small style="color:var(--text-muted);font-size:11px;">(Auto-calculated)</small>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:12px;">Contact Information</div>
+          <div class="form-row">
+            <span class="form-label">Email: <span class="req">*Required</span></span>
+            <input type="text" class="form-input wide" id="fEmail" placeholder="email@example.com">
+          </div>
+          <div class="form-row">
+            <span class="form-label">Phone: <span class="req">*Required</span></span>
+            <input type="text" class="form-input wide" id="fPhone" placeholder="1-868-123-456">
+          </div>
+
+          <hr class="form-divider">
+
+          <div class="form-row">
+            <span class="form-label">Employee ID:</span>
+            <input type="text" class="form-input wide" id="fEmpId" placeholder="e.g. CBTT-2022-045">
+            <button class="btn btn-ghost btn-sm" onclick="checkDupManual()" style="font-size:11px;">Check for Duplicates</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="saveParticipantBtn" onclick="handleSaveParticipant()">Save &amp; Register for Event</button>
+      <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
+      <button class="btn btn-danger" id="deletePBtn" style="display:none;margin-left:auto;" onclick="handleDeleteParticipant()">Remove Participant</button>
+    </div>
+  </div>
+
+  <!-- ── REGISTER FOR EVENT FORM ── -->
+  <div class="form-panel" id="registerForm">
+    <div class="form-panel-header">
+      <span id="registerTitle">Register for Events</span>
+      <button class="close-btn" onclick="closeRegForm()">✕</button>
+    </div>
+    <div class="form-body">
+      <input type="hidden" id="regPid">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Select events for <strong id="regSeasonLabel">current</strong> season:
+      </p>
+      <ul class="event-list" id="eventCheckList">
+        <li style="color:var(--text-muted);font-style:italic;">Loading events…</li>
+      </ul>
+
+      <div class="bib-section" id="bibSection" style="display:none;">
+        <div class="bib-section-lbl">Bib Assignment</div>
+        <div class="form-row">
+          <span class="form-label">Assign Bib No.:</span>
+          <input type="text" class="form-input" id="bibNoPreview" readonly placeholder="Auto-generated">
+          <small style="color:var(--text-muted);font-size:11px;">(Auto-generated)</small>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Assign Bib Tag:</span>
+          <input type="text" class="form-input" id="bibTagPreview" readonly placeholder="Auto-calculated">
+          <small style="color:var(--text-muted);font-size:11px;">(Auto-calculated)</small>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Age:</span>
+          <input type="text" class="form-input" id="regAge" readonly>
+          <small style="color:var(--text-muted);font-size:11px;">(Auto-calculated)</small>
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="handleRegister()">Register Participant</button>
+      <button class="btn btn-ghost" onclick="closeRegForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ── PARTICIPANTS TABLE ── -->
+  <div class="card">
+    <div class="card-header">Active Participants</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+          <th>Participant Name</th>
+          <th>Division</th>
+          <th>Events</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="participantsTbody">
+        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">
+          <span class="spin">⟳</span> Loading participants…
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── IMPORT PREVIEW MODAL ── -->
+<div class="overlay" id="importOverlay">
+  <div class="modal" style="max-width:580px;width:95%;">
+    <h3 id="importModalTitle">Preview Import</h3>
+    <p id="importModalMsg" style="margin-bottom:8px;"></p>
+    <div class="preview-scroll"><table class="preview-tbl" id="previewTbl"></table></div>
+    <p id="importSkipMsg" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cancelImport()">Cancel</button>
+      <button class="btn" onclick="confirmImport()">Import All</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM MODAL ── -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h3 id="confirmTitle">Confirm</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn" onclick="doConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══ STATE ═══ */
+let participants    = [];
+let availableEvents = [];
+let pendingFn       = null;
+let pendingImport   = [];
+
+/* ═══ INIT ═══ */
+async function init() {
+  await Promise.all([loadParticipants(), loadAvailableEvents()]);
+}
+
+/* ═══ API ═══ */
+async function apiFetch(url, opts={}) {
+  const res = await fetch(url, {
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+    ...opts
+  });
+  if (!res.ok) { const d=await res.json().catch(()=>({error:res.statusText})); throw new Error(d.error||`HTTP ${res.status}`); }
+  return res.json();
+}
+
+/* ═══ LOAD ═══ */
+async function loadParticipants() {
+  document.getElementById('participantsTbody').innerHTML =
+    `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;"><span class="spin">⟳</span> Loading…</td></tr>`;
+  try {
+    participants = await apiFetch('/hr/api/participants');
+    renderTable();
+  } catch(e) { showToast('⚠ ' + e.message); }
+}
+
+async function loadAvailableEvents() {
+  try { availableEvents = await apiFetch('/hr/api/available-events'); }
+  catch(e) { availableEvents = []; }
+}
+
+/* ═══ TABLE ═══ */
+function renderTable() {
+  const tb = document.getElementById('participantsTbody');
+  if (!participants.length) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No participants yet. Add one or import from CSV.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = participants.map(p => {
+    const statusClass = p.status === 'Completed' ? 'dot-active' :
+                        p.status === 'No-show'   ? 'dot-closed' : '';
+    return `<tr>
+      <td><input type="checkbox" class="row-check" value="${p.id}"></td>
+      <td><strong>${esc(p.full_name)}</strong></td>
+      <td>${esc(p.division)}</td>
+      <td style="font-size:12px;">${esc(p.events)}</td>
+      <td><span class="status-dot ${statusClass}"></span>${esc(p.status)}</td>
+      <td style="white-space:nowrap;">
+        <a class="btn btn-sm btn-ghost" onclick="openViewForm(${p.id})" style="margin-right:4px;">[View Participant]</a>
+        <a class="btn btn-sm" onclick="openEditForm(${p.id})" style="margin-right:4px;">[Edit]</a>
+        <a class="btn btn-sm btn-danger" onclick="triggerDelete(${p.id})">[Remove]</a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked);
+}
+
+function getSelectedIds() {
+  return [...document.querySelectorAll('.row-check:checked')].map(c => +c.value);
+}
+
+/* ═══ PARTICIPANT FORM ═══ */
+function openAddForm() {
+  clearForm();
+  document.getElementById('formTitle').textContent = 'Add New Participant';
+  document.getElementById('deletePBtn').style.display = 'none';
+  document.getElementById('participantForm').classList.add('active');
+  document.getElementById('registerForm').classList.remove('active');
+  scroll();
+}
+
+async function openEditForm(pid) {
+  clearForm();
+  document.getElementById('formTitle').textContent = 'Edit Participant';
+  document.getElementById('deletePBtn').style.display = 'inline-block';
+  try {
+    const p = await apiFetch(`/hr/api/participants/${pid}`);
+    document.getElementById('editingPid').value = pid;
+    document.getElementById('fFirstName').value = p.first_name;
+    document.getElementById('fLastName').value  = p.last_name;
+    document.getElementById('fBirthDate').value = p.birth_date || '';
+    document.getElementById('fEmail').value     = p.email;
+    document.getElementById('fPhone').value     = p.contact;
+    document.getElementById('fDivision').value  = p.division;
+    document.getElementById('fAge').value       = p.age ? p.age + ' years' : '';
+    if (p.sex) document.querySelector(`input[name="fSex"][value="${p.sex}"]`).checked = true;
+    document.getElementById('participantForm').classList.add('active');
+    document.getElementById('registerForm').classList.remove('active');
+    scroll();
+  } catch(e) { showToast('⚠ ' + e.message); }
+}
+
+async function openViewForm(pid) {
+  const p = participants.find(x => x.id === pid);
+  if (!p) return;
+  document.getElementById('regPid').value = pid;
+  document.getElementById('registerTitle').textContent = `Register for Events — ${p.full_name}`;
+  document.getElementById('regSeasonLabel').textContent =
+    availableEvents[0]?.season_year || 'current';
+  document.getElementById('regAge').value = p.age ? p.age + ' years' : '';
+
+  // Render event checkboxes
+  const list = document.getElementById('eventCheckList');
+  if (!availableEvents.length) {
+    list.innerHTML = '<li style="color:var(--text-muted);">No active events available.</li>';
+  } else {
+    list.innerHTML = availableEvents.map(e => `
+      <li>
+        <input type="checkbox" id="ev-${e.id}" value="${e.id}" onchange="updateBibPreview()">
+        <label for="ev-${e.id}">
+          ${esc(e.event_name)}
+          ${e.start_date ? `<small style="color:var(--text-muted);">(${e.start_date})</small>` : ''}
+        </label>
+      </li>`).join('');
+  }
+  document.getElementById('bibSection').style.display = 'none';
+  document.getElementById('participantForm').classList.remove('active');
+  document.getElementById('registerForm').classList.add('active');
+  scroll();
+}
+
+function updateBibPreview() {
+  const anyChecked = document.querySelectorAll('#eventCheckList input:checked').length > 0;
+  document.getElementById('bibSection').style.display = anyChecked ? 'block' : 'none';
+  if (anyChecked) {
+    // Show placeholder auto-generated values
+    document.getElementById('bibNoPreview').value  = 'Auto-generated';
+    document.getElementById('bibTagPreview').value = 'Auto-assigned';
+  }
+}
+
+function closeForm()    { document.getElementById('participantForm').classList.remove('active'); }
+function closeRegForm() { document.getElementById('registerForm').classList.remove('active'); }
+function scroll()       { setTimeout(() => document.querySelector('.form-panel.active')
+                          ?.scrollIntoView({behavior:'smooth',block:'start'}), 50); }
+
+function clearForm() {
+  document.getElementById('editingPid').value = '';
+  ['fFirstName','fLastName','fBirthDate','fDivision','fAge','fEmail','fPhone','fEmpId'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.querySelectorAll('input[name="fSex"]').forEach(r => r.checked = false);
+  document.getElementById('dupWarn').classList.remove('show');
+}
+
+/* ═══ AUTO-CALC DIVISION + AGE ═══ */
+function autoCalcFields() {
+  const bd  = document.getElementById('fBirthDate').value;
+  const sex = document.querySelector('input[name="fSex"]:checked')?.value;
+  if (bd) {
+    const birth = new Date(bd);
+    const age   = Math.floor((Date.now() - birth) / (365.25 * 24 * 3600 * 1000));
+    document.getElementById('fAge').value = age + ' years';
+    if (sex) {
+      let suffix;
+      if      (age < 20) suffix = '2029';
+      else if (age < 30) suffix = '3039';
+      else if (age < 40) suffix = '4049';
+      else if (age < 50) suffix = '5059';
+      else               suffix = '60+';
+      document.getElementById('fDivision').value = sex + suffix;
+    }
+  }
+}
+
+/* ═══ DUPLICATE CHECK ═══ */
+let dupTimer;
+function checkDup() {
+  clearTimeout(dupTimer);
+  dupTimer = setTimeout(async () => {
+    const fn = document.getElementById('fFirstName').value.trim();
+    const ln = document.getElementById('fLastName').value.trim();
+    if (!fn || !ln) return;
+    try {
+      const r = await apiFetch('/hr/api/participants/check-duplicate', {
+        method:'POST', body:JSON.stringify({first_name:fn, last_name:ln})
+      });
+      document.getElementById('dupWarn').classList.toggle('show', r.duplicate);
+    } catch(e) {}
+  }, 500);
+}
+
+function checkDupManual() {
+  const fn = document.getElementById('fFirstName').value.trim();
+  const ln = document.getElementById('fLastName').value.trim();
+  if (!fn || !ln) { showToast('Enter first and last name first.'); return; }
+  checkDup();
+  setTimeout(() => {
+    const isDup = document.getElementById('dupWarn').classList.contains('show');
+    if (!isDup) showToast('✓ No duplicate found.');
+  }, 700);
+}
+
+/* ═══ SAVE PARTICIPANT ═══ */
+async function handleSaveParticipant() {
+  const fn = document.getElementById('fFirstName').value.trim();
+  const ln = document.getElementById('fLastName').value.trim();
+  if (!fn || !ln) { showToast('⚠ First and last name are required.'); return; }
+
+  const pid = document.getElementById('editingPid').value;
+  const payload = {
+    first_name: fn, last_name: ln,
+    birth_date: document.getElementById('fBirthDate').value || null,
+    sex:        document.querySelector('input[name="fSex"]:checked')?.value || null,
+    email:      document.getElementById('fEmail').value.trim(),
+    contact:    document.getElementById('fPhone').value.trim(),
+  };
+
+  const btn = document.getElementById('saveParticipantBtn');
+  btn.disabled = true; btn.textContent = '⟳ Saving…';
+  try {
+    if (pid) {
+      await apiFetch(`/hr/api/participants/${pid}`, {method:'PUT', body:JSON.stringify(payload)});
+      showToast(`✓ ${fn} ${ln} updated.`);
+    } else {
+      const created = await apiFetch('/hr/api/participants', {method:'POST', body:JSON.stringify(payload)});
+      showToast(`✓ ${fn} ${ln} added.`);
+      // Auto-open register form
+      await loadParticipants();
+      closeForm();
+      openViewForm(created.id);
+      return;
+    }
+    await loadParticipants();
+    closeForm();
+  } catch(e) { showToast('✕ ' + e.message); }
+  finally { btn.disabled=false; btn.textContent='Save & Register for Event'; }
+}
+
+/* ═══ REGISTER ═══ */
+async function handleRegister() {
+  const pid   = +document.getElementById('regPid').value;
+  const seIds = [...document.querySelectorAll('#eventCheckList input:checked')].map(c => +c.value);
+  if (!seIds.length) { showToast('⚠ Select at least one event.'); return; }
+  try {
+    const res = await apiFetch(`/hr/api/participants/${pid}/register`, {
+      method:'POST', body:JSON.stringify({season_event_ids: seIds})
+    });
+    const bibs = res.registrations.map(r => `${r.event_name} (Bib: ${r.bib_no})`).join(', ');
+    showToast(`✓ Registered! ${bibs}`);
+    await loadParticipants();
+    closeRegForm();
+  } catch(e) { showToast('✕ ' + e.message); }
+}
+
+/* ═══ DELETE ═══ */
+function handleDeleteParticipant() {
+  const pid = +document.getElementById('editingPid').value;
+  const p   = participants.find(x => x.id === pid);
+  pendingFn = async () => {
+    try {
+      await apiFetch(`/hr/api/participants/${pid}`, {method:'DELETE'});
+      showToast(`✓ ${p?.full_name} removed.`);
+      await loadParticipants(); closeForm();
+    } catch(e) { showToast('✕ ' + e.message); }
+  };
+  openConfirm('Remove Participant', `Remove "${p?.full_name}"? This also removes their registrations.`);
+}
+
+function triggerDelete(pid) {
+  const p = participants.find(x => x.id === pid);
+  pendingFn = async () => {
+    try {
+      await apiFetch(`/hr/api/participants/${pid}`, {method:'DELETE'});
+      showToast(`✓ ${p?.full_name} removed.`);
+      await loadParticipants();
+    } catch(e) { showToast('✕ ' + e.message); }
+  };
+  openConfirm('Remove Participant', `Remove "${p?.full_name}"? This also removes their registrations.`);
+}
+
+/* ═══ BULK MARK STATUS ═══ */
+function bulkMarkStatus(status) {
+  const ids = getSelectedIds();
+  if (!ids.length) { showToast('Select participants first.'); return; }
+  showToast(`Marking ${ids.length} participants as ${status} — (coming soon with result records)`);
+}
+
+/* ═══ IMPORT ═══ */
+function handleImport(e, type) {
+  const file = e.target.files[0]; if (!file) return;
+  setImportMsg(`Reading "${file.name}"…`, '');
+  if (type === 'csv') {
+    Papa.parse(file, {header:true, skipEmptyLines:true,
+      complete: r => previewImport(r.data, file.name),
+      error:    r => setImportMsg('⚠ ' + r.message, 'err')});
+  } else {
+    const fr = new FileReader();
+    fr.onload = ev => {
+      try {
+        const wb = XLSX.read(ev.target.result, {type:'binary', cellDates:true});
+        previewImport(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''}), file.name);
+      } catch(err) { setImportMsg('⚠ ' + err.message, 'err'); }
+    };
+    fr.readAsBinaryString(file);
+  }
+  e.target.value = '';
+}
+
+function previewImport(rows, fname) {
+  if (!rows.length) { setImportMsg('⚠ File is empty.', 'err'); return; }
+  pendingImport = rows;
+  const cols = ['first_name','last_name','birth_date','sex','email','contact'];
+  const altCols = ['First Name','Last Name','Birth Date','Sex','Email','Phone'];
+  document.getElementById('previewTbl').innerHTML =
+    `<thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.slice(0,10).map(r=>`<tr>${cols.map((c,i)=>`<td>${esc(String(r[c]||r[altCols[i]]||''))}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  document.getElementById('importModalTitle').textContent = `Preview — ${fname}`;
+  document.getElementById('importModalMsg').textContent   = `Found ${rows.length} row(s). Showing first 10.`;
+  document.getElementById('importSkipMsg').textContent    = 'Duplicates will be skipped automatically.';
+  document.getElementById('importOverlay').classList.add('active');
+}
+
+async function confirmImport() {
+  document.getElementById('importOverlay').classList.remove('active');
+  setImportMsg('⟳ Importing…', '');
+  try {
+    const res = await apiFetch('/hr/api/participants/bulk-import', {
+      method:'POST', body:JSON.stringify({rows: pendingImport})
+    });
+    setImportMsg(`✓ ${res.added} added, ${res.skipped} skipped`, 'ok');
+    if (res.errors?.length) showToast(`⚠ ${res.errors.length} row(s) had errors.`);
+    await loadParticipants();
+  } catch(e) { setImportMsg('✕ ' + e.message, 'err'); }
+  pendingImport = [];
+}
+
+function cancelImport() {
+  document.getElementById('importOverlay').classList.remove('active');
+  setImportMsg('Cancelled.', '');
+  pendingImport = [];
+}
+
+function setImportMsg(msg, cls) {
+  const el = document.getElementById('importMsg');
+  el.textContent = msg;
+  el.className   = 'import-msg' + (cls ? ' '+cls : '');
+}
+
+/* ═══ EXPORT + TEMPLATE ═══ */
+function exportCSV() {
+  const rows = [['first_name','last_name','division','events','status','email','contact']];
+  participants.forEach(p => rows.push([p.first_name,p.last_name,p.division,p.events,p.status,p.email,p.contact]));
+  dlBlob(rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n'),
+    `participants_${new Date().toISOString().slice(0,10)}.csv`,'text/csv');
+  showToast('✓ Exported.');
+}
+
+function dlTemplate() {
+  dlBlob(['first_name,last_name,birth_date,sex,email,contact',
+          'Nekeisha,Blackman,1998-05-14,F,nekeisha@cbtt.com,1-868-123-456',
+          'Adrian,Bishop,1990-03-22,M,adrian@cbtt.com,1-868-789-012'].join('\n'),
+    'participants_template.csv','text/csv');
+  showToast('✓ Template downloaded.');
+}
+
+function dlBlob(c,n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();URL.revokeObjectURL(a.href);}
+
+/* ═══ CONFIRM ═══ */
+function openConfirm(title, msg) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('active'); pendingFn=null; }
+async function doConfirm() { if(pendingFn) await pendingFn(); closeConfirm(); }
+
+/* ═══ SYSTEM DROPDOWN ═══ */
+function toggleSys(e) { e.stopPropagation(); document.getElementById('sysDd').classList.toggle('open'); }
+document.addEventListener('click', () => document.getElementById('sysDd')?.classList.remove('open'));
+
+/* ═══ TOAST ═══ */
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+init();
+</script>
+</body>
+</html>

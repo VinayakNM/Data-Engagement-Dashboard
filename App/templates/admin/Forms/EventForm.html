@@ -1,397 +1,261 @@
-!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CariFin Data Dashboard – Event Management</title>
-<link rel="stylesheet" href="Style.css">
-<style>
-  /* ── PAGE-SPECIFIC STYLES ── */
-  .stage-table input[type="text"],
-  .stage-table input[type="date"] {
-    width: 100%;
-    font-size: 11px;
-    padding: 3px 7px;
-  }
-  .stage-table input[type="date"] { width: auto; min-width: 130px; }
+{% extends "base.html" %}
+{% block title %}Manage Events{% endblock %}
+{% block breadcrumb %}Event Management{% endblock %}
 
-  textarea {
-    border: 1.5px solid var(--border);
-    background: var(--bg);
-    padding: 7px 10px;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 12px;
-    color: var(--text);
-    outline: none;
-    resize: vertical;
-    width: 100%;
-    max-width: 420px;
-    min-height: 70px;
-    transition: border-color 0.15s;
-  }
-  textarea:focus { border-color: var(--accent); }
+{% block content %}
+<div id="app-root">Loading...</div>
 
-  .form-row.top-align { align-items: flex-start; }
-  .form-row.top-align .form-label { margin-top: 6px; }
+<script>
+const API = '/api/forms';
+let token = null;
+let allEvents = [];
+let allSeasons = [];
+let selectedSeason = null;
 
-  .stage-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-  .stage-table th {
-    font-size: 10px; padding: 6px 10px; background: #f0ece4;
-  }
-  .stage-table td { padding: 6px 8px; font-size: 12px; }
-  .stage-table td:first-child { text-align: center; font-family: 'IBM Plex Mono', monospace; font-weight: 600; width: 48px; }
+async function apiGet(path) {
+    const r = await fetch(API + path, { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? r.json() : [];
+}
+async function apiPost(path, body) {
+    return fetch(API + path, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiPut(path, body) {
+    return fetch(API + path, {
+        method: 'PUT',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiPatch(path, body) {
+    return fetch(API + path, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+}
+async function apiDelete(path) {
+    return fetch(API + path, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+    });
+}
 
-  .stage-actions { display: flex; gap: 6px; margin-bottom: 16px; }
+function getTokenFromCookie() {
+    const match = document.cookie.match(/access_token_cookie=([^;]+)/);
+    return match ? match[1] : null;
+}
 
-  /* Description cell truncation in main table */
-  .desc-cell { max-width: 180px; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
-</style>
-</head>
-<body>
+async function loadData() {
+    token = getTokenFromCookie();
+    allEvents  = await apiGet('/events' + (selectedSeason ? '?season_id=' + selectedSeason : ''));
+    allSeasons = await apiGet('/seasons-list');
+    render();
+}
 
-<!-- TOP BAR -->
-<div class="topbar">
-  <span>CariFin Data Dashboard</span>
-  <div class="topbar-right">
-    <span>Hi, Admin123 (Admin)</span>
-    <a href="#">System ▾</a>
-    <a href="#">Logout</a>
-  </div>
-</div>
-
-<!-- PAGE HEADER -->
-<div class="page-header">
-  <div class="logo-box">🏔</div>
-  <div class="breadcrumb"><span>System &rsaquo;</span> Event Management</div>
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
-  <div class="section-title">Manage Events</div>
-
-  <!-- ACTIVE EVENTS TABLE -->
-  <div class="card">
-    <div class="card-header">Active Events</div>
-    <table>
-      <thead>
-        <tr>
-          <th>ID#</th>
-          <th>Event Name</th>
-          <th>Type</th>
-          <th>Stages</th>
-          <th>Description</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="eventsTableBody">
-        <!-- Rendered by JS -->
-      </tbody>
-    </table>
-  </div>
-
-  <!-- ADD NEW EVENT button -->
-  <div class="section-actions" style="text-align:left; margin-bottom: 20px;">
-    <button class="btn" onclick="openForm('new')">+ Add New Event</button>
-  </div>
-
-  <!-- ADD/EDIT EVENT FORM -->
-  <div class="form-panel" id="eventForm">
-    <div class="form-panel-header">
-      <span id="formTitle">Add / Edit Event Form</span>
-      <button class="close-btn" onclick="closeForm()" title="Close">✕</button>
-    </div>
-    <div class="form-body">
-
-      <!-- Event Name -->
-      <div class="form-row">
-        <span class="form-label">Event Name:</span>
-        <input type="text" class="wide" id="eventName" placeholder="e.g. Urban Challenge">
+function render() {
+    const root = document.getElementById('app-root');
+    root.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <label style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--text-muted); margin-right:8px;">Filter by Season:</label>
+          <select onchange="selectedSeason=this.value||null;loadData()" style="font-family:'IBM Plex Mono',monospace; padding:6px 10px; border:2px solid var(--border); border-radius:3px;">
+            <option value="">All Seasons</option>
+            ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year} (${s.status})</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn" onclick="openCreateModal()">+ New Event</button>
       </div>
 
-      <!-- Event Type -->
-      <div class="form-row">
-        <span class="form-label">Event Type:</span>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="eventType" value="Run"> Run</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Walk" checked> Walk</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Mixed"> Mixed</label>
-          <label class="radio-option"><input type="radio" name="eventType" value="Other"> Other</label>
+      <div class="card">
+        <div class="card-header">Events</div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th>Name</th><th>Type</th><th>Season Status</th><th>Stages</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            ${allEvents.map(e => `
+              <tr>
+                <td><strong>${e.name}</strong></td>
+                <td><span style="font-family:'IBM Plex Mono',monospace;">${e.event_type||'—'}</span></td>
+                <td>
+                  ${e.status === 'unassigned'
+                    ? '<span class="badge badge-archived">Unassigned</span>'
+                    : e.status === 'active'
+                      ? '<span class="badge badge-active">Active</span>'
+                      : '<span class="badge badge-closed">Inactive</span>'
+                  }
+                </td>
+                <td>${e.stage_count}</td>
+                <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn btn-sm btn-ghost" onclick="openEditModal(${e.id})">Edit</button>
+                  ${selectedSeason && e.status !== 'unassigned' ? `
+                    <button class="btn btn-sm btn-ghost" onclick="toggleStatus(${e.id}, '${e.status}')">
+                      ${e.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>` : ''}
+                  <button class="btn btn-sm btn-danger" onclick="deleteEvent(${e.id}, '${e.name}')">Delete</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table></div>
+      </div>
+
+      <!-- Create Modal -->
+      <div class="overlay" id="createModal">
+        <div class="modal" style="max-width:520px; width:95%;">
+          <h3>New Event</h3>
+          <div class="form-row">
+            <span class="form-label">Name:</span>
+            <input type="text" id="newName" class="wide" placeholder="e.g. Urban Challenge">
+          </div>
+          <div class="form-row">
+            <span class="form-label">Type:</span>
+            <select id="newType" style="width:200px;">
+              <option value="run">Run</option>
+              <option value="walk">Walk</option>
+              <option value="mixed">Mixed</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Season:</span>
+            <select id="newSeason" style="width:200px;">
+              <option value="">— None —</option>
+              ${allSeasons.map(s => `<option value="${s.id}" ${selectedSeason==s.id?'selected':''}>${s.year}</option>`).join('')}
+            </select>
+          </div>
+          <div id="newStagesWrap"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="createEvent()">Create</button>
+            <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+          </div>
         </div>
       </div>
 
-      <!-- Description -->
-      <div class="form-row top-align">
-        <span class="form-label">Description:</span>
-        <textarea id="eventDescription" placeholder="Brief description of the event…"></textarea>
+      <!-- Edit Modal -->
+      <div class="overlay" id="editModal">
+        <div class="modal" style="max-width:520px; width:95%;">
+          <h3>Edit Event</h3>
+          <div id="editFormContent"></div>
+          <div class="form-actions" style="border-top:none; padding:0; margin-top:16px;">
+            <button class="btn" onclick="saveEdit()">Save</button>
+            <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+          </div>
+        </div>
       </div>
+    `;
+}
 
-      <!-- Stage Configuration -->
-      <div class="events-label" style="margin-top: 6px;">Stage Configuration</div>
-      <table class="stage-table">
-        <thead>
-          <tr>
-            <th>Stage</th>
-            <th>Distance</th>
-            <th>Location</th>
-            <th>Date</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="stageTableBody">
-          <!-- Rendered by JS -->
-        </tbody>
-      </table>
+let editingId = null;
 
-      <div class="stage-actions">
-        <button class="btn btn-ghost btn-sm" onclick="addStage()">Add Stage</button>
-        <button class="btn btn-ghost btn-sm" onclick="removeStage()">Remove Stage</button>
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('active');
+}
+
+function openEditModal(id) {
+    editingId = id;
+    const e = allEvents.find(x => x.id === id);
+    if (!e) return;
+    document.getElementById('editFormContent').innerHTML = `
+      <div class="form-row">
+        <span class="form-label">Name:</span>
+        <input type="text" id="editName" class="wide" value="${e.name}">
       </div>
+      <div class="form-row">
+        <span class="form-label">Type:</span>
+        <select id="editType" style="width:200px;">
+          ${['run','walk','mixed','other'].map(t =>
+            `<option value="${t}" ${e.event_type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      ${selectedSeason ? `
+      <div style="margin-top:16px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px;">Stages</div>
+      <div id="editStages">
+        ${(e.stages||[]).map((st,i) => `
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <input type="text" placeholder="Distance" value="${st.distance}" id="es_dist_${i}" style="width:90px;">
+            <input type="text" placeholder="Location" value="${st.location}" id="es_loc_${i}" style="flex:1; min-width:120px;">
+            <input type="date" value="${st.stage_date}" id="es_date_${i}" style="width:140px;">
+          </div>`).join('')}
+        <button class="btn btn-sm btn-ghost" onclick="addEditStage()">+ Add Stage</button>
+      </div>` : ''}
+    `;
+    document.getElementById('editModal').classList.add('active');
+}
 
-    </div><!-- /form-body -->
+function addEditStage() {
+    const wrap = document.getElementById('editStages');
+    const i = wrap.querySelectorAll('[id^=es_dist]').length;
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;';
+    div.innerHTML = `
+      <input type="text" placeholder="Distance" id="es_dist_${i}" style="width:90px;">
+      <input type="text" placeholder="Location" id="es_loc_${i}" style="flex:1;min-width:120px;">
+      <input type="date" id="es_date_${i}" style="width:140px;">
+    `;
+    wrap.insertBefore(div, wrap.lastElementChild);
+}
 
-    <!-- FORM ACTIONS -->
-    <div class="form-actions">
-      <button class="btn" onclick="handleSave()">Save Event</button>
-      <button class="btn btn-ghost" onclick="closeForm()">Cancel</button>
-      <button class="btn btn-danger" id="deleteBtn" onclick="handleDelete()" style="margin-left:auto; display:none;">Delete Event</button>
-    </div>
-  </div>
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
 
-</div><!-- /main -->
+async function createEvent() {
+    const name = document.getElementById('newName').value.trim();
+    const type = document.getElementById('newType').value;
+    const sid  = document.getElementById('newSeason').value;
+    if (!name) { alert('Name is required'); return; }
+    const body = { name, event_type: type };
+    if (sid) body.season_id = parseInt(sid);
+    const r = await apiPost('/events', body);
+    if (r.ok) { closeModal('createModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error creating event'); }
+}
 
-<!-- CONFIRM MODAL (Archive / Delete) -->
-<div class="overlay" id="confirmOverlay">
-  <div class="modal">
-    <h3 id="confirmTitle">Confirm Action</h3>
-    <p id="confirmMsg">Are you sure?</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
-      <button class="btn" id="confirmOkBtn" onclick="confirmAction()">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
-
-<script>
-  /* ── DATA STORE ── */
-  let events = [
-    { id: 1, name: 'Urban Challenge', type: 'Run',  stages: 3, description: 'Multi-stage running challenge across 3 different locations.', status: 'active',   stages_data: [{distance:'5K', location:"Queen's Park", date:'2025-02-15'},{distance:'5K',location:'Brian Lara',date:'2025-02-22'},{distance:'3K',location:'Hasely Cro.',date:'2025-03-05'}] },
-    { id: 2, name: 'Cross Country',   type: 'Run',  stages: 1, description: '',                                                              status: 'active',   stages_data: [{distance:'10K',location:'Arima',date:'2025-03-10'}] },
-    { id: 3, name: 'Urban Walk',      type: 'Walk', stages: 3, description: '',                                                              status: 'inactive', stages_data: [{distance:'3K',location:'POS',date:'2025-04-01'},{distance:'3K',location:'San Fernando',date:'2025-04-08'},{distance:'3K',location:'Chaguanas',date:'2025-04-15'}] },
-  ];
-  let nextId = 4;
-  let currentMode = 'new';
-  let editingId   = null;
-  let pendingAction = null;
-
-  /* ── RENDER MAIN TABLE ── */
-  function renderTable() {
-    const tbody = document.getElementById('eventsTableBody');
-    if (!events.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No events found.</td></tr>`;
-      return;
+async function saveEdit() {
+    const name = document.getElementById('editName').value.trim();
+    const type = document.getElementById('editType').value;
+    const body = { name, event_type: type };
+    if (selectedSeason) {
+        body.season_id = parseInt(selectedSeason);
+        const stageWrap = document.getElementById('editStages');
+        if (stageWrap) {
+            const n = stageWrap.querySelectorAll('[id^=es_dist]').length;
+            body.stages = [];
+            for (let i = 0; i < n; i++) {
+                body.stages.push({
+                    distance:   document.getElementById(`es_dist_${i}`)?.value || '',
+                    location:   document.getElementById(`es_loc_${i}`)?.value  || '',
+                    stage_date: document.getElementById(`es_date_${i}`)?.value || '',
+                });
+            }
+        }
     }
-    tbody.innerHTML = events.map(e => {
-      const isActive = e.status === 'active';
-      const statusBadge = isActive
-        ? `<span class="status-dot dot-active"></span> Active`
-        : `<span class="status-dot dot-closed"></span> Inactive`;
-      const actions = isActive
-        ? `<button class="btn btn-sm" onclick="openForm('edit',${e.id})">Edit</button>
-           <button class="btn btn-sm btn-ghost" onclick="triggerArchive(${e.id})">Archive</button>`
-        : `<button class="btn btn-sm btn-ghost" onclick="triggerActivate(${e.id})">Activate</button>
-           <button class="btn btn-sm btn-danger" onclick="triggerDelete(${e.id})">Delete</button>`;
-      return `
-        <tr>
-          <td style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:center;">${e.id}</td>
-          <td><strong>${e.name}</strong></td>
-          <td>${e.type}</td>
-          <td style="text-align:center;">${e.stages_data.length}</td>
-          <td class="desc-cell">${e.description || '—'}</td>
-          <td>${statusBadge}</td>
-          <td style="white-space:nowrap;">${actions}</td>
-        </tr>`;
-    }).join('');
-  }
+    const r = await apiPut(`/events/${editingId}`, body);
+    if (r.ok) { closeModal('editModal'); loadData(); }
+    else { const d = await r.json(); alert(d.error || 'Error saving'); }
+}
 
-  /* ── STAGE ROWS ── */
-  function renderStages(stages_data) {
-    const tbody = document.getElementById('stageTableBody');
-    tbody.innerHTML = '';
-    (stages_data || []).forEach((s, i) => addStageRow(i + 1, s));
-  }
+async function toggleStatus(eid, currentStatus) {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const r = await apiPatch(`/events/${eid}/status`, { season_id: parseInt(selectedSeason), status: newStatus });
+    if (r.ok) loadData();
+}
 
-  function addStageRow(num, data = {}) {
-    const tbody = document.getElementById('stageTableBody');
-    const rowNum = num || tbody.rows.length + 1;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${rowNum}</td>
-      <td><input type="text" placeholder="e.g. 5K" value="${data.distance || ''}"></td>
-      <td><input type="text" placeholder="Location" value="${data.location || ''}"></td>
-      <td><input type="date" value="${data.date || ''}"></td>
-      <td><button class="btn btn-sm btn-ghost" onclick="this.closest('tr').remove(); renumberStages();" title="Remove row">✕</button></td>`;
-    tbody.appendChild(tr);
-  }
+async function deleteEvent(eid, name) {
+    if (!confirm(`Delete event "${name}"? This cannot be undone.`)) return;
+    const r = await apiDelete(`/events/${eid}`);
+    if (r.ok) loadData();
+    else { const d = await r.json(); alert(d.error || 'Error deleting'); }
+}
 
-  function addStage() {
-    const tbody = document.getElementById('stageTableBody');
-    addStageRow(tbody.rows.length + 1);
-  }
+document.addEventListener('click', e => {
+    if (e.target.classList.contains('overlay')) e.target.classList.remove('active');
+});
 
-  function removeStage() {
-    const tbody = document.getElementById('stageTableBody');
-    if (tbody.rows.length > 0) tbody.deleteRow(tbody.rows.length - 1);
-  }
-
-  function renumberStages() {
-    const rows = document.querySelectorAll('#stageTableBody tr');
-    rows.forEach((r, i) => r.cells[0].textContent = i + 1);
-  }
-
-  function getStagesFromTable() {
-    const rows = document.querySelectorAll('#stageTableBody tr');
-    return Array.from(rows).map(r => ({
-      distance: r.cells[1].querySelector('input').value.trim(),
-      location: r.cells[2].querySelector('input').value.trim(),
-      date:     r.cells[3].querySelector('input').value,
-    }));
-  }
-
-  /* ── OPEN / CLOSE FORM ── */
-  function openForm(mode, id) {
-    currentMode = mode;
-    editingId = id || null;
-
-    // Reset
-    document.getElementById('eventName').value = '';
-    document.getElementById('eventDescription').value = '';
-    document.querySelectorAll('input[name="eventType"]')[1].checked = true;
-    document.getElementById('stageTableBody').innerHTML = '';
-    document.getElementById('deleteBtn').style.display = 'none';
-
-    if (mode === 'new') {
-      document.getElementById('formTitle').textContent = 'Add New Event';
-      addStageRow(1);
-    } else {
-      const ev = events.find(e => e.id === id);
-      if (!ev) return;
-      document.getElementById('formTitle').textContent = `Edit Event – ${ev.name}`;
-      document.getElementById('eventName').value = ev.name;
-      document.getElementById('eventDescription').value = ev.description;
-      document.querySelectorAll('input[name="eventType"]').forEach(r => r.checked = r.value === ev.type);
-      renderStages(ev.stages_data);
-      document.getElementById('deleteBtn').style.display = 'inline-block';
-    }
-
-    document.getElementById('eventForm').classList.add('active');
-    setTimeout(() => document.getElementById('eventForm').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-  }
-
-  function closeForm() {
-    document.getElementById('eventForm').classList.remove('active');
-    editingId = null;
-  }
-
-  /* ── SAVE ── */
-  function handleSave() {
-    const name = document.getElementById('eventName').value.trim();
-    if (!name) { showToast('⚠ Please enter an Event Name.'); return; }
-
-    const type        = document.querySelector('input[name="eventType"]:checked')?.value || 'Walk';
-    const description = document.getElementById('eventDescription').value.trim();
-    const stages_data = getStagesFromTable();
-
-    if (currentMode === 'new') {
-      events.push({ id: nextId++, name, type, description, status: 'active', stages_data });
-      showToast(`✓ Event "${name}" added successfully.`);
-    } else {
-      const idx = events.findIndex(e => e.id === editingId);
-      if (idx > -1) {
-        events[idx] = { ...events[idx], name, type, description, stages_data };
-        showToast(`✓ Event "${name}" updated successfully.`);
-      }
-    }
-
-    renderTable();
-    closeForm();
-  }
-
-  /* ── ARCHIVE ── */
-  function triggerArchive(id) {
-    const ev = events.find(e => e.id === id);
-    pendingAction = () => {
-      ev.status = 'inactive';
-      renderTable();
-      showToast(`✓ "${ev.name}" archived.`);
-    };
-    openConfirm('Archive Event', `Archive "${ev.name}"? It will be marked inactive.`);
-  }
-
-  /* ── ACTIVATE ── */
-  function triggerActivate(id) {
-    const ev = events.find(e => e.id === id);
-    ev.status = 'active';
-    renderTable();
-    showToast(`✓ "${ev.name}" is now Active.`);
-  }
-
-  /* ── DELETE ── */
-  function triggerDelete(id) {
-    const ev = events.find(e => e.id === id);
-    pendingAction = () => {
-      events = events.filter(e => e.id !== id);
-      renderTable();
-      showToast(`✓ "${ev.name}" deleted.`);
-    };
-    openConfirm('Delete Event', `Permanently delete "${ev.name}"? This cannot be undone.`, true);
-  }
-
-  function handleDelete() {
-    if (!editingId) return;
-    const ev = events.find(e => e.id === editingId);
-    pendingAction = () => {
-      events = events.filter(e => e.id !== editingId);
-      renderTable();
-      closeForm();
-      showToast(`✓ "${ev.name}" deleted.`);
-    };
-    openConfirm('Delete Event', `Permanently delete "${ev.name}"? This cannot be undone.`, true);
-  }
-
-  /* ── CONFIRM MODAL ── */
-  function openConfirm(title, msg, danger = false) {
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmMsg').textContent = msg;
-    const btn = document.getElementById('confirmOkBtn');
-    btn.className = danger ? 'btn btn-danger' : 'btn';
-    btn.textContent = danger ? 'Delete' : 'Confirm';
-    document.getElementById('confirmOverlay').classList.add('active');
-  }
-  function closeConfirm() {
-    document.getElementById('confirmOverlay').classList.remove('active');
-    pendingAction = null;
-  }
-  function confirmAction() {
-    if (pendingAction) pendingAction();
-    closeConfirm();
-  }
-
-  /* ── TOAST ── */
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 3200);
-  }
-
-  // Initial render
-  renderTable();
+loadData();
 </script>
-</body>
-</html>
+{% endblock %}
