@@ -2,7 +2,7 @@ services:
   - type: web
     name: carifin-dashboard
     env: python
-    repo: https://github.com/VinayakNM/Data-Engagement-Dashboard.git
+    repo: https://github.com/JasMintTea/Data-Engagement-Dashboard.git
     plan: free
     branch: main
     healthCheckPath: /health
@@ -16,12 +16,4 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: SQLALCHEMY_DATABASE_URI
-        fromDatabase:
-          name: carifin-db
-          property: connectionString
-
-databases:
-  - name: carifin-db
-    plan: free
-    databaseName: carifin
-    user: carifin
+        value: "sqlite:///carifin.db"
