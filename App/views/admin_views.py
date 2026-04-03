@@ -313,8 +313,13 @@ def import_season_excel():
             inst_lookup[_normalise(inst.name)] = inst
             inst_lookup[_normalise(inst.code)] = inst
 
-        def find_institution(raw_name):
+        def _normalise(s):
+            return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()
 
+        def _tokens(s):
+            return set(_normalise(s).split())
+
+        def find_institution(raw_name):
             key = raw_name.strip().lower()
             key_n = _normalise(raw_name)
 
@@ -334,6 +339,15 @@ def import_season_excel():
                     return inst
                 if iname_n and key_n and (iname_n in key_n or key_n in iname_n):
                     return inst
+
+                raw_tokens = _tokens(raw_name)
+                inst_tokens = _tokens(inst.name)
+                if raw_tokens and inst_tokens:
+                    overlap = raw_tokens & inst_tokens
+                    # Match if majority of raw tokens appear in institution name
+                    if len(overlap) >= max(1, len(raw_tokens) - 1):
+                        return inst
+
             return None
 
         # ── Build event lookup per unique event name in the file ──────────────
