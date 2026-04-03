@@ -300,27 +300,39 @@ def import_season_excel():
         all_institutions = Institution.query.all()
 
         # Build lookup: normalised_key -> Institution
+        import re as _re
+
+        def _normalise(s):
+            """Strip punctuation and collapse spaces for fuzzy matching."""
+            return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()
+
         inst_lookup = {}
         for inst in all_institutions:
             inst_lookup[inst.name.strip().lower()] = inst
             inst_lookup[inst.code.strip().lower()] = inst
+            inst_lookup[_normalise(inst.name)] = inst
+            inst_lookup[_normalise(inst.code)] = inst
 
         def find_institution(raw_name):
-            """Match a raw team name string to an Institution in the DB.
-            1. Exact name match (case-insensitive)
-            2. Exact code match (case-insensitive)
-            3. DB name contains the raw value (substring)
-            4. Raw value contains DB name (substring)
-            Returns the Institution or None.
-            """
+
             key = raw_name.strip().lower()
+            key_n = _normalise(raw_name)
+
             if key in inst_lookup:
                 return inst_lookup[key]
-            # substring search
+            if key_n in inst_lookup:
+                return inst_lookup[key_n]
+
             for inst in all_institutions:
                 iname = inst.name.lower()
                 icode = inst.code.lower()
-                if iname in key or key in iname or icode == key:
+                iname_n = _normalise(inst.name)
+
+                if icode == key or icode == key_n:
+                    return inst
+                if iname in key or key in iname:
+                    return inst
+                if iname_n and key_n and (iname_n in key_n or key_n in iname_n):
                     return inst
             return None
 
