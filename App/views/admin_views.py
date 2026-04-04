@@ -34,17 +34,13 @@ def test():
 def dashboard():
     if current_user.role != "admin":
         return "Access Denied", 403
-    # Get institutions for dropdown and table
     institutions = get_admin_data()
 
-    # Get metrics
-    # Support filter params from URL query string
     filter_year = request.args.get("season", type=int)
     filter_inst = request.args.get("institution")
     filter_event = request.args.get("event", type=int)
     filter_division = request.args.get("division")
 
-    # Resolve season — use filter year if provided, else active season, else most recent
     if filter_year:
         current_season = Season.query.filter_by(year=filter_year).first()
     else:
@@ -55,13 +51,9 @@ def dashboard():
             current_season = Season.query.order_by(Season.year.desc()).first()
     season_id = current_season.id if current_season else None
 
-    # All seasons for the filter dropdown
     all_seasons = Season.query.order_by(Season.year.desc()).all()
-
-    # Events for the event filter dropdown
     events = Event.query.order_by(Event.name).all()
 
-    # Distinct divisions from Participant and Registration tables
     div_rows = (
         db.session.query(Participant.division)
         .filter(Participant.division.isnot(None), Participant.division != "")
@@ -103,10 +95,8 @@ def dashboard():
     )
     no_show_pct = round((no_show_count / total_reg * 100), 1) if total_reg > 0 else 0
 
-    # FIX: bar chart max for proportional heights
     max_count = max((i["count"] for i in participation_by_inst), default=1)
 
-    # ── Analytics panels ──────────────────────────────────────────────────────
     stage_funnel = get_stage_funnel(season_id, filter_event, filter_inst)
     gender_split = get_gender_split(season_id, filter_event, filter_inst)
     age_groups = get_age_group_distribution(season_id, filter_event, filter_inst)
@@ -140,14 +130,12 @@ def create_user():
     if current_user.role != "admin":
         return "Access Denied", 403
 
-    # Get form data
     firstname = request.form.get("firstname")
     lastname = request.form.get("lastname")
     email = request.form.get("email")
     role = request.form.get("role")
     institution_id = request.form.get("institution_id")
 
-    # Generate username
     from App.controllers.user_controller import generate_username
     from App.models import Institution
 
@@ -158,14 +146,11 @@ def create_user():
             return redirect(url_for("admin_views.dashboard"))
         username = generate_username(firstname, lastname, inst.code)
     else:
-        # For admin/scorer, use role-based username
         base = f"{role}_{firstname[0].upper()}{lastname}".lower()
         username = base
 
-    # Generate temporary password
     temp_password = generate_temp_password()
 
-    # Create user
     user, error = create_user_by_admin(
         firstname=firstname,
         lastname=lastname,
@@ -183,7 +168,6 @@ def create_user():
             f"{role.capitalize()} user created! Username: {username}, Temporary password: {temp_password}",
             "success",
         )
-        # Email the temp_password
         print(f"Temporary password for {username}: {temp_password}")
 
     return redirect(url_for("admin_views.dashboard"))
@@ -192,11 +176,11 @@ def create_user():
 @admin_views.route("/admin/import-season", methods=["POST"])
 @jwt_required()
 def import_season_excel():
-
+    """Upload an Excel registration file and seed it into a chosen season."""
     if current_user.role != "admin":
         return "Access Denied", 403
 
-    from datetime import date, datetime
+    from datetime import date
     import io
 
     try:
@@ -219,22 +203,18 @@ def import_season_excel():
             flash("Only .xlsx / .xls files are supported.", "danger")
             return redirect(url_for("admin_views.dashboard"))
 
-        # ── Resolve season ────────────────────────────────────────────────────
         season = Season.query.filter_by(year=season_year).first()
         if not season:
             flash(f"Season {season_year} not found. Create it first.", "danger")
             return redirect(url_for("admin_views.dashboard"))
 
-        # ── Read file ─────────────────────────────────────────────────────────
         try:
             df = pd.read_excel(io.BytesIO(file.read()))
         except Exception as e:
             flash(f"Could not read file: {e}", "danger")
             return redirect(url_for("admin_views.dashboard"))
 
-        # Strip whitespace from all column names
-        df.columns = [str(c).strip() for c in df.columns]
-        col_map = {c.upper(): c for c in df.columns}
+        col_map = {c.strip().upper(): c for c in df.columns}
 
         def find_col(*candidates):
             for c in candidates:
@@ -242,18 +222,14 @@ def import_season_excel():
                     return col_map[c.upper()]
             return None
 
-        def clean(val):
-            if val is None:
-                return None
-            s = str(val).strip()
-            return None if s in ("", "nan", "NaT", "None") else s
-
         def parse_date(val):
+            from datetime import datetime, date as date_
+
             if val is None:
                 return None
             if isinstance(val, datetime):
                 return val.date()
-            if isinstance(val, date):
+            if isinstance(val, date_):
                 return val
             s = str(val).strip()
             if s in ("", "nan", "NaT", "None"):
@@ -265,250 +241,131 @@ def import_season_excel():
                     continue
             return None
 
-        # ── Detect columns ────────────────────────────────────────────────────
-        col_first = find_col("FIRST NAME", "FIRSTNAME", "FIRST")
-        col_last = find_col("LAST NAME", "LASTNAME", "LAST")
-        col_team = find_col("TEAM NAME", "TEAM", "INSTITUTION", "CLUB", "COMPANY")
-        col_event = find_col("EVENT NAME", "EVENT", "RACE")
-        col_email = find_col("EMAIL", "E-MAIL", "EMAIL ADDRESS")
-        col_sex = find_col("SEX", "GENDER")
-        col_div = find_col("DIV", "DIVISION", "AGE GROUP", "CATEGORY")
-        col_bdate = find_col("BIRTHDATE", "BIRTH DATE", "DOB", "DATE OF BIRTH")
-
-        if not all([col_first, col_last, col_team]):
-            flash(
-                "File missing required columns (FIRST NAME, LAST NAME, TEAM/INSTITUTION).",
-                "danger",
-            )
-            return redirect(url_for("admin_views.dashboard"))
-
-        df = df[
-            df[col_team].notna() & df[col_first].notna() & df[col_last].notna()
-        ].copy()
-        df.reset_index(drop=True, inplace=True)
-
-        # ── Detect TIME columns for stages ────────────────────────────────────
-        stage_nums = [
-            n
-            for n in range(1, 20)
-            if col_map.get(f"TIME{n}") and df[col_map[f"TIME{n}"]].notna().any()
-        ]
-
-        all_institutions = Institution.query.all()
-
-        # Build lookup: normalised_key -> Institution
-        import re as _re
-
-        def _normalise(s):
-            """Strip punctuation and collapse spaces for fuzzy matching."""
-            return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()
-
-        ALIASES = {
-            "fcb": "FCIT",
-            "first citizens": "FCIT",
+        TEAM_MAP = {
             "cbtt": "CBTT",
-            "central bank": "CBTT",
+            "first citizens": "FCIT",
+            "fcb": "FCIT",
             "sagicor": "SAGC",
             "scotiabank": "SCOT",
             "scotia": "SCOT",
             "ttmb": "TTMB",
-            "tt mortgage": "TTMB",
             "ttutc": "TTUT",
             "utc": "TTUT",
             "min. of finance": "MOF",
             "ministry of finance": "MOF",
-            "mof": "MOF",
         }
 
-        inst_lookup = {}
-        for inst in all_institutions:
-            inst_lookup[inst.name.strip().lower()] = inst
-            inst_lookup[inst.code.strip().lower()] = inst
-            inst_lookup[_normalise(inst.name)] = inst
-            inst_lookup[_normalise(inst.code)] = inst
+        col_first = find_col("FIRST NAME", "FIRSTNAME", "FIRST")
+        col_last = find_col("LAST NAME", "LASTNAME", "LAST")
+        col_team = find_col("TEAM NAME", "TEAM", "INSTITUTION", "CLUB")
+        col_email = find_col("EMAIL", "E-MAIL")
+        col_sex = find_col("SEX", "GENDER")
+        col_div = find_col("DIV", "DIVISION", "AGE GROUP")
+        col_bdate = find_col("BIRTHDATE", "BIRTH DATE", "DOB", "DATE OF BIRTH")
 
-        # Add aliases
-        for alias, code in ALIASES.items():
-            target = Institution.query.filter_by(code=code).first()
-            if target:
-                inst_lookup[alias] = target
-                inst_lookup[_normalise(alias)] = target
+        if not all([col_first, col_last, col_team]):
+            flash(
+                "File missing required columns (FIRST NAME, LAST NAME, TEAM NAME).",
+                "danger",
+            )
+            return redirect(url_for("admin_views.dashboard"))
 
-        def _normalise(s):
-            return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()
+        df = df[df[col_team].notna() & df[col_first].notna() & df[col_last].notna()]
 
-        def _tokens(s):
-            return set(_normalise(s).split())
+        stage_nums = [
+            n
+            for n in range(1, 10)
+            if col_map.get(f"TIME{n}") and df[col_map[f"TIME{n}"]].notna().any()
+        ]
+        if not stage_nums:
+            stage_nums = []
 
-        def find_institution(raw_name):
-            key = raw_name.strip().lower()
-            key_n = _normalise(raw_name)
+        event = Event.query.filter_by(name="Urban Challenge").first()
+        if not event:
+            event = Event.query.first()
+        if not event:
+            flash("No events found. Create an event first.", "danger")
+            return redirect(url_for("admin_views.dashboard"))
 
-            if key in inst_lookup:
-                return inst_lookup[key]
-            if key_n in inst_lookup:
-                return inst_lookup[key_n]
-
-            for inst in all_institutions:
-                iname = inst.name.lower()
-                icode = inst.code.lower()
-                iname_n = _normalise(inst.name)
-
-                if icode == key or icode == key_n:
-                    return inst
-                if iname in key or key in iname:
-                    return inst
-                if iname_n and key_n and (iname_n in key_n or key_n in iname_n):
-                    return inst
-
-                raw_tokens = _tokens(raw_name)
-                inst_tokens = _tokens(inst.name)
-                if raw_tokens and inst_tokens:
-                    overlap = raw_tokens & inst_tokens
-                    # Match if majority of raw tokens appear in institution name
-                    if len(overlap) >= max(1, len(raw_tokens) - 1):
-                        return inst
-
-            return None
-
-        # ── Build event lookup per unique event name in the file ──────────────
-        # If no EVENT column, treat all rows as a single event (use season's first event)
-        def resolve_event(raw_event_name):
-            """Find or create an Event and link it to the season."""
-            name = (raw_event_name or "").strip()
-            if not name:
-                return None, None
-
-            # Find existing event (case-insensitive)
-            event = Event.query.filter(
-                db.func.lower(Event.name) == name.lower()
-            ).first()
-            if not event:
-                # Auto-create event
-                event = Event(name=name, event_type="run")
-                db.session.add(event)
-                db.session.flush()
-                print(f"[IMPORT] Auto-created event: {name}")
-
-            # Link to season if not already
-            se = SeasonEvent.query.filter_by(
-                season_id=season.id, event_id=event.id
-            ).first()
-            if not se:
-                se = SeasonEvent(
-                    season_id=season.id,
-                    event_id=event.id,
-                    status="active",
-                    start_date=date(season.year, 3, 1),
-                    end_date=date(season.year, 11, 30),
-                )
-                db.session.add(se)
-                db.session.flush()
-                print(f"[IMPORT] Linked event '{name}' to season {season.year}")
-
-            return event, se
-
-        # ── Pre-resolve events and stages ─────────────────────────────────────
-        se_cache = {}  # event_name_lower -> SeasonEvent
-        stage_cache = {}  # se.id -> {stage_number: Stage}
-
-        if col_event:
-            unique_event_names = df[col_event].dropna().unique()
-            for raw in unique_event_names:
-                name_clean = str(raw).strip()
-                if not name_clean or name_clean == "nan":
-                    continue
-                _, se = resolve_event(name_clean)
-                if se:
-                    se_cache[name_clean.lower()] = se
-        else:
-            # No event column — use first event linked to this season, or create a default
-            se_list = SeasonEvent.query.filter_by(season_id=season.id).all()
-            if se_list:
-                default_se = se_list[0]
-            else:
-                # Auto-create a default event for this season
-                default_event = Event.query.first()
-                if not default_event:
-                    default_event = Event(name="Urban Challenge", event_type="run")
-                    db.session.add(default_event)
-                    db.session.flush()
-                default_se = SeasonEvent(
-                    season_id=season.id,
-                    event_id=default_event.id,
-                    status="active",
-                    start_date=date(season.year, 3, 1),
-                    end_date=date(season.year, 11, 30),
-                )
-                db.session.add(default_se)
-                db.session.flush()
-            se_cache["__default__"] = default_se
-
-        # Ensure stages exist for all resolved SeasonEvents
-        db.session.flush()
-        month_map = {1: 2, 2: 5, 3: 9, 4: 10, 5: 11}
-        for se in se_cache.values():
-            for snum in stage_nums:
-                if not Stage.query.filter_by(
-                    season_event_id=se.id, stage_number=snum
-                ).first():
-                    db.session.add(
-                        Stage(
-                            season_event_id=se.id,
-                            stage_number=snum,
-                            distance="5K",
-                            location="TBD",
-                            stage_date=date(season.year, month_map.get(snum, 3), 15),
-                        )
-                    )
+        se = SeasonEvent.query.filter_by(season_id=season.id, event_id=event.id).first()
+        if not se:
+            se = SeasonEvent(
+                season_id=season.id,
+                event_id=event.id,
+                status="active",
+                start_date=date(season.year, 3, 1),
+                end_date=date(season.year, 11, 30),
+            )
+            db.session.add(se)
             db.session.flush()
-            stage_cache[se.id] = {
-                s.stage_number: s
-                for s in Stage.query.filter_by(season_event_id=se.id).all()
-            }
 
+        month_map = {1: 2, 2: 5, 3: 9, 4: 10, 5: 11}
+        for snum in stage_nums:
+            if not Stage.query.filter_by(
+                season_event_id=se.id, stage_number=snum
+            ).first():
+                db.session.add(
+                    Stage(
+                        season_event_id=se.id,
+                        stage_number=snum,
+                        distance="5K",
+                        location="Queen's Park Savannah",
+                        stage_date=date(season.year, month_map.get(snum, 3), 15),
+                    )
+                )
         db.session.commit()
+        stage_by_num = {
+            s.stage_number: s
+            for s in Stage.query.filter_by(season_event_id=se.id).all()
+        }
 
-        # ── Import rows ───────────────────────────────────────────────────────
+        inst_cache = {}
+        for raw in df[col_team].dropna().unique():
+            code = TEAM_MAP.get(str(raw).strip().lower())
+            if code and code not in inst_cache:
+                inst = Institution.query.filter_by(code=code).first()
+                if inst:
+                    inst_cache[code] = inst
+
         created = registered = results_added = skipped = 0
-        unmatched_institutions = set()
 
         for _, row in df.iterrows():
             try:
-                raw_team = clean(row.get(col_team))
-                if not raw_team:
+                code = TEAM_MAP.get(str(row[col_team]).strip().lower())
+                if not code or code not in inst_cache:
                     skipped += 1
                     continue
 
-                inst = find_institution(raw_team)
-                if not inst:
-                    unmatched_institutions.add(raw_team)
+                first = str(row[col_first]).strip()
+                last = str(row[col_last]).strip()
+                if not first or not last or first == "nan" or last == "nan":
                     skipped += 1
                     continue
 
-                first = clean(row.get(col_first))
-                last = clean(row.get(col_last))
-                if not first or not last:
-                    skipped += 1
-                    continue
-
-                # Resolve which SeasonEvent this row belongs to
-                if col_event:
-                    raw_ev = clean(row.get(col_event)) or ""
-                    se = se_cache.get(raw_ev.lower())
-                else:
-                    se = se_cache.get("__default__")
-
-                if not se:
-                    skipped += 1
-                    continue
-
-                email = clean(row.get(col_email)) if col_email else None
+                inst = inst_cache[code]
+                email = (
+                    str(row[col_email]).strip()
+                    if col_email and pd.notna(row.get(col_email))
+                    else None
+                )
                 bdate = parse_date(row.get(col_bdate)) if col_bdate else None
-                sex = clean(row.get(col_sex)) if col_sex else None
-                div = clean(row.get(col_div)) if col_div else None
+                sex = (
+                    str(row[col_sex]).strip()
+                    if col_sex and pd.notna(row.get(col_sex))
+                    else None
+                )
+                div = (
+                    str(row[col_div]).strip()
+                    if col_div and pd.notna(row.get(col_div))
+                    else None
+                )
+                if email == "nan":
+                    email = None
+                if sex == "nan":
+                    sex = None
+                if div == "nan":
+                    div = None
 
-                # Find or create participant
                 p = Participant.query.filter_by(
                     first_name=first, last_name=last, institution_id=inst.id
                 ).first()
@@ -526,7 +383,6 @@ def import_season_excel():
                     db.session.flush()
                     created += 1
 
-                # Find or create registration
                 reg = Registration.query.filter_by(
                     participant_id=p.id, season_event_id=se.id
                 ).first()
@@ -538,16 +394,14 @@ def import_season_excel():
                     db.session.flush()
                     registered += 1
 
-                # Import stage results
-                stages_for_se = stage_cache.get(se.id, {})
                 for snum in stage_nums:
                     time_col = col_map.get(f"TIME{snum}")
                     if not time_col:
                         continue
-                    time_val = clean(str(row.get(time_col, "")))
-                    if not time_val:
+                    time_val = row.get(time_col)
+                    if pd.isna(time_val) or str(time_val).strip() in ("", "nan"):
                         continue
-                    stage = stages_for_se.get(snum)
+                    stage = stage_by_num.get(snum)
                     if not stage:
                         continue
                     if not Result.query.filter_by(
@@ -557,7 +411,7 @@ def import_season_excel():
                             Result(
                                 registration_id=reg.id,
                                 stage_id=stage.id,
-                                finish_time=time_val,
+                                finish_time=str(time_val).strip(),
                             )
                         )
                         results_added += 1
@@ -570,17 +424,12 @@ def import_season_excel():
 
         db.session.commit()
 
-        msg = (
+        flash(
             f"✓ Season {season_year} import complete — "
             f"{created} participants added, {registered} registered, "
-            f"{results_added} results recorded, {skipped} rows skipped."
+            f"{results_added} results recorded, {skipped} rows skipped.",
+            "success",
         )
-        if unmatched_institutions:
-            msg += (
-                f" ⚠ Unmatched institutions (add them first): "
-                f'{", ".join(sorted(unmatched_institutions))}'
-            )
-        flash(msg, "success" if not unmatched_institutions else "warning")
         return redirect(url_for("admin_views.dashboard"))
 
     except Exception as e:
@@ -652,9 +501,6 @@ def add_institution():
 
     code = request.form.get("code")
     name = request.form.get("name")
-    contact = request.form.get("contact")
-    email = request.form.get("email")
-    phone = request.form.get("phone")
 
     if not code or not name:
         flash("Code and name are required", "danger")
@@ -664,14 +510,7 @@ def add_institution():
         flash(f"Institution with code {code} already exists", "danger")
         return redirect(url_for("admin_views.institutions"))
 
-    inst = Institution(
-        name=name,
-        code=code,
-        # contact=contact,
-        # email=email,
-        # phone=phone,
-        # is_active=True
-    )
+    inst = Institution(name=name, code=code)
     db.session.add(inst)
     db.session.commit()
 
@@ -679,7 +518,7 @@ def add_institution():
     return redirect(url_for("admin_views.institutions"))
 
 
-# ================== OTHER MANAGEMENT PAGES (placeholders) ==================
+# ================== OTHER MANAGEMENT PAGES ==================
 @admin_views.route("/admin/events")
 @jwt_required()
 def events():
