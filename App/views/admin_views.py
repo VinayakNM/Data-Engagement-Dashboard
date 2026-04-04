@@ -192,10 +192,7 @@ def create_user():
 @admin_views.route("/admin/import-season", methods=["POST"])
 @jwt_required()
 def import_season_excel():
-    """Upload an Excel registration file and seed it into a chosen season.
-    Fully dynamic — institutions and events are matched from the database,
-    not from a hardcoded map. New institutions and events are auto-created.
-    """
+
     if current_user.role != "admin":
         return "Access Denied", 403
 
@@ -306,12 +303,36 @@ def import_season_excel():
             """Strip punctuation and collapse spaces for fuzzy matching."""
             return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()
 
+        ALIASES = {
+            "fcb": "FCIT",
+            "first citizens": "FCIT",
+            "cbtt": "CBTT",
+            "central bank": "CBTT",
+            "sagicor": "SAGC",
+            "scotiabank": "SCOT",
+            "scotia": "SCOT",
+            "ttmb": "TTMB",
+            "tt mortgage": "TTMB",
+            "ttutc": "TTUT",
+            "utc": "TTUT",
+            "min. of finance": "MOF",
+            "ministry of finance": "MOF",
+            "mof": "MOF",
+        }
+
         inst_lookup = {}
         for inst in all_institutions:
             inst_lookup[inst.name.strip().lower()] = inst
             inst_lookup[inst.code.strip().lower()] = inst
             inst_lookup[_normalise(inst.name)] = inst
             inst_lookup[_normalise(inst.code)] = inst
+
+        # Add aliases
+        for alias, code in ALIASES.items():
+            target = Institution.query.filter_by(code=code).first()
+            if target:
+                inst_lookup[alias] = target
+                inst_lookup[_normalise(alias)] = target
 
         def _normalise(s):
             return _re.sub(r"[^a-z0-9 ]", "", s.strip().lower()).strip()

@@ -255,11 +255,7 @@ def seed():
 
 
 def import_excel_seed(filepath, season_year):
-    """
-    Import participants from an Excel file into the given season.
-    Reuses the same dynamic matching logic as the admin import route.
-    Safe to run multiple times — skips existing participants/registrations.
-    """
+
     import pandas as pd
 
     season = Season.query.filter_by(year=season_year).first()
@@ -331,12 +327,36 @@ def import_excel_seed(filepath, season_year):
     def _tokens(s):
         return set(_normalise(s).split())
 
+    ALIASES = {
+        "fcb": "FCIT",
+        "first citizens": "FCIT",
+        "cbtt": "CBTT",
+        "central bank": "CBTT",
+        "sagicor": "SAGC",
+        "scotiabank": "SCOT",
+        "scotia": "SCOT",
+        "ttmb": "TTMB",
+        "tt mortgage": "TTMB",
+        "ttutc": "TTUT",
+        "utc": "TTUT",
+        "min. of finance": "MOF",
+        "ministry of finance": "MOF",
+        "mof": "MOF",
+    }
+
     inst_lookup = {}
     for inst in all_institutions:
         inst_lookup[inst.name.strip().lower()] = inst
         inst_lookup[inst.code.strip().lower()] = inst
         inst_lookup[_normalise(inst.name)] = inst
         inst_lookup[_normalise(inst.code)] = inst
+
+    # Add aliases
+    for alias, code in ALIASES.items():
+        target = Institution.query.filter_by(code=code).first()
+        if target:
+            inst_lookup[alias] = target
+            inst_lookup[_normalise(alias)] = target
 
     def find_institution(raw_name):
         key = raw_name.strip().lower()
